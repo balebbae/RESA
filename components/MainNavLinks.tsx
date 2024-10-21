@@ -14,24 +14,30 @@ import {
 export function MainNavLinks() {
   return (
     <NavigationMenu>
-      <NavigationMenuList>
+      <NavigationMenuList className="space-x-3">
         <NavigationMenuItem>
           <Link href="/about" legacyBehavior passHref>
-            <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+            <NavigationMenuLink
+              className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-transparent`}
+            >
               About Us
             </NavigationMenuLink>
           </Link>
         </NavigationMenuItem>
         <NavigationMenuItem>
           <Link href="/help" legacyBehavior passHref>
-            <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+            <NavigationMenuLink
+              className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-transparent`}
+            >
               Help
             </NavigationMenuLink>
           </Link>
         </NavigationMenuItem>
         <NavigationMenuItem>
           <Link href="/login" legacyBehavior passHref>
-            <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+            <NavigationMenuLink
+              className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-transparent`}
+            >
               Login
             </NavigationMenuLink>
           </Link>
@@ -39,8 +45,7 @@ export function MainNavLinks() {
         <NavigationMenuItem>
           <Link href="/start" legacyBehavior passHref>
             <NavigationMenuLink
-              className={`${navigationMenuTriggerStyle()} border: 2px`}
-              style={{ border: "2px solid black", padding: "16px" }}
+              className={`${navigationMenuTriggerStyle()} bg-black text-white hover:outline `}
             >
               Getting Started
             </NavigationMenuLink>

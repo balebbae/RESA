@@ -11,11 +11,25 @@ import { Input } from "@/components/ui/input";
 import OAuthButton from "./OAuthButton";
 import "@/app/styles/style.css";
 import { emailLogin } from "./action";
+import pb from "@/lib/pocketbase";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import NavbarNoLinks from "@/components/NavbarNoLinks";
 
-export default function Login() {
+export default async function Login({
+  searchParams,
+}: {
+  searchParams: { message: string };
+}) {
+  const valid = await pb.authStore.isValid;
+  if (valid) {
+    redirect("/resa");
+  }
+
   return (
-    <div className="gradient-bg-hori">
-      <section className="flex h-screen w-screen items-center justify-center ">
+    <div className="gradient-bg-270">
+      <NavbarNoLinks />
+      <section className="flex h-screen w-screen items-center justify-center mt-[-85px]">
         <Card className="mx-auto max-w-sm mt-[-100px]">
           <CardHeader>
             <CardTitle className="text-2xl">Login</CardTitle>
@@ -24,7 +38,7 @@ export default function Login() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <form id="login-form" className="grid gap-4" method="">
+            <form id="login-form" className="grid gap-4" method="POST">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -48,15 +62,23 @@ export default function Login() {
                   required
                 />
               </div>
-              <div className="text-sm font-medium text-destructive"></div>
+
+              {searchParams.message && (
+                <div className="text-sm font-medium text-destructive">
+                  {searchParams.message}
+                </div>
+              )}
+
               <Button className="w-full" type="submit" formAction={emailLogin}>
                 Login
               </Button>
             </form>
-            <OAuthButton />
+            <OAuthButton text="Login" />
             <div className="mt-4 text-center text-sm">
               Don&apos;t have an account?{" "}
-              <button className="underline">Sign up</button>
+              <Link href={"/signup"}>
+                <button className="underline">Sign up</button>
+              </Link>
             </div>
           </CardContent>
         </Card>

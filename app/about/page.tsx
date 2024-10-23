@@ -3,7 +3,7 @@ import React from "react";
 
 const About = () => {
   return (
-    <div className="gradient-bg">
+    <div className="gradient-bg-135">
       <Navbar />
       About
     </div>

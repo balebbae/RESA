@@ -3,7 +3,7 @@ import React from "react";
 
 const Help = () => {
   return (
-    <div className="gradient-bg">
+    <div className="gradient-bg-225">
       <Navbar />
       Help
     </div>

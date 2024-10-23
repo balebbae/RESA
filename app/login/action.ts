@@ -16,6 +16,7 @@ export async function emailLogin(formData: FormData) {
     console.log(authData);
   } catch (e) {
     redirect("/login?message=Invalid email or password");
+    console.log(e);
   }
   revalidatePath("/", "layout");
   redirect("/resa");

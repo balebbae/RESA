@@ -12,7 +12,7 @@ export default async function signUp(formData: FormData) {
     const name = formData.get("name") as string;
 
     if (password !== confirmPassword) {
-      throw new Error("Passwords do not match!");
+      redirect("/signup?message=Passwords do not match");
     }
 
     const data = {

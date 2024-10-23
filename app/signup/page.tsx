@@ -10,7 +10,7 @@ import ScheduleUndraw from "@/assets/Schedule.svg";
 import Image from "next/image";
 import signUp from "./action";
 
-const Signup = () => {
+const Signup = ({ searchParams }: { searchParams: { message: string } }) => {
   return (
     <div className="gradient-bg-270-reverse ">
       <NavbarNoLinks />
@@ -71,6 +71,11 @@ const Signup = () => {
                     required
                   />
                 </div>
+                {searchParams.message && (
+                  <div className="text-sm font-medium text-destructive">
+                    {searchParams.message}
+                  </div>
+                )}
                 <OAuthButton text="Sign up" />
                 <Button className="w-full mt-[-10px]" formAction={signUp}>
                   Sign up

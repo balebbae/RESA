@@ -2,3 +2,8 @@
   background: linear-gradient(180deg, #d4d0f1 25%, #ffffff 50%);
   min-height: 100vh;
 }
+
+.gradient-bg-hori {
+  background: linear-gradient(270deg, #d4d0f1 10%, #ffffff 50%, #d4d0f1 90%);
+  min-height: 100vh;
+}

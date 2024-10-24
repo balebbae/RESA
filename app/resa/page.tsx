@@ -10,7 +10,8 @@ import {
 import { Logo, LogoIcon } from "./icons";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/Logo";
+import logo from "@/assets/logo.svg";
+import { signOut } from "./action";
 
 export default function SidebarDemo() {
   const links = [
@@ -41,6 +42,7 @@ export default function SidebarDemo() {
       icon: (
         <IconArrowLeft className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
+      onclick: () => signOut(),
     },
   ];
   const [open, setOpen] = useState(false);
@@ -48,7 +50,7 @@ export default function SidebarDemo() {
     <div
       className={cn(
         "rounded-md flex flex-col md:flex-row bg-gray-100 dark:bg-neutral-800 w-full flex-1  mx-auto border border-neutral-200 dark:border-neutral-700 overflow-hidden",
-        "h-screen" // for your use case, use `h-screen` instead of `h-[60vh]`
+        "h-screen"
       )}
     >
       <Sidebar open={open} setOpen={setOpen}>
@@ -64,7 +66,7 @@ export default function SidebarDemo() {
           <div>
             <SidebarLink
               link={{
-                label: "Manu Arora",
+                label: "Caleb Bae",
                 href: "#",
                 icon: (
                   <Image
@@ -89,7 +91,7 @@ export default function SidebarDemo() {
 const Dashboard = () => {
   return (
     <div className="flex flex-1">
-      <div className="p-2 md:p-10 rounded-tl-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex flex-col gap-2 flex-1 w-full h-full">
+      <div className="p-2 md:p-10 rounded-l-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex flex-col gap-2 flex-1 w-full h-full">
         <div className="flex gap-2">
           {[...new Array(4)].map((i) => (
             <div

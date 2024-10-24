@@ -26,3 +26,7 @@
   background: linear-gradient(0deg, #d4d0f1 25%, #ffffff 50%);
   min-height: 100vh;
 }
+
+.gradient-bg-logo {
+  background: linear-gradient(62deg, #e0c3fc 0%, #a1d5ff 50%, #b690d9 100%);
+}

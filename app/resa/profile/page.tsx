@@ -1,7 +1,8 @@
 import React from "react";
+import Calendar from "@/components/resa/Calendar";
 
 const Profile = async () => {
-  return <div>Profile</div>;
+  return <Calendar />;
 };
 
 export default Profile;

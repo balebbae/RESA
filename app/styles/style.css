@@ -28,5 +28,6 @@
 }
 
 .gradient-bg-logo {
-  background: linear-gradient(62deg, #e0c3fc 0%, #a1d5ff 50%, #b690d9 100%);
+  /* background: linear-gradient(62deg, #e0c3fc 0%, #a1d5ff 50%, #b690d9 100%); */
+  background: linear-gradient(0deg, #d9afd9 0%, #97d9e1 100%);
 }

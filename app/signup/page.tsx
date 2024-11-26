@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import "@/app/styles/style.css";
-import OAuthButton from "../login/OAuthButton";
+import OAuthButton from "@/app/login/OAuthButton";
 import Link from "next/link";
 import NavbarNoLinks from "@/components/NavbarNoLinks";
 import ScheduleUndraw from "@/assets/Schedule.svg";

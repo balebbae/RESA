@@ -19,5 +19,5 @@ export async function emailLogin(formData: FormData) {
     console.log(e);
   }
   revalidatePath("/", "layout");
-  redirect("/resa");
+  redirect("/resa/calendar");
 }

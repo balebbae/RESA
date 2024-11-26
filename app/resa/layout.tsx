@@ -1,8 +1,8 @@
 "use client";
-import React, { Children, useState } from "react";
+import React, { useState } from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import {
-  IconArrowLeft,
+  IconLogout2,
   IconCalendarWeek,
   IconSettings,
   IconUserBolt,
@@ -11,13 +11,12 @@ import { Logo, LogoIcon } from "@/components/resa/icons";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import ProfPhoto from "@/assets/ProfPhoto.jpg";
-import Dashboard from "@/components/resa/Calendar";
 
 const ResaLayout = ({ children }: { children: React.ReactNode }) => {
   const links = [
     {
       label: "Calendar",
-      href: "/resa",
+      href: "/resa/calendar",
       icon: (
         <IconCalendarWeek className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
@@ -38,9 +37,9 @@ const ResaLayout = ({ children }: { children: React.ReactNode }) => {
     },
     {
       label: "Logout",
-      href: "/resa",
+      href: "/login",
       icon: (
-        <IconArrowLeft className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+        <IconLogout2 className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
       // onclick: () => signOut(),
     },
@@ -70,7 +69,7 @@ const ResaLayout = ({ children }: { children: React.ReactNode }) => {
                 href: "#",
                 icon: (
                   <Image
-                    src={ProfPhoto}
+                    src={ProfPhoto} // get the users
                     className="h-7 w-7 flex-shrink-0 rounded-full"
                     width={50}
                     height={50}

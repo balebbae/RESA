@@ -1,0 +1,52 @@
+# -------------------------------
+# Global / OS-specific files
+# -------------------------------
+.DS_Store
+Thumbs.db
+*.log
+
+# -------------------------------
+# Editor / IDE directories
+# -------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# -------------------------------
+# Environment files (adjust as needed)
+# -------------------------------
+.env
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+
+# -------------------------------
+# Frontend (Next.js) specific ignores
+# -------------------------------
+/frontend/node_modules/
+frontend/.next/
+frontend/out/
+# Uncomment if you have a build folder or dist folder in frontend:
+# /frontend/build/
+# /frontend/dist/
+
+# -------------------------------
+# Backend (Go) specific ignores
+# -------------------------------
+/backend/bin/
+backend/build/
+backend/vendor/
+backend/*.exe
+backend/*.dll
+backend/*.so
+backend/*.dylib
+backend/*.test
+/backend/coverage.out
+
+# -------------------------------
+# Other common build directories
+# -------------------------------
+dist/
+coverage/

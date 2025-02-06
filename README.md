@@ -1,4 +1,4 @@
-# Restaurant Scheduling App
+# Restaurant Employee Scheduling Application (RESA)
 
 A modern web application for restaurant owners to manage employee shifts efficiently. Built with **Go (Chi)**, **Next.js**, and **PostgreSQL**, this app allows employers to create schedules manually or use AI-based automation.
 

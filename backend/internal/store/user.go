@@ -30,6 +30,6 @@ type UserStore struct {
 
 // func (s *UserStore) Create(ctx context.Context, user *User) error {
 // 	query := `
-
+// 		INSERT INTO users ()
 // 	`
 // }

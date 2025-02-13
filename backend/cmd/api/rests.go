@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/balebbae/RESA/internal/store"
+	"github.com/go-chi/chi/v5"
 )
 
+type restKey string
+const restCtx restKey = "rest"
 
 type CreateRestaurantPayload struct {
 	Name       string  `json:"name" validate:"required,max=255"`
@@ -59,4 +64,78 @@ func (app *application) createRestHandler(w http.ResponseWriter, r *http.Request
 		app.internalServerError(w, r, err)
 		return
 	}
+}
+
+func (app *application) getRestHandler(w http.ResponseWriter, r *http.Request) {
+	rest := getRestFromCtx(r)
+
+	_, err := app.store.Rest.GetByID(r.Context(), rest.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return 
+	}
+
+	err = app.jsonResponse(w, http.StatusOK, rest)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+func (app *application) deleteRestHandler(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "restID")
+	id, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	ctx := r.Context()
+
+	err = app.store.Rest.Delete(ctx, id)
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.notFoundResponse(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+
+func (app *application) restsContextMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		idParam := chi.URLParam(r, "restID")
+		id, err := strconv.ParseInt(idParam, 10, 64)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return 
+		}
+
+		ctx := r.Context()
+
+		rest, err := app.store.Rest.GetByID(ctx, id)
+		if err != nil {
+			switch {
+			case errors.Is(err, store.ErrNotFound):
+				app.notFoundResponse(w, r, err)
+			default:
+				app.internalServerError(w, r, err)
+			}
+			return 
+		}
+
+		ctx = context.WithValue(ctx, restCtx, rest)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+
+func getRestFromCtx(r *http.Request) *store.Rest {
+	rest, _ := r.Context().Value(restCtx).(*store.Rest)
+	return rest
 }

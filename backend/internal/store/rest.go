@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -44,6 +45,66 @@ func (s *RestStore) Create(ctx context.Context, rest *Rest) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (s *RestStore) GetByID(ctx context.Context, id int64) (*Rest, error) {
+	query := `
+		SELECT 
+			id, employer_id, name, address, phone, created_at, updated_at
+		FROM 
+			restaurants
+		WHERE 
+			id = $1
+	`
+
+	var restaurant Rest
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	err := s.db.QueryRowContext(ctx, query, id).Scan(
+		&restaurant.ID,
+		&restaurant.EmployerID,
+		&restaurant.Name,
+		&restaurant.Address,
+		&restaurant.Phone,
+		&restaurant.CreatedAt,
+		&restaurant.UpdatedAt,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+	
+	return &restaurant, nil
+}
+
+func (s *RestStore) Delete(ctx context.Context, id int64) error {
+	query := `DELETE FROM restaurants WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	res, err := s.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return ErrNotFound
 	}
 
 	return nil

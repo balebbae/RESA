@@ -1,7 +1,6 @@
 ALTER TABLE users 
 ADD COLUMN password_hash TEXT NOT NULL;
 
--- Ensure updated_at is automatically updated on changes
 CREATE OR REPLACE FUNCTION update_user_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN

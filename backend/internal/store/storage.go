@@ -4,24 +4,29 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	_ "github.com/lib/pq"
 )
 
 var (
 	ErrNotFound = errors.New("resource not found")
+	QueryTimeoutDuration = time.Second * 5
 )
 
 type Storage struct {
 	Users interface {
 		Create(context.Context, *User) error
 	}
+	Rest interface {
+		Create(context.Context, *Rest) error
+	}
 }
 
 func NewStorage(db *sql.DB) Storage {
 	return Storage{
-		// Posts: &PostStore{db},
 		Users: &UserStore{db},
+		Rest: &RestStore{db},
 	}
 }
 

@@ -7,8 +7,8 @@ import (
 
 	"github.com/balebbae/RESA/internal/store"
 
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type application struct {
@@ -51,7 +51,9 @@ func (app *application) mount() http.Handler {
 			r.Route("/{restID}", func(r chi.Router){ // /v1/rest/{restID}
 				r.Use(app.restsContextMiddleware)
 				r.Get("/", app.getRestHandler)
+				r.Patch("/", app.updateRestHandler)
 				r.Delete("/", app.deleteRestHandler)
+
 			})
 			
 		})

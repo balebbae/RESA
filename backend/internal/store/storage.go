@@ -21,6 +21,7 @@ type Storage struct {
 	Rest interface {
 		Create(context.Context, *Rest) error
 		GetByID(context.Context, int64) (*Rest, error)
+		Update(context.Context, *Rest) error
 		Delete(context.Context, int64) error
 	}
 }

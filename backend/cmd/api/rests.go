@@ -82,6 +82,54 @@ func (app *application) getRestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type UpdateRestPayload struct {
+	Name *string `json:"name" validate:"omitempty,max=255"`
+	Address *string `json:"address" validate:"omitempty,max=255"`
+	Phone *string `json:"phone" validate:"omitempty,max=20"`
+}
+
+func (app *application) updateRestHandler(w http.ResponseWriter, r *http.Request) {
+	rest := getRestFromCtx(r)
+
+	var payload UpdateRestPayload
+	err := readJSON(w, r, &payload)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	err = Validate.Struct(payload)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if payload.Name != nil {
+		rest.Name = *payload.Name
+	}
+
+	if payload.Address != nil {
+		rest.Address = *payload.Address
+	}
+
+	if payload.Phone != nil {
+		rest.Phone = payload.Phone
+	} else {
+		rest.Phone = nil
+	}
+
+	err = app.store.Rest.Update(r.Context(), rest)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	err = app.jsonResponse(w, http.StatusOK, rest)
+	if err != nil {
+		app.internalServerError(w, r, err) 
+	}
+}
+
 func (app *application) deleteRestHandler(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "restID")
 	id, err := strconv.ParseInt(idParam, 10, 64)

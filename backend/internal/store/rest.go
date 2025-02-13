@@ -15,6 +15,7 @@ type Rest struct {
 	Phone      *string   `json:"phone,omitempty"` // Optional field
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
+	Version int `json:"version"`
 }
 
 type RestStore struct {
@@ -53,26 +54,27 @@ func (s *RestStore) Create(ctx context.Context, rest *Rest) error {
 func (s *RestStore) GetByID(ctx context.Context, id int64) (*Rest, error) {
 	query := `
 		SELECT 
-			id, employer_id, name, address, phone, created_at, updated_at
+			id, employer_id, name, address, phone, created_at, updated_at, version
 		FROM 
 			restaurants
 		WHERE 
 			id = $1
 	`
 
-	var restaurant Rest
+	var rest Rest
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
 	err := s.db.QueryRowContext(ctx, query, id).Scan(
-		&restaurant.ID,
-		&restaurant.EmployerID,
-		&restaurant.Name,
-		&restaurant.Address,
-		&restaurant.Phone,
-		&restaurant.CreatedAt,
-		&restaurant.UpdatedAt,
+		&rest.ID,
+		&rest.EmployerID,
+		&rest.Name,
+		&rest.Address,
+		&rest.Phone,
+		&rest.CreatedAt,
+		&rest.UpdatedAt,
+		&rest.Version,
 	)
 
 	if err != nil {
@@ -84,7 +86,44 @@ func (s *RestStore) GetByID(ctx context.Context, id int64) (*Rest, error) {
 		}
 	}
 	
-	return &restaurant, nil
+	return &rest, nil
+}
+
+func (s *RestStore) Update(ctx context.Context, rest *Rest) error { 
+	query := `
+		UPDATE restaurants
+		SET 
+			name = $1, 
+			address = $2, 
+			phone = $3,
+			version = version + 1
+		WHERE id = $4 AND version = $5
+		RETURNING version
+	`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	err := s.db.QueryRowContext(
+		ctx,
+		query,
+		rest.Name,
+		rest.Address,
+		rest.Phone,
+		rest.ID,
+		rest.Version,
+	).Scan(&rest.Version)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrNotFound
+		default:
+			return err
+		}
+	}
+
+	return nil
+
 }
 
 func (s *RestStore) Delete(ctx context.Context, id int64) error {

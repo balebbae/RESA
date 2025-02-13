@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"time"
 )
@@ -28,8 +29,30 @@ type UserStore struct {
 	db *sql.DB
 }
 
-// func (s *UserStore) Create(ctx context.Context, user *User) error {
-// 	query := `
-// 		INSERT INTO users ()
-// 	`
-// }
+func (s *UserStore) Create(ctx context.Context, user *User) error {
+	query := `
+		INSERT INTO users (email, password, first_name, last_name, role) 
+		VALUES ($1, $2, $3, $4, $5) 
+		RETURNED id, created_at, updated_at
+		`
+
+	err := s.db.QueryRowContext(
+		ctx,
+		query,
+		user.Email,
+		user.Password,
+		user.FirstName,
+		user.LastName,
+		user.Role,
+	).Scan(
+		&user.ID,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

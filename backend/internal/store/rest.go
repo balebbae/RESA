@@ -123,7 +123,6 @@ func (s *RestStore) Update(ctx context.Context, rest *Rest) error {
 	}
 
 	return nil
-
 }
 
 func (s *RestStore) Delete(ctx context.Context, id int64) error {

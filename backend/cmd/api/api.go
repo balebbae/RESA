@@ -55,8 +55,8 @@ func (app *application) mount() http.Handler {
 				r.Delete("/", app.deleteRestaurantHandler)
 				r.Route("/employees", func(r chi.Router){
 					r.Get("/", app.getRestaurantEmployeesHandler)
-					r.Post("/", app.createRestaurantEmployeeHandler) // payload employee_id
-					r.Delete("/", app.deleteRestaurantEmployeeHandler)
+					r.Post("/", app.createEmployeeToRestaurantHandler) // payload employee_id
+					r.Delete("/", app.deleteEmployeeFromRestaurantHandler)
 				})
 			})
 			

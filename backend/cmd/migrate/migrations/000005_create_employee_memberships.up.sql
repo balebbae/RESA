@@ -1,6 +1,6 @@
 -- 20250218_create_restaurant_employees.up.sql
 
-CREATE TABLE restaurant_employees (
+CREATE TABLE employee_memberships (
     id BIGSERIAL PRIMARY KEY,
     restaurant_id BIGINT NOT NULL,
     employee_id BIGINT NOT NULL,

@@ -16,7 +16,6 @@ func (app *application) createEmployeeToRestaurantHandler(w http.ResponseWriter,
         return
     }
 
-    // Now read the JSON payload for the employee_id.
     var payload struct {
         EmployeeID int64 `json:"employee_id" validate:"required"`
     }
@@ -26,7 +25,6 @@ func (app *application) createEmployeeToRestaurantHandler(w http.ResponseWriter,
         return
     }
 
-    // Optional: Validate the payload if using a validator.
     if err := Validate.Struct(payload); err != nil {
         app.badRequestResponse(w, r, err)
         return
@@ -35,12 +33,10 @@ func (app *application) createEmployeeToRestaurantHandler(w http.ResponseWriter,
     // Add the employee to the restaurant.
     ctx := r.Context()
     if err := app.store.EmployeeMembership.CreateEmployeeToRestaurant(ctx, restaurant.ID, payload.EmployeeID); err != nil {
-        // Handle DB errors (unique constraint, foreign key, etc.)
         app.internalServerError(w, r, err)
         return
     }
 
-    // Return a success response (e.g. 201 or 204).
     w.WriteHeader(http.StatusCreated)
 }
 

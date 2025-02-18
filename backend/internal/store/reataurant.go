@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type Rest struct {
+type Restaurant struct {
 	ID         int64     `json:"id"`
 	EmployerID int64     `json:"employer_id"`
 	Name       string    `json:"name"`
@@ -18,11 +18,11 @@ type Rest struct {
 	Version int `json:"version"`
 }
 
-type RestStore struct {
+type RestaurantStore struct {
 	db *sql.DB
 }
 
-func (s *RestStore) Create(ctx context.Context, rest *Rest) error {
+func (s *RestaurantStore) Create(ctx context.Context, restaurant *Restaurant) error {
 	query := `
 		INSERT INTO restaurants (employer_id, name, address, phone) 
 		VALUES ($1, $2, $3, $4) 
@@ -35,14 +35,14 @@ func (s *RestStore) Create(ctx context.Context, rest *Rest) error {
 	err := s.db.QueryRowContext(
 		ctx, 
 		query,
-		rest.EmployerID,
-		rest.Name,
-		rest.Address,
-		rest.Phone,
+		restaurant.EmployerID,
+		restaurant.Name,
+		restaurant.Address,
+		restaurant.Phone,
 	).Scan(
-		&rest.ID,
-		&rest.CreatedAt,
-		&rest.UpdatedAt,
+		&restaurant.ID,
+		&restaurant.CreatedAt,
+		&restaurant.UpdatedAt,
 	)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (s *RestStore) Create(ctx context.Context, rest *Rest) error {
 	return nil
 }
 
-func (s *RestStore) GetByID(ctx context.Context, id int64) (*Rest, error) {
+func (s *RestaurantStore) GetByID(ctx context.Context, id int64) (*Restaurant, error) {
 	query := `
 		SELECT 
 			id, employer_id, name, address, phone, created_at, updated_at, version
@@ -61,20 +61,20 @@ func (s *RestStore) GetByID(ctx context.Context, id int64) (*Rest, error) {
 			id = $1
 	`
 
-	var rest Rest
+	var restaurant Restaurant
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
 	err := s.db.QueryRowContext(ctx, query, id).Scan(
-		&rest.ID,
-		&rest.EmployerID,
-		&rest.Name,
-		&rest.Address,
-		&rest.Phone,
-		&rest.CreatedAt,
-		&rest.UpdatedAt,
-		&rest.Version,
+		&restaurant.ID,
+		&restaurant.EmployerID,
+		&restaurant.Name,
+		&restaurant.Address,
+		&restaurant.Phone,
+		&restaurant.CreatedAt,
+		&restaurant.UpdatedAt,
+		&restaurant.Version,
 	)
 
 	if err != nil {
@@ -86,10 +86,10 @@ func (s *RestStore) GetByID(ctx context.Context, id int64) (*Rest, error) {
 		}
 	}
 	
-	return &rest, nil
+	return &restaurant, nil
 }
 
-func (s *RestStore) Update(ctx context.Context, rest *Rest) error { 
+func (s *RestaurantStore) Update(ctx context.Context, restaurant *Restaurant) error { 
 	query := `
 		UPDATE restaurants
 		SET 
@@ -106,12 +106,12 @@ func (s *RestStore) Update(ctx context.Context, rest *Rest) error {
 	err := s.db.QueryRowContext(
 		ctx,
 		query,
-		rest.Name,
-		rest.Address,
-		rest.Phone,
-		rest.ID,
-		rest.Version,
-	).Scan(&rest.Version)
+		restaurant.Name,
+		restaurant.Address,
+		restaurant.Phone,
+		restaurant.ID,
+		restaurant.Version,
+	).Scan(&restaurant.Version)
 
 	if err != nil {
 		switch {
@@ -125,7 +125,7 @@ func (s *RestStore) Update(ctx context.Context, rest *Rest) error {
 	return nil
 }
 
-func (s *RestStore) Delete(ctx context.Context, id int64) error {
+func (s *RestaurantStore) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM restaurants WHERE id = $1`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)

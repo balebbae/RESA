@@ -18,10 +18,10 @@ type Storage struct {
 	Users interface {
 		Create(context.Context, *User) error
 	}
-	Rest interface {
-		Create(context.Context, *Rest) error
-		GetByID(context.Context, int64) (*Rest, error)
-		Update(context.Context, *Rest) error
+	Restaurant interface {
+		Create(context.Context, *Restaurant) error
+		GetByID(context.Context, int64) (*Restaurant, error)
+		Update(context.Context, *Restaurant) error
 		Delete(context.Context, int64) error
 	}
 }
@@ -29,7 +29,7 @@ type Storage struct {
 func NewStorage(db *sql.DB) Storage {
 	return Storage{
 		Users: &UserStore{db},
-		Rest: &RestStore{db},
+		Restaurant: &RestaurantStore{db},
 	}
 }
 

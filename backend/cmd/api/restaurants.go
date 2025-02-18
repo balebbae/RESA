@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -10,8 +9,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type restKey string
-const restCtx restKey = "rest"
+type restaurantKey string
+const restaurantCtx restaurantKey = "restaurant"
 
 type CreateRestaurantPayload struct {
 	Name       string  `json:"name" validate:"required,max=255"`
@@ -21,7 +20,7 @@ type CreateRestaurantPayload struct {
 }
 
 // Create a restaurant handler
-func (app *application) createRestHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) createRestaurantHandler(w http.ResponseWriter, r *http.Request) {
 	var payload CreateRestaurantPayload
 
 	// Read JSON payload
@@ -43,7 +42,7 @@ func (app *application) createRestHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Construct `Rest` struct for DB insertion
-	restaurant := &store.Rest{
+	restaurant := &store.Restaurant{
 		Name:       payload.Name,
 		Address:    payload.Address,
 		Phone:      payload.Phone,
@@ -53,7 +52,7 @@ func (app *application) createRestHandler(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 
 	// Insert into DB
-	err := app.store.Rest.Create(ctx, restaurant)
+	err := app.store.Restaurant.Create(ctx, restaurant)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -66,32 +65,32 @@ func (app *application) createRestHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (app *application) getRestHandler(w http.ResponseWriter, r *http.Request) {
-	rest := getRestFromCtx(r)
+func (app *application) getRestaurantHandler(w http.ResponseWriter, r *http.Request) {
+	restaurant := app.getRestaurantFromCtx(r)
 
-	_, err := app.store.Rest.GetByID(r.Context(), rest.ID)
+	_, err := app.store.Restaurant.GetByID(r.Context(), restaurant.ID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return 
 	}
 
-	err = app.jsonResponse(w, http.StatusOK, rest)
+	err = app.jsonResponse(w, http.StatusOK, restaurant)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
 }
 
-type UpdateRestPayload struct {
+type UpdateRestaurantPayload struct {
 	Name *string `json:"name" validate:"omitempty,max=255"`
 	Address *string `json:"address" validate:"omitempty,max=255"`
 	Phone *string `json:"phone" validate:"omitempty,max=20"`
 }
 
-func (app *application) updateRestHandler(w http.ResponseWriter, r *http.Request) {
-	rest := getRestFromCtx(r)
+func (app *application) updateRestaurantHandler(w http.ResponseWriter, r *http.Request) {
+	restaurant := app.getRestaurantFromCtx(r)
 
-	var payload UpdateRestPayload
+	var payload UpdateRestaurantPayload
 	err := readJSON(w, r, &payload)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
@@ -105,33 +104,33 @@ func (app *application) updateRestHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	if payload.Name != nil {
-		rest.Name = *payload.Name
+		restaurant.Name = *payload.Name
 	}
 
 	if payload.Address != nil {
-		rest.Address = *payload.Address
+		restaurant.Address = *payload.Address
 	}
 
 	if payload.Phone != nil {
-		rest.Phone = payload.Phone
+		restaurant.Phone = payload.Phone
 	} else {
-		rest.Phone = nil
+		restaurant.Phone = nil
 	}
 
-	err = app.store.Rest.Update(r.Context(), rest)
+	err = app.store.Restaurant.Update(r.Context(), restaurant)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
 
-	err = app.jsonResponse(w, http.StatusOK, rest)
+	err = app.jsonResponse(w, http.StatusOK, restaurant)
 	if err != nil {
 		app.internalServerError(w, r, err) 
 	}
 }
 
-func (app *application) deleteRestHandler(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "restID")
+func (app *application) deleteRestaurantHandler(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "restaurantID")
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
@@ -140,7 +139,7 @@ func (app *application) deleteRestHandler(w http.ResponseWriter, r *http.Request
 
 	ctx := r.Context()
 
-	err = app.store.Rest.Delete(ctx, id)
+	err = app.store.Restaurant.Delete(ctx, id)
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrNotFound):
@@ -154,36 +153,3 @@ func (app *application) deleteRestHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
-
-func (app *application) restsContextMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		idParam := chi.URLParam(r, "restID")
-		id, err := strconv.ParseInt(idParam, 10, 64)
-		if err != nil {
-			app.internalServerError(w, r, err)
-			return 
-		}
-
-		ctx := r.Context()
-
-		rest, err := app.store.Rest.GetByID(ctx, id)
-		if err != nil {
-			switch {
-			case errors.Is(err, store.ErrNotFound):
-				app.notFoundResponse(w, r, err)
-			default:
-				app.internalServerError(w, r, err)
-			}
-			return 
-		}
-
-		ctx = context.WithValue(ctx, restCtx, rest)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-
-func getRestFromCtx(r *http.Request) *store.Rest {
-	rest, _ := r.Context().Value(restCtx).(*store.Rest)
-	return rest
-}

@@ -46,14 +46,18 @@ func (app *application) mount() http.Handler {
 			r.Post("/", app.createUserHandler)
 		})
 
-		r.Route("/rest", func(r chi.Router) { // /v1/rest
-			r.Post("/", app.createRestHandler)
-			r.Route("/{restID}", func(r chi.Router){ // /v1/rest/{restID}
-				r.Use(app.restsContextMiddleware)
-				r.Get("/", app.getRestHandler)
-				r.Patch("/", app.updateRestHandler)
-				r.Delete("/", app.deleteRestHandler)
-
+		r.Route("/restaurants", func(r chi.Router) { // /v1/rest
+			r.Post("/", app.createRestaurantHandler)
+			r.Route("/{restaurantID}", func(r chi.Router){ // /v1/rest/{restID}
+				r.Use(app.restaurantsContextMiddleware)
+				r.Get("/", app.getRestaurantHandler)
+				r.Patch("/", app.updateRestaurantHandler)
+				r.Delete("/", app.deleteRestaurantHandler)
+				r.Route("/employees", func(r chi.Router){
+					r.Get("/", app.getRestaurantEmployeesHandler)
+					r.Post("/", app.createRestaurantEmployeeHandler) // payload employee_id
+					r.Delete("/", app.deleteRestaurantEmployeeHandler)
+				})
 			})
 			
 		})

@@ -223,7 +223,7 @@ func (s *UserStore) update(ctx context.Context, tx *sql.Tx, user *User) error {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	_, err := tx.ExecContext(ctx, query, user.FirstName, user.LastName, user.Role, user.IsActive, user.ID)
+	_, err := tx.ExecContext(ctx, query, user.Email, user.FirstName, user.LastName, user.Role, user.IsActive, user.ID)
 	if err != nil {
 		return err
 	}

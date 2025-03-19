@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/balebbae/RESA/docs" // This is required to genearte swagger docs
+	"github.com/balebbae/RESA/internal/auth"
 	"github.com/balebbae/RESA/internal/mailer"
 	"github.com/balebbae/RESA/internal/store"
 	"go.uber.org/zap"
@@ -21,6 +22,7 @@ type application struct {
 	store store.Storage
 	logger *zap.SugaredLogger
 	mailer mailer.Client
+	authenticator auth.Authenticator
 }
 
 type config struct {
@@ -30,6 +32,23 @@ type config struct {
 	apiURL string
 	mail mailConfig
 	frontendURL string
+	auth authConfig
+}
+
+type authConfig struct {
+	basic basicConfig
+	token tokenConfig
+}
+
+type tokenConfig struct {
+	secret string
+	exp time.Duration
+	iss string
+}
+
+type basicConfig struct {
+	user string 
+	pass string
 }
 
 type mailConfig struct {
@@ -71,10 +90,10 @@ func (app *application) mount() http.Handler {
     }))
 
 	r.Route("/v1", func(r chi.Router) {
-		r.Get("/health", app.healthCheckHandler)
+		r.With(app.BasicAuthMiddleware()).Get("/health", app.healthCheckHandler)
 
 		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
-		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
+		r.With(app.BasicAuthMiddleware()).Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
 
 		r.Route("/restaurant", func(r chi.Router) { // /v1/rest
 			r.Post("/", app.createRestaurantHandler)
@@ -100,6 +119,7 @@ func (app *application) mount() http.Handler {
 		// Public Routes
 		r.Route("/authentication", func(r chi.Router) {
 			r.Post("/user", app.registerUserHandler)
+			r.Post("/token", app.createTokenHandler)
 		})
 	})
 	

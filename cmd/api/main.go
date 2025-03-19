@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/balebbae/RESA/internal/auth"
 	"github.com/balebbae/RESA/internal/db"
 	"github.com/balebbae/RESA/internal/env"
 	"github.com/balebbae/RESA/internal/mailer"
@@ -55,6 +56,17 @@ func main() {
 				apiKey: env.GetString("SENDGRID_API_KEY", ""),
 			},
 		},
+		auth: authConfig{
+			basic: basicConfig{
+				user: env.GetString("AUTH_BASIC_USER", "admin"), // <= TODO:: change that to have no default 
+				pass: env.GetString("AUTH_BASIC_PASS", "admin"),
+			},
+			token: tokenConfig{
+				secret: env.GetString("AUTH_TOKEN_SECRET", "example"), // <= TODO:: SET SECRET no default
+				exp: time.Hour * 24,
+				iss: "RESA",
+			},
+		},
 	}
 
 	fmt.Println(env.GetString("ENV", "development"))
@@ -81,11 +93,19 @@ func main() {
 
 	mailer := mailer.NewSendGrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
 
+
+	jwtAuthenticator := auth.NewJWTAuthenticator(
+		cfg.auth.token.secret, 
+		cfg.auth.token.iss, 
+		cfg.auth.token.iss,
+	)
+
 	app := &application{
 		config: cfg,
 		store: store,
 		logger: logger,
 		mailer: mailer,
+		authenticator: jwtAuthenticator,
 	}
 
 	mux := app.mount()

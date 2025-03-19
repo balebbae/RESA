@@ -1,9 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation"; // Correct import for Next.js App Router
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// Note: In the App Router, dynamic route parameters are provided as a prop.
 export default function ConfirmPage({ params }: { params: { token: string } }) {
   const router = useRouter();
   const { token } = params;

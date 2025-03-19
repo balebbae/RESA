@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger" // http-swagger middleware
 )
 
@@ -58,16 +59,16 @@ func (app *application) mount() http.Handler {
 
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	// // Enable CORS
-    // r.Use(cors.Handler(cors.Options{
-    //     AllowedOrigins:   []string{app.config.frontendURL},
+	// Enable CORS
+    r.Use(cors.Handler(cors.Options{
+        AllowedOrigins:   []string{app.config.frontendURL},
 
-    //     AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-    //     AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-    //     ExposedHeaders:   []string{"Link"},
-    //     AllowCredentials: false,
-    //     MaxAge:           300,
-    // }))
+        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+        AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+        ExposedHeaders:   []string{"Link"},
+        AllowCredentials: false,
+        MaxAge:           300,
+    }))
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Get("/health", app.healthCheckHandler)

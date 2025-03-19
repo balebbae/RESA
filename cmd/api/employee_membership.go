@@ -56,8 +56,6 @@ func (app *application) createEmployeeToRestaurantHandler(w http.ResponseWriter,
     w.WriteHeader(http.StatusCreated)
 }
 
-
-
 func (app *application) getRestaurantEmployeesHandler(w http.ResponseWriter, r *http.Request) {
 
 }

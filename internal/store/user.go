@@ -41,6 +41,10 @@ type password struct {
 	hash []byte
 }
 
+func (p *password) Compare(text string) error {
+	return bcrypt.CompareHashAndPassword(p.hash, []byte(text))
+}
+
 func (p *password) Set(text string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(text), bcrypt.DefaultCost)
 	if err != nil {
@@ -111,7 +115,7 @@ func (s *UserStore) GetByID(ctx context.Context, userID int64) (*User, error) {
 	).Scan(
 		&user.ID,
 		&user.Email,
-		&user.Password,
+		&user.Password.hash,
 		&user.FirstName,
 		&user.LastName,
 		&user.Role,

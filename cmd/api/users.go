@@ -7,13 +7,9 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type CreateUserPayload struct {
-	Email     string `json:"email" validate:"required,max=255,email"`
-	Password  string `json:"password"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Role      string `json:"role"`
-}
+type userKey string
+
+const userCtx userKey = "user"
 
 // ActivateUser gdoc
 //
@@ -44,4 +40,9 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 	if err := app.jsonResponse(w, http.StatusNoContent, ""); err != nil {
 		app.internalServerError(w, r, err)
 	}
+}
+
+func getUserFromContext(r *http.Request) *store.User {
+	user, _ := r.Context().Value(userCtx).(*store.User)
+	return user
 }

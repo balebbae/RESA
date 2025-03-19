@@ -33,7 +33,7 @@ func (s *RestaurantStore) Create(ctx context.Context, restaurant *Restaurant) er
 	defer cancel()
 
 	err := s.db.QueryRowContext(
-		ctx, 
+		ctx,
 		query,
 		restaurant.EmployerID,
 		restaurant.Name,

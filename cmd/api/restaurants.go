@@ -16,7 +16,6 @@ type CreateRestaurantPayload struct {
 	Name       string  `json:"name" validate:"required,max=255"`
 	Address    string  `json:"address" validate:"required,max=500"`
 	Phone      *string `json:"phone,omitempty" validate:"omitempty,max=20"`
-	EmployerID int64   `json:"employer_id" validate:"required"` // Should come from authentication
 }
 
 // CreatePost godoc
@@ -54,12 +53,14 @@ func (app *application) createRestaurantHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	user := getUserFromContext(r)
+
 	// Construct `Rest` struct for DB insertion
 	restaurant := &store.Restaurant{
 		Name:       payload.Name,
 		Address:    payload.Address,
 		Phone:      payload.Phone,
-		EmployerID: 1, //payload.EmployerID, // This should be replaced with authenticated user ID later
+		EmployerID: user.ID,
 	}
 
 	ctx := r.Context()

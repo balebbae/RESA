@@ -96,6 +96,7 @@ func (app *application) mount() http.Handler {
 		r.With(app.BasicAuthMiddleware()).Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
 
 		r.Route("/restaurant", func(r chi.Router) { // /v1/rest
+			r.Use(app.AuthTokenMiddleware)
 			r.Post("/", app.createRestaurantHandler)
 			r.Route("/{restaurantID}", func(r chi.Router){ // /v1/rest/{restID}
 				r.Use(app.restaurantsContextMiddleware)

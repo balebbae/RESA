@@ -165,6 +165,11 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		return
 	} // User now exists
 
+	if err := user.Password.Compare(payload.Password); err != nil {
+		app.unauthorizedErrorResponse(w, r, err)
+		return
+	}
+
 	// generate the token -> add claims
 	claims := jwt.MapClaims{
 		"sub": user.ID,

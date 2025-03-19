@@ -16,21 +16,12 @@ var (
 	ErrDuplicateUsername = errors.New("a user with that username already exists")
 )
 
-type Role string
-
-const (
-	Employer Role = "employer"
-	Employee Role = "employee"
-
-)
-
 type User struct {
 	ID int64 `json:"id"`
 	Email string `json:"email"`
 	Password password `json:"-"`
 	FirstName string `json:"first_name"`
 	LastName string `json:"last_name"`
-	Role Role `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	IsActive bool `json:"is_active"`
@@ -63,8 +54,8 @@ type UserStore struct {
 
 func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 	query := `
-		INSERT INTO users (email, first_name, last_name, role, password) 
-		VALUES ($1, $2, $3, $4, $5) 
+		INSERT INTO users (email, password, first_name, last_name) 
+		VALUES ($1, $2, $3, $4) 
 		RETURNING id, created_at
 		`
 
@@ -72,10 +63,9 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 		ctx,
 		query,
 		user.Email,
+		user.Password.hash,
 		user.FirstName,
 		user.LastName,
-		user.Role,
-		user.Password.hash,
 	).Scan(
 		&user.ID,
 		&user.CreatedAt,
@@ -98,7 +88,7 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 
 func (s *UserStore) GetByID(ctx context.Context, userID int64) (*User, error) {
 	query := `
-		SELECT id, email, password, first_name, last_name, role, created_at
+		SELECT id, email, password, first_name, last_name, created_at
 		FROM users 
 		WHERE id = $1 AND is_active = true;
 	`
@@ -118,7 +108,6 @@ func (s *UserStore) GetByID(ctx context.Context, userID int64) (*User, error) {
 		&user.Password.hash,
 		&user.FirstName,
 		&user.LastName,
-		&user.Role,
 		&user.CreatedAt,
 	)
 
@@ -173,7 +162,7 @@ func (s *UserStore) Activate(ctx context.Context, token string) error {
 
 func (s *UserStore) getUserFromInvitation(ctx context.Context, tx *sql.Tx, token string) (*User, error) {
 	query := `
-		SELECT u.id, u.email, u.first_name, u.last_name, u.role, u.created_at, u.is_active
+		SELECT u.id, u.email, u.first_name, u.last_name, u.created_at, u.is_active
 		FROM users u
 		JOIN user_invitations ui ON u.id = ui.user_id
 		WHERE ui.token = $1 AND ui.expiry > $2;	
@@ -191,7 +180,6 @@ func (s *UserStore) getUserFromInvitation(ctx context.Context, tx *sql.Tx, token
 		&user.Email,
 		&user.FirstName,
 		&user.LastName,
-		&user.Role,
 		&user.CreatedAt,
 		&user.IsActive,
 	)
@@ -222,12 +210,12 @@ func (s *UserStore) createUserInvitation(ctx context.Context, tx *sql.Tx, token 
 }
 
 func (s *UserStore) update(ctx context.Context, tx *sql.Tx, user *User) error {
-	query := `UPDATE users SET email = $1, first_name = $2, last_name = $3, role = $4, is_active = $5 WHERE id = $6`
+	query := `UPDATE users SET email = $1, first_name = $2, last_name = $3, is_active = $4 WHERE id = $5`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	_, err := tx.ExecContext(ctx, query, user.Email, user.FirstName, user.LastName, user.Role, user.IsActive, user.ID)
+	_, err := tx.ExecContext(ctx, query, user.Email, user.FirstName, user.LastName, user.IsActive, user.ID)
 	if err != nil {
 		return err
 	}
@@ -279,7 +267,7 @@ func (s *UserStore) delete(ctx context.Context, tx *sql.Tx, id int64) error {
 
 func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error) {
 	query := `
-	SELECT id, email, password, first_name, last_name, role, created_at
+	SELECT id, email, password, first_name, last_name, created_at
 		FROM users 
 	WHERE email = $1 AND is_active = true;
 	`
@@ -299,7 +287,6 @@ func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error)
 		&user.Password.hash,
 		&user.FirstName,
 		&user.LastName,
-		&user.Role,
 		&user.CreatedAt,
 	)
 

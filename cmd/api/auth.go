@@ -17,7 +17,6 @@ type RegisterUserPayload struct {
 	Email string `json:"email" validate:"required,email,max=255"`
 	FirstName string `json:"first_name" validate:"required,max=255"`
 	LastName string `json:"last_name" validate:"required,max=255"`
-	Role store.Role `json:"role"`
 	Password string `json:"password" validate:"required,min=3,max=72"`
 }
 
@@ -54,7 +53,6 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		Email: payload.Email,
 		FirstName: payload.FirstName,
 		LastName: payload.LastName,
-		Role: payload.Role,
 	}
 
 	// Hash the user password

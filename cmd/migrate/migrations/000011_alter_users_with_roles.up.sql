@@ -1,0 +1,4 @@
+ALTER TABLE
+  IF EXISTS users
+ADD
+  COLUMN role_id BIGSERIAL REFERENCES roles(id);

@@ -100,9 +100,12 @@ func (app *application) mount() http.Handler {
 			r.Post("/", app.createRestaurantHandler)
 			r.Route("/{restaurantID}", func(r chi.Router){ // /v1/rest/{restID}
 				r.Use(app.restaurantsContextMiddleware)
-				r.Get("/", app.getRestaurantHandler)
-				r.Patch("/", app.updateRestaurantHandler)
-				r.Delete("/", app.deleteRestaurantHandler)
+				r.Get("/", app.getRestaurantHandler) // TODO:: Allow employees of the restaurant to see the restaurant info
+													// TODO:: Middleware to allow users who are employees of the rest to see the rest info
+
+				r.Patch("/", app.checkRestaurantOwnership("employer", app.updateRestaurantHandler)) 
+				r.Delete("/", app.checkRestaurantOwnership("employer", app.deleteRestaurantHandler)) 
+
 				r.Route("/employees", func(r chi.Router){
 					r.Get("/", app.getRestaurantEmployeesHandler)
 					r.Post("/", app.createEmployeeToRestaurantHandler) // payload employee_id

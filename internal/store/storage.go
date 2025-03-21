@@ -34,6 +34,9 @@ type Storage struct {
 		CreateEmployeeToRestaurant(context.Context, int64, int64) error
 		DeleteEmployeeFromRestaurant(context.Context, int64) error
 	}
+	Roles interface {
+		GetByName(context.Context, string) (*Role, error)
+	}
 }
 
 func NewStorage(db *sql.DB) Storage {
@@ -41,6 +44,7 @@ func NewStorage(db *sql.DB) Storage {
 		Users: &UserStore{db},
 		Restaurant: &RestaurantStore{db},
 		EmployeeMembership: &EmployeeMembershipStore{db},
+		Roles: &RoleStore{db},
 	}
 }
 

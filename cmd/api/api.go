@@ -90,18 +90,17 @@ func (app *application) mount() http.Handler {
     }))
 
 	r.Route("/v1", func(r chi.Router) {
-		r.With(app.BasicAuthMiddleware()).Get("/health", app.healthCheckHandler)
+		r.With(app.BasicAuthMiddleware()).Get("/health", app.healthCheckHandler) // Basic auth middleware
 
 		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
-		r.With(app.BasicAuthMiddleware()).Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
+		r.With(app.BasicAuthMiddleware()).Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL))) // Basic auth middleware
 
 		r.Route("/restaurant", func(r chi.Router) { // /v1/rest
-			r.Use(app.AuthTokenMiddleware)
+			r.Use(app.AuthTokenMiddleware) // authorized to go inside the application 
 			r.Post("/", app.createRestaurantHandler)
 			r.Route("/{restaurantID}", func(r chi.Router){ // /v1/rest/{restID}
 				r.Use(app.restaurantsContextMiddleware)
-				r.Get("/", app.getRestaurantHandler) // TODO:: Allow employees of the restaurant to see the restaurant info
-													// TODO:: Middleware to allow users who are employees of the rest to see the rest info
+				r.Get("/", app.getRestaurantHandler) // TODO:: Middleware to allow users who are employees of the rest to see the rest info
 
 				r.Patch("/", app.checkRestaurantOwnership("employer", app.updateRestaurantHandler)) 
 				r.Delete("/", app.checkRestaurantOwnership("employer", app.deleteRestaurantHandler)) 

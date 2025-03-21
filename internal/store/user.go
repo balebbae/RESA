@@ -66,7 +66,7 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 
 	role := user.Role.Name
 	if role == "" {
-		role = "user"
+		role = "employee"
 	}
 
 

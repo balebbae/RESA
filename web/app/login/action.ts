@@ -1,6 +1,5 @@
 "use server";
 
-import pb from "@/lib/pocketbase";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -10,7 +9,7 @@ export async function emailLogin(formData: FormData) {
       email: formData.get("email") as string,
       password: formData.get("password") as string,
     };
-    const authData = await pb
+
       .collection("users")
       .authWithPassword(data.email, data.password);
     console.log(authData);

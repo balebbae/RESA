@@ -84,7 +84,7 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 
 		ctx := r.Context()
 
-		user, err := app.store.Users.GetByID(ctx, userID)
+		user, err := app.store.User.GetByID(ctx, userID)
 		if err != nil {
 			app.unauthorizedErrorResponse(w, r, err)
 			return
@@ -160,7 +160,7 @@ func (app *application) checkRestaurantOwnership(requiredRole string, next http.
 }
 
 func (app *application) checkRolePrecedence(ctx context.Context, user *store.User, roleName string) (bool, error) {
-	role, err := app.store.Roles.GetByName(ctx, roleName)
+	role, err := app.store.Role.GetByName(ctx, roleName)
 	if err != nil {
 		return false, err
 	}

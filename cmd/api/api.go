@@ -125,7 +125,7 @@ func (app *application) mount() http.Handler {
                     // GET all shifts for a restaurant
                     // r.Get("/", app.listShiftsHandler)
                     // // CREATE new shift
-                    // r.Post("/", app.checkRestaurantOwnership("employer", app.createShiftHandler))
+                    r.Post("/", app.checkRestaurantOwnership("employer", app.createShiftHandler))
 
                     // For a specific shift:
                     // r.Route("/{shiftID}", func(r chi.Router) {

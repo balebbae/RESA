@@ -15,7 +15,7 @@ var (
 )
 
 type Storage struct {
-	Users interface {
+	User interface {
 		Create(context.Context, *sql.Tx, *User) error
 		GetByID(context.Context, int64) (*User, error)
 		GetByEmail(context.Context, string) (*User, error)
@@ -34,17 +34,21 @@ type Storage struct {
 		CreateEmployeeToRestaurant(context.Context, int64, int64) error
 		DeleteEmployeeFromRestaurant(context.Context, int64) error
 	}
-	Roles interface {
+	Role interface {
 		GetByName(context.Context, string) (*Role, error)
+	}
+	Shift interface {
+		Create(context.Context, *Shift) (error)
 	}
 }
 
 func NewStorage(db *sql.DB) Storage {
 	return Storage{
-		Users: &UserStore{db},
+		User: &UserStore{db},
 		Restaurant: &RestaurantStore{db},
 		EmployeeMembership: &EmployeeMembershipStore{db},
-		Roles: &RoleStore{db},
+		Role: &RoleStore{db},
+		Shift: &ShiftStore{db},
 	}
 }
 

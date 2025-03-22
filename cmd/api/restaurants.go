@@ -47,12 +47,6 @@ func (app *application) createRestaurantHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	// Ensure required fields are not empty
-	if payload.Name == "" || payload.Address == "" {
-		app.badRequestResponse(w, r, errors.New("name and address are required"))
-		return
-	}
-
 	user := getUserFromContext(r)
 
 	// Construct `Rest` struct for DB insertion

@@ -73,7 +73,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	hashToken := hex.EncodeToString(hash[:])
 
 	// Store the user
-	err := app.store.Users.CreateAndInvite(ctx, user, hashToken, app.config.mail.exp)
+	err := app.store.User.CreateAndInvite(ctx, user, hashToken, app.config.mail.exp)
 	if err != nil {
 		switch err {
 		case store.ErrDuplicateEmail:
@@ -108,7 +108,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		app.logger.Errorw("error sending welcome email", "error", err)
 
 		// rollback user creation if email fails (SAGA Pattern)
-		if err := app.store.Users.Delete(ctx, user.ID); err != nil {
+		if err := app.store.User.Delete(ctx, user.ID); err != nil {
 			app.logger.Errorw("error deleting user", "error", err)
 		}
 
@@ -155,7 +155,7 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	// fetch the user (check if the user exists) from the payload
-	user, err := app.store.Users.GetByEmail(r.Context(), payload.Email)
+	user, err := app.store.User.GetByEmail(r.Context(), payload.Email)
 	if err != nil {
 		switch err {
 		case store.ErrNotFound:

@@ -56,7 +56,7 @@ func Seed(str store.Storage, db *sql.DB) {
 
     // Create employer users
     for _, user := range employers {
-        if createErr := str.Users.Create(ctx, tx, user); createErr != nil {
+        if createErr := str.User.Create(ctx, tx, user); createErr != nil {
             _ = tx.Rollback()
             log.Printf("Error creating employer user: %v\n", createErr)
             return
@@ -65,7 +65,7 @@ func Seed(str store.Storage, db *sql.DB) {
 
     // Create employee users
     for _, user := range employees {
-        if createErr := str.Users.Create(ctx, tx, user); createErr != nil {
+        if createErr := str.User.Create(ctx, tx, user); createErr != nil {
             _ = tx.Rollback()
             log.Printf("Error creating employee user: %v\n", createErr)
             return

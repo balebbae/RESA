@@ -26,7 +26,7 @@ const userCtx userKey = "user"
 func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
 	token := chi.URLParam(r, "token")
 
-	err := app.store.Users.Activate(r.Context(), token)
+	err := app.store.User.Activate(r.Context(), token)
 	if err != nil {
 		switch err {
 		case store.ErrNotFound:

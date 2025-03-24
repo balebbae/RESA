@@ -31,7 +31,7 @@ type CreateRestaurantPayload struct {
 //	@Failure		401		{object}	error
 //	@Failure		500		{object}	error
 //	@Security		ApiKeyAuth
-//	@Router			/restaurant [post]
+//	@Router			/restaurants [post]
 func (app *application) createRestaurantHandler(w http.ResponseWriter, r *http.Request) {
 	var payload CreateRestaurantPayload
 
@@ -87,7 +87,7 @@ func (app *application) createRestaurantHandler(w http.ResponseWriter, r *http.R
 //	@Security		ApiKeyAuth
 //	@Router			/restaurant/{id} [get]
 func (app *application) getRestaurantHandler(w http.ResponseWriter, r *http.Request) {
-	restaurant := getRestaurantFromCtx(r)
+	restaurant := getRestaurantFromContext(r)
 
 	_, err := app.store.Restaurant.GetByID(r.Context(), restaurant.ID)
 	if err != nil {
@@ -125,7 +125,7 @@ type UpdateRestaurantPayload struct {
 //	@Security		ApiKeyAuth
 //	@Router			/restaurant/{id} [patch]
 func (app *application) updateRestaurantHandler(w http.ResponseWriter, r *http.Request) {
-	restaurant := getRestaurantFromCtx(r)
+	restaurant := getRestaurantFromContext(r)
 
 	var payload UpdateRestaurantPayload
 	err := readJSON(w, r, &payload)

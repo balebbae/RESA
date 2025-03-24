@@ -23,7 +23,7 @@ type ShiftStore struct {
 
 func (s *ShiftStore) Create(ctx context.Context, shift *Shift) error {
 	query := `
-		INSERT INTO shift (restaurant_id, start_time, end_time, positions)
+		INSERT INTO shifts (restaurant_id, start_time, end_time, positions)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, created_at, updated_at;
 	`
@@ -84,6 +84,6 @@ func(s *ShiftStore) GetByID(ctx context.Context, id int64) (*Shift, error) {
 			return nil, err
 		}
 	}
-	
+
 	return &shift, nil
 }

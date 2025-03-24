@@ -99,7 +99,7 @@ func (app *application) mount() http.Handler {
 		// ---------------------------------
         // Restaurant Endpoints
         // ---------------------------------
-		r.Route("/restaurant", func(r chi.Router) { // /v1/rest
+		r.Route("/restaurants", func(r chi.Router) { // /v1/rest
 			r.Use(app.AuthTokenMiddleware) // authorized to go inside the application 
 			r.Post("/", app.createRestaurantHandler)
 			r.Route("/{restaurantID}", func(r chi.Router){ // /v1/rest/{restID}

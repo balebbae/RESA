@@ -46,7 +46,7 @@ func getUserFromContext(r *http.Request) *store.User {
 	return user
 }
 
-func getRestaurantFromCtx(r *http.Request) *store.Restaurant {
+func getRestaurantFromContext(r *http.Request) *store.Restaurant {
 	restaurant, _ := r.Context().Value(restaurantCtx).(*store.Restaurant)
 	return restaurant
 }
@@ -135,7 +135,7 @@ func (app *application) BasicAuthMiddleware() func(http.Handler) http.Handler {
 func (app *application) checkRestaurantOwnership(requiredRole string, next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := getUserFromContext(r)
-		restaurant := getRestaurantFromCtx(r)
+		restaurant := getRestaurantFromContext(r)
 		
 		// if it is the users restaurant 
 		if restaurant.EmployerID == user.ID {

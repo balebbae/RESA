@@ -1,15 +1,19 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+	"time"
 
-type shiftKey string 
-const shiftCtx shiftKey = "shift"
+	"github.com/balebbae/RESA/internal/store"
+)
 
-type CreateShiftHandler struct {
-	RestaurantID int64 `json:"restaurant_id" validate:"required"`
-	StartTime string
-	EndTime string
-	Position int64
+// type shiftKey string
+// const shiftCtx shiftKey = "shift"
+
+type CreateShiftPayload struct {
+	StartTime time.Time
+	EndTime time.Time
+	Positions int64
 }
 
 // CreateShift godoc
@@ -19,15 +23,16 @@ type CreateShiftHandler struct {
 //	@Tags			shift
 //	@Accept			json
 //	@Produce		json
-//	@Param			payload	body		CreateShiftPayload	true	"Shift payload"
-//	@Success		201		{object}	store.Shift
-//	@Failure		400		{object}	error
-//	@Failure		401		{object}	error
-//	@Failure		500		{object}	error
+//	@Param			restaurantId	path		int					true	"id of the restaurant"
+//	@Param			payload			body		CreateShiftPayload	true	"Shift payload"
+//	@Success		201				{object}	store.Shift
+//	@Failure		400				{object}	error
+//	@Failure		401				{object}	error
+//	@Failure		500				{object}	error
 //	@Security		ApiKeyAuth
-//	@Router			/restaurant/{restaurantId}/shift [post]
+//	@Router			/restaurants/{restaurantId}/shifts [post]
 func (app *application) createShiftHandler(w http.ResponseWriter, r *http.Request) {
-	var payload CreateShiftHandler
+	var payload CreateShiftPayload
 
 	if err := readJSON(w, r, &payload); err != nil {
 		app.badRequestResponse(w, r, err)
@@ -39,5 +44,25 @@ func (app *application) createShiftHandler(w http.ResponseWriter, r *http.Reques
 		return 
 	}
 
-	if payload.Name
+	restaurant := getRestaurantFromContext(r)
+
+	shift := &store.Shift{
+		RestaurantID: restaurant.ID,
+		StartTime: payload.StartTime,
+		EndTime: payload.EndTime,
+		Positions: payload.Positions,
+	}
+
+	ctx := r.Context()
+
+	err := app.store.Shift.Create(ctx, shift)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return 
+	}
+
+	if err = app.jsonResponse(w, http.StatusCreated, shift); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
 }

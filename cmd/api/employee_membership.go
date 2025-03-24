@@ -26,7 +26,7 @@ type AddEmployee struct {
 //	@Security		ApiKeyAuth
 //	@Router			/restaurant/{restaurantId}/employees [post]
 func (app *application) createEmployeeToRestaurantHandler(w http.ResponseWriter, r *http.Request) {
-	restaurant := getRestaurantFromCtx(r)
+	restaurant := getRestaurantFromContext(r)
     if restaurant == nil {
         app.notFoundResponse(w, r, errors.New("restaurant not found in context"))
         return

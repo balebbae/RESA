@@ -36,7 +36,7 @@ func (app *application) createShiftHandler(w http.ResponseWriter, r *http.Reques
 
 	if err := readJSON(w, r, &payload); err != nil {
 		app.badRequestResponse(w, r, err)
-		return 
+		return
 	}
 
 	if err := Validate.Struct(payload); err != nil {
@@ -45,9 +45,9 @@ func (app *application) createShiftHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	restaurant := getRestaurantFromContext(r)
-
+	
 	shift := &store.Shift{
-		RestaurantID: restaurant.ID,
+		RestaurantID: restaurant.ID, 
 		StartTime: payload.StartTime,
 		EndTime: payload.EndTime,
 		Positions: payload.Positions,

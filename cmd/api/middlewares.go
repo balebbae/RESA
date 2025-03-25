@@ -165,5 +165,5 @@ func (app *application) checkRolePrecedence(ctx context.Context, user *store.Use
 		return false, err
 	}
 
-	return user.Role.Level >= role.Level, nil
+	return user.Role.Level > role.Level, nil
 }

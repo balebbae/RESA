@@ -10,22 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import OAuthButton from "./OAuthButton";
 import "@/app/styles/style.css";
-import { emailLogin } from "./action";
-import pb from "@/lib/pocketbase";
-import { redirect } from "next/navigation";
+
 import Link from "next/link";
 import NavbarNoLinks from "@/components/NavbarNoLinks";
 
-export default async function Login({
-  searchParams,
-}: {
-  searchParams: { message: string };
-}) {
-  const valid = await pb.authStore.isValid;
-  if (valid) {
-    redirect("/resa");
-  }
-
+export default async function Login() {
   return (
     <div className="gradient-bg-270">
       <NavbarNoLinks />
@@ -63,13 +52,7 @@ export default async function Login({
                 />
               </div>
 
-              {searchParams.message && (
-                <div className="text-sm font-medium text-destructive">
-                  {searchParams.message}
-                </div>
-              )}
-
-              <Button className="w-full" type="submit" formAction={emailLogin}>
+              <Button className="w-full" type="submit">
                 Login
               </Button>
             </form>

@@ -76,8 +76,8 @@ func (app *application) createRestaurantHandler(w http.ResponseWriter, r *http.R
 // GetRestaurant godoc
 //
 //	@Summary		Fetches a Restaurant
-//	@Description	Fetches a Restaurant by ID
 //	@Tags			restaurant
+//	@Description	Fetches a Restaurant by ID
 //	@Accept			json
 //	@Produce		json
 //	@Param			id	path		int	true	"Restaurant ID"
@@ -85,7 +85,7 @@ func (app *application) createRestaurantHandler(w http.ResponseWriter, r *http.R
 //	@Failure		404	{object}	error
 //	@Failure		500	{object}	error
 //	@Security		ApiKeyAuth
-//	@Router			/restaurant/{id} [get]
+//	@Router			/restaurants/{id} [get]
 func (app *application) getRestaurantHandler(w http.ResponseWriter, r *http.Request) {
 	restaurant := getRestaurantFromContext(r)
 
@@ -123,7 +123,7 @@ type UpdateRestaurantPayload struct {
 //	@Failure		404		{object}	error
 //	@Failure		500		{object}	error
 //	@Security		ApiKeyAuth
-//	@Router			/restaurant/{id} [patch]
+//	@Router			/restaurants/{id} [patch]
 func (app *application) updateRestaurantHandler(w http.ResponseWriter, r *http.Request) {
 	restaurant := getRestaurantFromContext(r)
 
@@ -178,7 +178,7 @@ func (app *application) updateRestaurantHandler(w http.ResponseWriter, r *http.R
 //	@Failure		404	{object}	error
 //	@Failure		500	{object}	error
 //	@Security		ApiKeyAuth
-//	@Router			/restaurant/{id} [delete]
+//	@Router			/restaurants/{id} [delete]
 func (app *application) deleteRestaurantHandler(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "restaurantID")
 	id, err := strconv.ParseInt(idParam, 10, 64)

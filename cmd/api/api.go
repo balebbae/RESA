@@ -123,12 +123,12 @@ func (app *application) mount() http.Handler {
                 // ---------------------------------
                 r.Route("/shifts", func(r chi.Router) {
                     // GET all shifts for a restaurant
-                    // r.Get("/", app.listShiftsHandler)
+                    // r.Get("/", app.getRestaurantShifsHandler)
                     // // CREATE new shift
                     r.Post("/", app.checkRestaurantOwnership("employer", app.createShiftHandler))
 
                     // For a specific shift:
-                    // r.Route("/{shiftID}", func(r chi.Router) {
+                    r.Route("/{shiftID}", func(r chi.Router) {
                     //     r.Use(app.shiftContextMiddleware) // e.g. load shift, ensure it belongs to restaurant
                     //     // READ a single shift
                     //     r.Get("/", app.getShiftHandler)
@@ -159,9 +159,29 @@ func (app *application) mount() http.Handler {
                         //     // A user might update or delete their preference
                         //     r.Patch("/{preferenceID}", app.updateShiftPreferenceHandler)
                         //     r.Delete("/{preferenceID}", app.deleteShiftPreferenceHandler)
-                        // })
+                        })
                     })
                 })
+
+				// ---------------------------------
+				// Restaurant Positions Sub-Endpoints
+				// ---------------------------------
+				// r.Route("/positions", func(r chi.Router) {
+				// 	// GET all positions for this restaurant
+				// 	r.Get("/", app.listPositionsHandler)
+
+				// 	// CREATE a new position (e.g., "Server", "Host", etc.)
+				// 	r.Post("/", app.checkRestaurantOwnership("employer", app.createPositionHandler))
+
+				// 	// Routes for a specific position:
+				// 	r.Route("/{positionID}", func(r chi.Router) {
+				// 		r.Use(app.positionContextMiddleware) 
+				// 		r.Get("/", app.getPositionHandler)
+				// 		r.Patch("/", app.checkRestaurantOwnership("employer", app.updatePositionHandler))
+				// 		r.Delete("/", app.checkRestaurantOwnership("employer", app.deletePositionHandler))
+				// 	})
+				// })
+
 
                 // ---------------------------------
                 // Subscription Endpoints TODO:: FUNCTIONALITY

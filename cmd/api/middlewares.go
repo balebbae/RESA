@@ -51,6 +51,11 @@ func getRestaurantFromContext(r *http.Request) *store.Restaurant {
 	return restaurant
 }
 
+func getShiftFromContext(r *http.Request) *store.Shift {
+	shift, _ := r.Context().Value(shiftCtx).(*store.Shift)
+	return shift
+}
+
 func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")

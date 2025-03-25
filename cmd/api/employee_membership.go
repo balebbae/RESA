@@ -24,7 +24,7 @@ type AddEmployee struct {
 //	@Failure		404				{object}	error
 //	@Failure		500				{object}	error
 //	@Security		ApiKeyAuth
-//	@Router			/restaurant/{restaurantId}/employees [post]
+//	@Router			/restaurants/{restaurantId}/employees [post]
 func (app *application) createEmployeeToRestaurantHandler(w http.ResponseWriter, r *http.Request) {
 	restaurant := getRestaurantFromContext(r)
     if restaurant == nil {

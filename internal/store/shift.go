@@ -87,3 +87,12 @@ func(s *ShiftStore) GetByID(ctx context.Context, id int64) (*Shift, error) {
 
 	return &shift, nil
 }
+
+// func(s *ShiftStore) GetByRestaurantID(ctx context.Context, id int64) ([]Shift, error) {
+// 	query := `
+// 		SELECT 
+
+// 		WHERE 
+// 		ORDER BY s.created_at DESC;	
+// 	`
+// }

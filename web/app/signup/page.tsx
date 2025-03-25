@@ -8,7 +8,6 @@ import Link from "next/link";
 import NavbarNoLinks from "@/components/NavbarNoLinks";
 import ScheduleUndraw from "@/assets/Schedule.svg";
 import Image from "next/image";
-import signUp from "./action";
 
 const Signup = ({ searchParams }: { searchParams: { message: string } }) => {
   return (
@@ -77,9 +76,7 @@ const Signup = ({ searchParams }: { searchParams: { message: string } }) => {
                   </div>
                 )}
                 <OAuthButton text="Sign up" />
-                <Button className="w-full mt-[-10px]" formAction={signUp}>
-                  Sign up
-                </Button>
+                <Button className="w-full mt-[-10px]">Sign up</Button>
 
                 <div className="text-center text-sm ">
                   Already have an account?{" "}

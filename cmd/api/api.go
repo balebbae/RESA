@@ -123,7 +123,7 @@ func (app *application) mount() http.Handler {
                 // ---------------------------------
                 r.Route("/shifts", func(r chi.Router) {
                     // GET all shifts for a restaurant
-                    // r.Get("/", app.getRestaurantShifsHandler)
+                    r.Get("/", app.getRestaurantShifsHandler)
                     // // CREATE new shift
                     r.Post("/", app.checkRestaurantOwnership("employer", app.createShiftHandler))
 

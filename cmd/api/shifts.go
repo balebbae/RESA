@@ -68,29 +68,30 @@ func (app *application) createShiftHandler(w http.ResponseWriter, r *http.Reques
 }
 
 
-// GetRestaurant godoc
+// GetRestaurantShifts godoc
 //
-//	@Summary		Fetches a Restaurant
-//	@Description	Fetches a Restaurant by ID
-//	@Tags			restaurant
+//	@Summary		Fetches shifts for a Restaurant
+//	@Description	Fetches all shifts associated with a Restaurant by its ID
+//	@Tags			shift
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		int	true	"Restaurant ID"
-//	@Success		200	{object}	store.Restaurant
-//	@Failure		404	{object}	error
-//	@Failure		500	{object}	error
+//	@Param			restaurantId	path		int	true	"Restaurant ID"
+//	@Success		200				{array}		store.Shift
+//	@Failure		404				{object}	error
+//	@Failure		500				{object}	error
 //	@Security		ApiKeyAuth
-//	@Router			/restaurants/{restaurantId}/shifts [post]
-// func (app *application) getRestaurantShifsHandler(w http.ResponseWriter, r *http.Request) {
-// 	restaurant := getRestaurantFromContext(r)
+//	@Router			/restaurants/{restaurantId}/shifts [get]
+func (app *application) getRestaurantShifsHandler(w http.ResponseWriter, r *http.Request) {
+	restaurant := getRestaurantFromContext(r)
 
-// 	var shifts []store.Shift
+	shifts, err := app.store.Shift.GetByRestaurantID(r.Context(), restaurant.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
 
-// 	shifts, err := app.store.Shift.GetByRestaurantID(r.Context(), restaurant.ID)
-// 	if err != nil {
-// 		app.internalServerError(w, r, err)
-// 		return
-// 	}
-
-
-// }
+	if err := app.jsonResponse(w, http.StatusOK, shifts); err != nil {
+		app.internalServerError(w, r, err)
+		return 
+	}
+}

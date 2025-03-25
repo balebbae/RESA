@@ -39,6 +39,7 @@ type Storage struct {
 	}
 	Shift interface {
 		Create(context.Context, *Shift) (error)
+		GetByRestaurantID(context.Context, int64) ([]Shift, error)
 	}
 }
 

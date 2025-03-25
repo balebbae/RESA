@@ -88,11 +88,51 @@ func(s *ShiftStore) GetByID(ctx context.Context, id int64) (*Shift, error) {
 	return &shift, nil
 }
 
-// func(s *ShiftStore) GetByRestaurantID(ctx context.Context, id int64) ([]Shift, error) {
-// 	query := `
-// 		SELECT 
+func(s *ShiftStore) GetByRestaurantID(ctx context.Context, id int64) ([]Shift, error) {
+	query := `
+		SELECT 
+			id,
+			restaurant_id,
+			start_time,
+			end_time,
+			positions,
+			created_at,
+			updated_at
+		FROM shifts
+		WHERE restaurant_id = $1
+		ORDER BY start_time ASC
+	`
 
-// 		WHERE 
-// 		ORDER BY s.created_at DESC;	
-// 	`
-// }
+	
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+	
+	
+	rows, err := s.db.QueryContext(ctx, query, id)
+	if err != nil {
+		return nil, err
+	}
+	
+	var shifts []Shift
+
+	for rows.Next() {
+		var shift Shift
+		if err := rows.Scan(
+			&shift.ID,
+			&shift.RestaurantID,
+			&shift.StartTime,
+			&shift.EndTime,
+			&shift.Positions,
+			&shift.CreatedAt,
+			&shift.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		shifts = append(shifts, shift)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return shifts, nil
+}

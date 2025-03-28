@@ -57,7 +57,7 @@ func (app *application) createEmployeeToRestaurantHandler(w http.ResponseWriter,
 }
 
 func (app *application) getRestaurantEmployeesHandler(w http.ResponseWriter, r *http.Request) {
-
+    
 }
 
 func (app *application) deleteEmployeeFromRestaurantHandler(w http.ResponseWriter, r *http.Request) {

@@ -39,7 +39,16 @@ type Storage struct {
 	}
 	Shift interface {
 		Create(context.Context, *Shift) (error)
+		GetByID(context.Context, int64) (*Shift, error)
 		GetByRestaurantID(context.Context, int64) ([]Shift, error)
+	}
+	ShiftAssignment interface {
+		Create(context.Context, *ShiftAssignment) error
+		GetByID(context.Context, int64) (*ShiftAssignment, error)
+		GetByShiftID(context.Context, int64) ([]ShiftAssignment, error)
+		GetByEmployeeID(context.Context, int64) ([]ShiftAssignment, error)
+		UpdateStatus(context.Context, int64, string) error
+		Delete(context.Context, int64) error
 	}
 }
 
@@ -50,6 +59,7 @@ func NewStorage(db *sql.DB) Storage {
 		EmployeeMembership: &EmployeeMembershipStore{db},
 		Role: &RoleStore{db},
 		Shift: &ShiftStore{db},
+		ShiftAssignment: &ShiftAssignmentStore{db},
 	}
 }
 

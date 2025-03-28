@@ -119,12 +119,12 @@ func (app *application) mount() http.Handler {
 				})
 
 				// ---------------------------------
-                // Shifts Sub-Endpoints TODO:: FUNCTIONALITY
+                // Shifts Sub-Endpoints
                 // ---------------------------------
                 r.Route("/shifts", func(r chi.Router) {
                     // GET all shifts for a restaurant
                     r.Get("/", app.getRestaurantShifsHandler)
-                    // // CREATE new shift
+                    // CREATE new shift
                     r.Post("/", app.checkRestaurantOwnership("employer", app.createShiftHandler))
 
                     // For a specific shift:
@@ -138,16 +138,22 @@ func (app *application) mount() http.Handler {
                     //     r.Delete("/", app.checkRestaurantOwnership("employer", app.deleteShiftHandler))
 
                         // -----------------------------
-                        // Shift Assignments Sub-route TODO:: FUNCTIONALITY
+                        // Shift Assignments Sub-route
                         // -----------------------------
-                        // r.Route("/assignments", func(r chi.Router) {
-                        //     // GET who is assigned to this shift
-                        //     r.Get("/", app.listShiftAssignmentsHandler)
-                        //     // Assign user to this shift
-                        //     r.Post("/", app.checkRestaurantOwnership("employer", app.createShiftAssignmentHandler))
-                        //     // Possibly a DELETE endpoint to remove a user from shift
-                        //     r.Delete("/{assignmentID}", app.checkRestaurantOwnership("employer", app.deleteShiftAssignmentHandler))
-                        // })
+                        r.Route("/assignments", func(r chi.Router) {
+                            // GET who is assigned to this shift
+                            r.Get("/", app.listShiftAssignmentsHandler)
+                            // Assign user to this shift
+                            r.Post("/", app.checkRestaurantOwnership("employer", app.createShiftAssignmentHandler))
+                            
+                            // Routes for a specific assignment
+                            r.Route("/{assignmentID}", func(r chi.Router) {
+                                // Update status (confirm/reject)
+                                r.Patch("/", app.checkRestaurantOwnership("employer", app.updateShiftAssignmentStatusHandler))
+                                // Remove a user from shift
+                                r.Delete("/", app.checkRestaurantOwnership("employer", app.deleteShiftAssignmentHandler))
+                            })
+                        })
 
                         // -----------------------------
                         // Shift Preferences Sub-route TODO:: FUNCTIONALITY
@@ -198,7 +204,7 @@ func (app *application) mount() http.Handler {
             })
 
 		// ---------------------------------
-        // Users Endpoints TODO:: FUNCTIONALITY
+        // Users Endpoints
         // ---------------------------------
 		r.Route("/users", func(r chi.Router) {
 			r.Put("/activate/{token}", app.activateUserHandler)
@@ -212,6 +218,14 @@ func (app *application) mount() http.Handler {
             // Possibly an admin route to list all users, etc.
             // r.With(app.AuthTokenMiddleware, app.checkIsAdmin).Get("/", app.listAllUsersHandler)
 		})
+
+        // ---------------------------------
+        // Employee Assignments Endpoints
+        // ---------------------------------
+        r.Route("/employees/{employeeID}/assignments", func(r chi.Router) {
+            r.Use(app.AuthTokenMiddleware)
+            r.Get("/", app.listEmployeeAssignmentsHandler)
+        })
 
         // ---------------------------------
         // Public Authentication Endpoints

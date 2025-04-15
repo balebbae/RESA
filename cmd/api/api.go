@@ -90,53 +90,111 @@ func (app *application) mount() http.Handler {
     }))
 
 	r.Route("/v1", func(r chi.Router) {
+		// ───── Public + basic‑auth ─────────────────────────
 		r.With(app.BasicAuthMiddleware()).Get("/health", app.healthCheckHandler) // Basic auth middleware
 
 		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
 		r.With(app.BasicAuthMiddleware()).Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL))) // Basic auth middleware
 
-
-		// ---------------------------------
-        // Restaurant Endpoints
-        // ---------------------------------
-		r.Route("/restaurants", func(r chi.Router) { // /v1/rest
-			r.Use(app.AuthTokenMiddleware) // authorized to go inside the application 
-			r.Post("/", app.createRestaurantHandler)
-			r.Route("/{restaurantID}", func(r chi.Router){ // /v1/rest/{restID}
-				r.Use(app.restaurantsContextMiddleware)
-				r.Get("/", app.getRestaurantHandler) // TODO:: Middleware to allow users who are employees of the rest to see the rest info
-
-				r.Patch("/", app.checkRestaurantOwnership("employer", app.updateRestaurantHandler)) 
-				r.Delete("/", app.checkRestaurantOwnership("employer", app.deleteRestaurantHandler)) 
-
-                r.Route("/shifts", func(r chi.Router) {
-                    r.Get("/", app.getRestaurantShifsHandler)
-
-                    r.Post("/", app.checkRestaurantOwnership("employer", app.createShiftHandler))
-
-					r.Route("/{shiftID}", func(r chi.Router) {
-					
-				})
-                    })
-                })
-            })
-
-		// ---------------------------------
-        // Users Endpoints TODO:: FUNCTIONALITY
-        // ---------------------------------
-		r.Route("/users", func(r chi.Router) {
-			r.Put("/activate/{token}", app.activateUserHandler)
-		})
-
-        // ---------------------------------
-        // Public Authentication Endpoints
-        // ---------------------------------
+		// ───── Authentication (public) ─────────────────────
 		r.Route("/authentication", func(r chi.Router) {
 			r.Post("/user", app.registerUserHandler)
 			r.Post("/token", app.createTokenHandler)
+			// r.Post("/refresh", app.refreshTokenHandler)
+
 		})
+		
+		// ───── User self‑service ───────────────────────────
+		r.Route("/users", func(r chi.Router) {
+			r.Put("/activate/{token}", app.activateUserHandler)
+
+			// r.With(app.AuthTokenMiddleware).Get("/me", app.getCurrentUserHandler)
+			// r.With(app.AuthTokenMiddleware).Patch("/me", app.updateCurrentUserHandler)
+		})
+
+		// ───── All app features require valid JWT ──────────
+		r.Route("/restaurants", func(r chi.Router) { 
+			r.Use(app.AuthTokenMiddleware) 
+			r.Post("/", app.createRestaurantHandler)
+
+			r.Route("/{restaurantID}", func(r chi.Router){ 
+				r.Use(app.restaurantsContextMiddleware)
+
+				// restaurant CRUD
+				r.Get("/", app.getRestaurantHandler)
+				r.Patch("/", app.checkRestaurantOwnership(app.updateRestaurantHandler)) 
+				r.Delete("/", app.checkRestaurantOwnership(app.deleteRestaurantHandler)) 
+
+				// ── roles
+				r.Route("/roles", func(r chi.Router) {
+					r.Get("/",  app.getRolesHandler)
+					r.Post("/", app.checkRestaurantOwnership(app.createRoleHandler))
+					r.Route("/{roleID}", func(r chi.Router) {
+						r.Get("/",    app.getRoleHandler)
+						r.Patch("/",  app.checkRestaurantOwnership(app.updateRoleHandler))
+						r.Delete("/", app.checkRestaurantOwnership(app.deleteRoleHandler))
+					})
+				})
+
+				// ── employees
+				r.Route("/employees", func(r chi.Router) {
+					r.Get("/",  app.getEmployeesHandler)
+					r.Post("/", app.checkRestaurantOwnership(app.createEmployeeHandler))
+					r.Route("/{employeeID}", func(r chi.Router) {
+						r.Get("/",    app.getEmployeeHandler)
+						r.Patch("/",  app.checkRestaurantOwnership(app.updateEmployeeHandler))
+						r.Delete("/", app.checkRestaurantOwnership(app.deleteEmployeeHandler))
+
+						// manage employee ⇄ role
+						r.Post("/roles",                app.checkRestaurantOwnership(app.addEmployeeRolesHandler))
+						r.Delete("/roles/{roleID}",     app.checkRestaurantOwnership(app.removeEmployeeRoleHandler))
+					})
+				})
+
+				// ── recurring shift templates
+				r.Route("/shift-templates", func(r chi.Router) {
+					r.Get("/",  app.getShiftTemplatesHandler)
+					r.Post("/", app.checkRestaurantOwnership(app.createShiftTemplateHandler))
+					r.Route("/{templateID}", func(r chi.Router) {
+						r.Get("/",    app.getShiftTemplateHandler)
+						r.Patch("/",  app.checkRestaurantOwnership(app.updateShiftTemplateHandler))
+						r.Delete("/", app.checkRestaurantOwnership(app.deleteShiftTemplateHandler))
+					})
+				})
+
+				// ── weekly schedules
+				r.Route("/schedules", func(r chi.Router) {
+					r.Get("/",  app.getSchedulesHandler)
+					r.Post("/", app.checkRestaurantOwnership(app.createScheduleHandler))
+
+					r.Route("/{scheduleID}", func(r chi.Router) {
+						r.Get("/",    app.getScheduleHandler)
+						r.Patch("/",  app.checkRestaurantOwnership(app.updateScheduleHandler))
+						r.Delete("/", app.checkRestaurantOwnership(app.deleteScheduleHandler))
+
+						// publish (email out)
+						r.Post("/publish", app.checkRestaurantOwnership(app.publishScheduleHandler))
+
+						// scheduled shifts inside a schedule
+						r.Route("/shifts", func(r chi.Router) {
+							r.Get("/",  app.getScheduledShiftsHandler)
+							r.Post("/", app.checkRestaurantOwnership(app.createScheduledShiftHandler))
+
+							r.Route("/{shiftID}", func(r chi.Router) {
+								r.Get("/",    app.getScheduledShiftHandler)
+								r.Patch("/",  app.checkRestaurantOwnership(app.updateScheduledShiftHandler))
+								r.Delete("/", app.checkRestaurantOwnership(app.deleteScheduledShiftHandler))
+
+								// assign / unassign employee
+								r.Patch("/assign", app.checkRestaurantOwnership(app.assignEmployeeToShiftHandler))
+								r.Delete("/assign", app.checkRestaurantOwnership(app.unassignEmployeeFromShiftHandler))
+							})
+						})
+					})
+				})
+            })
+        })
 	})
-	
 	return r
 }
 

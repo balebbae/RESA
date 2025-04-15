@@ -51,10 +51,6 @@ func getRestaurantFromContext(r *http.Request) *store.Restaurant {
 	return restaurant
 }
 
-func getShiftFromContext(r *http.Request) *store.Shift {
-	shift, _ := r.Context().Value(shiftCtx).(*store.Shift)
-	return shift
-}
 
 func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +133,7 @@ func (app *application) BasicAuthMiddleware() func(http.Handler) http.Handler {
 	}
 }
 
-func (app *application) checkRestaurantOwnership(requiredRole string, next http.HandlerFunc) http.HandlerFunc {
+func (app *application) checkRestaurantOwnership(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := getUserFromContext(r)
 		restaurant := getRestaurantFromContext(r)

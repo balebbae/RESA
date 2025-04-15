@@ -3,7 +3,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -68,8 +67,6 @@ func main() {
 			},
 		},
 	}
-
-	fmt.Println(env.GetString("ENV", "development"))
 
 	logger := zap.Must(zap.NewProduction()).Sugar()
 	defer logger.Sync()

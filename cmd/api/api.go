@@ -109,92 +109,16 @@ func (app *application) mount() http.Handler {
 				r.Patch("/", app.checkRestaurantOwnership("employer", app.updateRestaurantHandler)) 
 				r.Delete("/", app.checkRestaurantOwnership("employer", app.deleteRestaurantHandler)) 
 
-				// ---------------------------------
-                // Employee Membership Sub-Endpoints
-                // ---------------------------------
-				r.Route("/employees", func(r chi.Router){
-					r.Get("/", app.getRestaurantEmployeesHandler)
-					r.Post("/", app.createEmployeeToRestaurantHandler) // payload employee_id
-					r.Delete("/", app.deleteEmployeeFromRestaurantHandler)
-				})
-
-				// ---------------------------------
-                // Shifts Sub-Endpoints TODO:: FUNCTIONALITY
-                // ---------------------------------
                 r.Route("/shifts", func(r chi.Router) {
-                    // GET all shifts for a restaurant
                     r.Get("/", app.getRestaurantShifsHandler)
-                    // // CREATE new shift
+
                     r.Post("/", app.checkRestaurantOwnership("employer", app.createShiftHandler))
 
-                    // For a specific shift:
-                    r.Route("/{shiftID}", func(r chi.Router) {
-                    //     r.Use(app.shiftContextMiddleware) // e.g. load shift, ensure it belongs to restaurant
-                    //     // READ a single shift
-                    //     r.Get("/", app.getShiftHandler)
-                    //     // UPDATE shift
-                    //     r.Patch("/", app.checkRestaurantOwnership("employer", app.updateShiftHandler))
-                    //     // DELETE shift
-                    //     r.Delete("/", app.checkRestaurantOwnership("employer", app.deleteShiftHandler))
-
-                        // -----------------------------
-                        // Shift Assignments Sub-route TODO:: FUNCTIONALITY
-                        // -----------------------------
-                        // r.Route("/assignments", func(r chi.Router) {
-                        //     // GET who is assigned to this shift
-                        //     r.Get("/", app.listShiftAssignmentsHandler)
-                        //     // Assign user to this shift
-                        //     r.Post("/", app.checkRestaurantOwnership("employer", app.createShiftAssignmentHandler))
-                        //     // Possibly a DELETE endpoint to remove a user from shift
-                        //     r.Delete("/{assignmentID}", app.checkRestaurantOwnership("employer", app.deleteShiftAssignmentHandler))
-                        // })
-
-                        // -----------------------------
-                        // Shift Preferences Sub-route TODO:: FUNCTIONALITY
-                        // -----------------------------
-                        // r.Route("/preferences", func(r chi.Router) {
-                        //     // Possibly employees can set their own preferences
-                        //     r.Get("/", app.listShiftPreferencesHandler)
-                        //     r.Post("/", app.createShiftPreferenceHandler)
-                        //     // A user might update or delete their preference
-                        //     r.Patch("/{preferenceID}", app.updateShiftPreferenceHandler)
-                        //     r.Delete("/{preferenceID}", app.deleteShiftPreferenceHandler)
-                        })
+					r.Route("/{shiftID}", func(r chi.Router) {
+					
+				})
                     })
                 })
-
-				// ---------------------------------
-				// Restaurant Positions Sub-Endpoints
-				// ---------------------------------
-				// r.Route("/positions", func(r chi.Router) {
-				// 	// GET all positions for this restaurant
-				// 	r.Get("/", app.listPositionsHandler)
-
-				// 	// CREATE a new position (e.g., "Server", "Host", etc.)
-				// 	r.Post("/", app.checkRestaurantOwnership("employer", app.createPositionHandler))
-
-				// 	// Routes for a specific position:
-				// 	r.Route("/{positionID}", func(r chi.Router) {
-				// 		r.Use(app.positionContextMiddleware) 
-				// 		r.Get("/", app.getPositionHandler)
-				// 		r.Patch("/", app.checkRestaurantOwnership("employer", app.updatePositionHandler))
-				// 		r.Delete("/", app.checkRestaurantOwnership("employer", app.deletePositionHandler))
-				// 	})
-				// })
-
-
-                // ---------------------------------
-                // Subscription Endpoints TODO:: FUNCTIONALITY
-                // ---------------------------------
-                // If each restaurant has exactly one subscription or multiple possible subscriptions:
-                // r.Route("/subscription", func(r chi.Router) {
-                //     // Get subscription info for a restaurant
-                //     r.Get("/", app.getSubscriptionHandler)
-                //     // Create a new subscription or change plan
-                //     r.Post("/", app.checkRestaurantOwnership("employer", app.createSubscriptionHandler))
-                //     r.Patch("/", app.checkRestaurantOwnership("employer", app.updateSubscriptionHandler))
-                //     r.Delete("/", app.checkRestaurantOwnership("employer", app.cancelSubscriptionHandler))
-                // })
             })
 
 		// ---------------------------------
@@ -202,15 +126,6 @@ func (app *application) mount() http.Handler {
         // ---------------------------------
 		r.Route("/users", func(r chi.Router) {
 			r.Put("/activate/{token}", app.activateUserHandler)
-			// add crud to allow users to change restaurant information
-
-			// For a user to read/update their own profile
-            // r.With(app.AuthTokenMiddleware).Get("/profile", app.getCurrentUserHandler)
-            // r.With(app.AuthTokenMiddleware).Patch("/profile", app.updateCurrentUserHandler)
-            // r.With(app.AuthTokenMiddleware).Delete("/profile", app.deleteCurrentUserHandler)
-
-            // Possibly an admin route to list all users, etc.
-            // r.With(app.AuthTokenMiddleware, app.checkIsAdmin).Get("/", app.listAllUsersHandler)
 		})
 
         // ---------------------------------

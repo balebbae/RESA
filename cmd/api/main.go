@@ -35,7 +35,9 @@ const version = "0.0.1"
 //	@name						Authorization
 //	@description
 func main() {
-	godotenv.Load(".env")
+	if err := godotenv.Load(".env"); err != nil {
+		log.Println(err)
+	}
 
 	cfg := config{
 		addr: env.GetString("ADDR", ":8080"),

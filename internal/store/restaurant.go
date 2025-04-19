@@ -147,3 +147,5 @@ func (s *RestaurantStore) Delete(ctx context.Context, id int64) error {
 
 	return nil
 }
+
+func (s *RestaurantStore) ListByUser(context.Context, int64) ([]*Restaurant, error)

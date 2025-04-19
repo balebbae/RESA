@@ -3,10 +3,21 @@ package store
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 type Employee struct {
-	
+    ID           int64     `db:"id" json:"id"`
+    RestaurantID int64     `db:"restaurant_id" json:"restaurant_id"`
+    FullName     string    `db:"full_name" json:"full_name"`
+    Email        string    `db:"email" json:"email"`
+    CreatedAt    time.Time `db:"created_at" json:"created_at"`
+    UpdatedAt    time.Time `db:"updated_at" json:"updated_at"`
+}
+
+type EmployeeRole struct {
+    EmployeeID int64 `db:"employee_id" json:"employee_id"`
+    RoleID     int64 `db:"role_id" json:"role_id"`
 }
 
 type EmployeeStore struct {

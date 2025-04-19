@@ -17,14 +17,14 @@ var (
 )
 
 type User struct {
-	ID int64 `json:"id"`
-	Email string `json:"email"`
-	Password password `json:"-"`
-	FirstName string `json:"first_name"`
-	LastName string `json:"last_name"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	IsActive bool `json:"is_active"`
+	ID int64 `db:"id" json:"id"`
+	Email string `db:"email" json:"email"`
+	Password password `db:"password" json:"-"`
+	FirstName string `db:"first_name" json:"first_name"`
+	LastName string `db:"last_name" json:"last_name"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	IsActive bool `db:"is_active" json:"is_active"`
 }
 
 type password struct {

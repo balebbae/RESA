@@ -8,14 +8,14 @@ import (
 )
 
 type Restaurant struct {
-	ID         int64     `json:"id"`
-	EmployerID int64     `json:"employer_id"`
-	Name       string    `json:"name"`
-	Address    string    `json:"address"`
-	Phone      *string   `json:"phone,omitempty"` // Optional field
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
-	Version int `json:"version"`
+	ID         int64     `db:"id" json:"id"`
+	UserID int64     `db:"employer_id" json:"employer_id"`
+	Name       string    `db:"name" json:"name"`
+	Address    string    `db:"address" json:"address"`
+	Phone      *string   `db:"phone" json:"phone,omitempty"` // Optional field
+	CreatedAt  time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
+	Version int `db:"version" json:"version"`
 }
 
 type RestaurantStore struct {
@@ -35,7 +35,7 @@ func (s *RestaurantStore) Create(ctx context.Context, restaurant *Restaurant) er
 	err := s.db.QueryRowContext(
 		ctx,
 		query,
-		restaurant.EmployerID,
+		restaurant.UserID,
 		restaurant.Name,
 		restaurant.Address,
 		restaurant.Phone,
@@ -68,7 +68,7 @@ func (s *RestaurantStore) GetByID(ctx context.Context, id int64) (*Restaurant, e
 
 	err := s.db.QueryRowContext(ctx, query, id).Scan(
 		&restaurant.ID,
-		&restaurant.EmployerID,
+		&restaurant.UserID,
 		&restaurant.Name,
 		&restaurant.Address,
 		&restaurant.Phone,

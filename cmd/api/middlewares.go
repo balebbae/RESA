@@ -139,7 +139,7 @@ func (app *application) checkRestaurantOwnership(next http.HandlerFunc) http.Han
 		restaurant := getRestaurantFromContext(r)
 		
 		// if it is the users restaurant 
-		if restaurant.EmployerID == user.ID {
+		if restaurant.UserID == user.ID {
 			next.ServeHTTP(w, r)
 			return
 		}

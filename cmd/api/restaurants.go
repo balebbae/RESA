@@ -54,7 +54,7 @@ func (app *application) createRestaurantHandler(w http.ResponseWriter, r *http.R
 		Name:       payload.Name,
 		Address:    payload.Address,
 		Phone:      payload.Phone,
-		EmployerID: user.ID,
+		UserID: user.ID,
 	}
 
 	ctx := r.Context()

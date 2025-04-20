@@ -77,8 +77,8 @@ func NewStorage(db *sql.DB) Storage {
 	return Storage{
 		User: &UserStore{db},
 		Restaurant: &RestaurantStore{db},
+		Employee: &EmployeeStore{db},
 		// Role:           &RoleStore{db},
-		// Employee:       &EmployeeStore{db},
 		// ShiftTemplate:  &ShiftTemplateStore{db},
 		// Schedule:       &ScheduleStore{db},
 		// ScheduledShift: &ScheduledShiftStore{db},

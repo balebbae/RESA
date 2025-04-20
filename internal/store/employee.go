@@ -1,7 +1,9 @@
 package store
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -23,11 +25,158 @@ type EmployeeStore struct {
 	db *sql.DB
 }
 
-// func (s *EmployeeStore) Create(context.Context, *Employee) error
-// func (s *EmployeeStore) GetByID(context.Context, int64) (*Employee, error)
-// func (s *EmployeeStore) ListByRestaurant(context.Context, int64) ([]*Employee, error) 
-// func (s *EmployeeStore) Update(context.Context, *Employee) error 
-// func (s *EmployeeStore) Delete(context.Context, int64) error 
+func (s *EmployeeStore) Create(ctx context.Context, employee *Employee) error {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
-// func (s *EmployeeStore) AssignRoles(context.Context, int64, []int64) error 
-// func (s *EmployeeStore) RemoveRole(context.Context, int64, int64) error
+	query := `
+		INSERT INTO employees (restaurant_id, full_name, email, created_at, updated_at)
+		VALUES ($1, $2, $3, NOW(), NOW())
+		RETURNING id, created_at, updated_at`
+
+	err := s.db.QueryRowContext(
+		ctx,
+		query,
+		employee.RestaurantID,
+		employee.FullName,
+		employee.Email,
+	).Scan(&employee.ID, &employee.CreatedAt, &employee.UpdatedAt)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *EmployeeStore) GetByID(ctx context.Context, id int64) (*Employee, error) {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `
+		SELECT id, restaurant_id, full_name, email, created_at, updated_at
+		FROM employees
+		WHERE id = $1`
+
+	var employee Employee
+	err := s.db.QueryRowContext(ctx, query, id).Scan(
+		&employee.ID,
+		&employee.RestaurantID,
+		&employee.FullName,
+		&employee.Email,
+		&employee.CreatedAt,
+		&employee.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+
+	return &employee, nil
+}
+
+func (s *EmployeeStore) ListByRestaurant(ctx context.Context, restaurantID int64) ([]*Employee, error) {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `
+		SELECT id, restaurant_id, full_name, email, created_at, updated_at
+		FROM employees
+		WHERE restaurant_id = $1
+		ORDER BY full_name`
+
+	rows, err := s.db.QueryContext(ctx, query, restaurantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var employees []*Employee
+
+	for rows.Next() {
+		var employee Employee
+		err := rows.Scan(
+			&employee.ID,
+			&employee.RestaurantID,
+			&employee.FullName,
+			&employee.Email,
+			&employee.CreatedAt,
+			&employee.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		employees = append(employees, &employee)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return employees, nil
+}
+
+func (s *EmployeeStore) Update(ctx context.Context, employee *Employee) error {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `
+		UPDATE employees
+		SET full_name = $1, email = $2, updated_at = NOW()
+		WHERE id = $3
+		RETURNING updated_at`
+
+	err := s.db.QueryRowContext(
+		ctx,
+		query,
+		employee.FullName,
+		employee.Email,
+		employee.ID,
+	).Scan(&employee.UpdatedAt)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (s *EmployeeStore) Delete(ctx context.Context, id int64) error {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `DELETE FROM employees WHERE id = $1`
+
+	result, err := s.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+// Stub implementations for AssignRoles and RemoveRole to satisfy the interface
+func (s *EmployeeStore) AssignRoles(ctx context.Context, employeeID int64, roleIDs []int64) error {
+	// Will be implemented later
+	return errors.New("not implemented")
+}
+
+func (s *EmployeeStore) RemoveRole(ctx context.Context, employeeID int64, roleID int64) error {
+	// Will be implemented later
+	return errors.New("not implemented")
+}

@@ -170,13 +170,78 @@ func (s *EmployeeStore) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-// Stub implementations for AssignRoles and RemoveRole to satisfy the interface
+// Replace stub implementations with real implementations
 func (s *EmployeeStore) AssignRoles(ctx context.Context, employeeID int64, roleIDs []int64) error {
-	// Will be implemented later
-	return errors.New("not implemented")
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	// Start a transaction
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Insert each role assignment
+	for _, roleID := range roleIDs {
+		// First check if this assignment already exists
+		var exists bool
+		checkQuery := `
+			SELECT EXISTS (
+				SELECT 1 
+				FROM employee_roles 
+				WHERE employee_id = $1 AND role_id = $2
+			)`
+
+		err := tx.QueryRowContext(ctx, checkQuery, employeeID, roleID).Scan(&exists)
+		if err != nil {
+			return err
+		}
+
+		if exists {
+			continue // Skip if already assigned
+		}
+
+		// Insert the new role assignment
+		insertQuery := `
+			INSERT INTO employee_roles (employee_id, role_id)
+			VALUES ($1, $2)`
+
+		_, err = tx.ExecContext(ctx, insertQuery, employeeID, roleID)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *EmployeeStore) RemoveRole(ctx context.Context, employeeID int64, roleID int64) error {
-	// Will be implemented later
-	return errors.New("not implemented")
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `
+		DELETE FROM employee_roles
+		WHERE employee_id = $1 AND role_id = $2`
+
+	result, err := s.db.ExecContext(ctx, query, employeeID, roleID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
 }

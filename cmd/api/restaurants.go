@@ -12,6 +12,7 @@ import (
 type restaurantKey string
 const restaurantCtx restaurantKey = "restaurant"
 
+
 type CreateRestaurantPayload struct {
 	Name       string  `json:"name" validate:"required,max=255"`
 	Address    string  `json:"address" validate:"required,max=500"`
@@ -174,7 +175,7 @@ func (app *application) updateRestaurantHandler(w http.ResponseWriter, r *http.R
 //	@Accept			json
 //	@Produce		json
 //	@Param			id	path		int	true	"Restaurant ID"
-//	@Success		204	{object} string
+//	@Success		204	{object}	string
 //	@Failure		404	{object}	error
 //	@Failure		500	{object}	error
 //	@Security		ApiKeyAuth
@@ -203,3 +204,30 @@ func (app *application) deleteRestaurantHandler(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// GetRestaurants godoc
+//
+//	@Summary		Lists user's restaurants
+//	@Description	Fetches all restaurants belonging to the authenticated user
+//	@Tags			restaurant
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{array}		store.Restaurant
+//	@Failure		401	{object}	error
+//	@Failure		500	{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/restaurants [get]
+func (app *application) getRestaurantsHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromContext(r)
+
+	restaurants, err := app.store.Restaurant.ListByUser(r.Context(), user.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	err = app.jsonResponse(w, http.StatusOK, restaurants)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}

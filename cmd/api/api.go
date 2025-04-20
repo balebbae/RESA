@@ -116,6 +116,8 @@ func (app *application) mount() http.Handler {
 		r.Route("/restaurants", func(r chi.Router) { 
 			r.Use(app.AuthTokenMiddleware) 
 			r.Post("/", app.createRestaurantHandler)
+			r.Get("/",  app.getRestaurantsHandler)
+
 
 			r.Route("/{restaurantID}", func(r chi.Router){ 
 				r.Use(app.restaurantsContextMiddleware)

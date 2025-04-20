@@ -148,4 +148,36 @@ func (s *RestaurantStore) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (s *RestaurantStore) ListByUser(context.Context, int64) ([]*Restaurant, error)
+func (s *RestaurantStore) ListByUser(ctx context.Context, userID int64) ([]*Restaurant, error) {
+	query := `
+		SELECT id, employer_id, name, address, phone, created_at, updated_at, version
+		FROM restaurants
+		WHERE employer_id = $1
+	`
+
+	var restaurants []*Restaurant
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	rows, err := s.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	
+	defer rows.Close()
+
+	for rows.Next() {
+		var restaurant Restaurant
+		if err := rows.Scan(&restaurant.ID, &restaurant.UserID, &restaurant.Name, &restaurant.Address, &restaurant.Phone, &restaurant.CreatedAt, &restaurant.UpdatedAt, &restaurant.Version); err != nil {
+			return nil, err
+		}
+		restaurants = append(restaurants, &restaurant)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return restaurants, nil
+}

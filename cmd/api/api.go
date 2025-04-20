@@ -19,7 +19,7 @@ import (
 
 type application struct {
 	config config
-	store store.Storage
+	store *store.Storage
 	logger *zap.SugaredLogger
 	mailer mailer.Client
 	authenticator auth.Authenticator

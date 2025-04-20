@@ -31,6 +31,22 @@ COMMENT ON EXTENSION citext IS 'data type for case-insensitive character strings
 
 
 --
+-- Name: update_employee_timestamp(); Type: FUNCTION; Schema: public; Owner: admin
+--
+
+CREATE FUNCTION public.update_employee_timestamp() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.updated_at := NOW();
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_employee_timestamp() OWNER TO admin;
+
+--
 -- Name: update_restaurant_timestamp(); Type: FUNCTION; Schema: public; Owner: admin
 --
 
@@ -45,6 +61,70 @@ $$;
 
 
 ALTER FUNCTION public.update_restaurant_timestamp() OWNER TO admin;
+
+--
+-- Name: update_role_timestamp(); Type: FUNCTION; Schema: public; Owner: admin
+--
+
+CREATE FUNCTION public.update_role_timestamp() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.updated_at := NOW();
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_role_timestamp() OWNER TO admin;
+
+--
+-- Name: update_schedule_timestamp(); Type: FUNCTION; Schema: public; Owner: admin
+--
+
+CREATE FUNCTION public.update_schedule_timestamp() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.updated_at := NOW();
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_schedule_timestamp() OWNER TO admin;
+
+--
+-- Name: update_scheduled_shift_timestamp(); Type: FUNCTION; Schema: public; Owner: admin
+--
+
+CREATE FUNCTION public.update_scheduled_shift_timestamp() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.updated_at := NOW();
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_scheduled_shift_timestamp() OWNER TO admin;
+
+--
+-- Name: update_shift_template_timestamp(); Type: FUNCTION; Schema: public; Owner: admin
+--
+
+CREATE FUNCTION public.update_shift_template_timestamp() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.updated_at := NOW();
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_shift_template_timestamp() OWNER TO admin;
 
 --
 -- Name: update_user_timestamp(); Type: FUNCTION; Schema: public; Owner: admin
@@ -206,7 +286,8 @@ CREATE TABLE public.scheduled_shifts (
     start_time time without time zone NOT NULL,
     end_time time without time zone NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    notes text
 );
 
 
@@ -524,10 +605,45 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: employees set_employee_timestamp; Type: TRIGGER; Schema: public; Owner: admin
+--
+
+CREATE TRIGGER set_employee_timestamp BEFORE UPDATE ON public.employees FOR EACH ROW EXECUTE FUNCTION public.update_employee_timestamp();
+
+
+--
 -- Name: restaurants set_restaurant_timestamp; Type: TRIGGER; Schema: public; Owner: admin
 --
 
 CREATE TRIGGER set_restaurant_timestamp BEFORE UPDATE ON public.restaurants FOR EACH ROW EXECUTE FUNCTION public.update_restaurant_timestamp();
+
+
+--
+-- Name: roles set_role_timestamp; Type: TRIGGER; Schema: public; Owner: admin
+--
+
+CREATE TRIGGER set_role_timestamp BEFORE UPDATE ON public.roles FOR EACH ROW EXECUTE FUNCTION public.update_role_timestamp();
+
+
+--
+-- Name: schedules set_schedule_timestamp; Type: TRIGGER; Schema: public; Owner: admin
+--
+
+CREATE TRIGGER set_schedule_timestamp BEFORE UPDATE ON public.schedules FOR EACH ROW EXECUTE FUNCTION public.update_schedule_timestamp();
+
+
+--
+-- Name: scheduled_shifts set_scheduled_shift_timestamp; Type: TRIGGER; Schema: public; Owner: admin
+--
+
+CREATE TRIGGER set_scheduled_shift_timestamp BEFORE UPDATE ON public.scheduled_shifts FOR EACH ROW EXECUTE FUNCTION public.update_scheduled_shift_timestamp();
+
+
+--
+-- Name: shift_templates set_shift_template_timestamp; Type: TRIGGER; Schema: public; Owner: admin
+--
+
+CREATE TRIGGER set_shift_template_timestamp BEFORE UPDATE ON public.shift_templates FOR EACH ROW EXECUTE FUNCTION public.update_shift_template_timestamp();
 
 
 --
@@ -631,6 +747,27 @@ ALTER TABLE ONLY public.shift_templates
 
 ALTER TABLE ONLY public.shift_templates
     ADD CONSTRAINT shift_templates_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id);
+
+
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: pg_database_owner
+--
+
+GRANT ALL ON SCHEMA public TO admin;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: public; Owner: postgres
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO admin;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: public; Owner: postgres
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO admin;
 
 
 --

@@ -12,7 +12,7 @@ import (
 )
 
 // Define envelope type for JSON responses
-type envelope map[string]any
+// type envelope map[string]any
 
 type createScheduledShiftRequest struct {
 	ShiftTemplateID *int64    `json:"shift_template_id,omitempty"`

@@ -10,8 +10,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type shiftTemplateKey string
-const shiftTemplateCtx shiftTemplateKey = "shiftTemplate"
+// type shiftTemplateKey string
+// const shiftTemplateCtx shiftTemplateKey = "shiftTemplate"
 
 type CreateShiftTemplatePayload struct {
 	RoleID       int64  `json:"role_id" validate:"required,gt=0"`

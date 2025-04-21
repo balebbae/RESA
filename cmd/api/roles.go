@@ -9,9 +9,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type roleKey string
-const roleCtx roleKey = "role"
-
+// type roleKey string
+// const roleCtx roleKey = "role"
 type CreateRolePayload struct {
 	Name    string  `json:"name" validate:"required,max=50"`
 }

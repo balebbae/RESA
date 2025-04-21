@@ -10,8 +10,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type scheduleKey string
-const scheduleCtx scheduleKey = "schedule"
+// type scheduleKey string
+// const scheduleCtx scheduleKey = "schedule"
 
 type CreateSchedulePayload struct {
 	StartDate string `json:"start_date" validate:"required"` // YYYY-MM-DD

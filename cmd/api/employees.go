@@ -9,8 +9,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type employeeKey string
-const employeeCtx employeeKey = "employee"
+// type employeeKey string
+// const employeeCtx employeeKey = "employee"
 
 type CreateEmployeePayload struct {
 	FullName     string  `json:"full_name" validate:"required,max=255"`

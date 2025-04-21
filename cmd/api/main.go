@@ -11,6 +11,8 @@ import (
 	"github.com/balebbae/RESA/internal/env"
 	"github.com/balebbae/RESA/internal/mailer"
 	"github.com/balebbae/RESA/internal/store"
+	"github.com/balebbae/RESA/internal/store/cache"
+	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
@@ -48,6 +50,12 @@ func main() {
 			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 30),
 			maxIdleConns: env.GetInt("DB_MAX_IDLE_CONNS", 30),
 			maxIdleTime: env.GetString("DB_MAX_IDLE_TIME", "15m"),
+		},
+		redisCfg: redisConfig{
+			addr: env.GetString("REDIS_ADDR", "localhost:6379"),
+			password: env.GetString("REDIS_PW", ""),
+			db: env.GetInt("REDIS_DB", 0),
+			enabled: env.GetBool("REDIS_ENABLED", false),
 		},
 		env: env.GetString("ENV", "development"),
 		mail: mailConfig{
@@ -88,10 +96,19 @@ func main() {
 	
 	logger.Info("db connection established")
 
+	// Cache
+	var rdb *redis.Client
+	if cfg.redisCfg.enabled {
+		rdb = cache.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.password, cfg.redisCfg.db)
+		logger.Info("redis connection established")
+	}
+
+
+
 	store := store.NewStorage(db)
+	cacheStorage := cache.NewRedisStorage(rdb)
 
 	mailer := mailer.NewSendGrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
-
 
 	jwtAuthenticator := auth.NewJWTAuthenticator(
 		cfg.auth.token.secret, 
@@ -102,6 +119,7 @@ func main() {
 	app := &application{
 		config: cfg,
 		store: store,
+		cacheStorage: cacheStorage,
 		logger: logger,
 		mailer: mailer,
 		authenticator: jwtAuthenticator,

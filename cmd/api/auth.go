@@ -190,3 +190,84 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		app.internalServerError(w, r, err)
 	}
 }
+
+// refreshTokenHandler godoc
+// 
+//	@Summary		Refreshes an authentication token
+//	@Description	Creates a new token with a fresh expiry time using an existing valid token
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Security		ApiKeyAuth
+//	@Success		200	{string}	string	"New token"
+//	@Failure		401	{object}	error	"Unauthorized - invalid or expired token"
+//	@Failure		500	{object}	error	"Internal server error"
+//	@Router			/authentication/refresh [post]
+func (app *application) refreshTokenHandler(w http.ResponseWriter, r *http.Request) {
+	// Get the current token from the Authorization header
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" || len(authHeader) < 8 || authHeader[:7] != "Bearer " {
+		app.logger.Errorw("invalid authorization header format", "header", authHeader)
+		app.unauthorizedErrorResponse(w, r, fmt.Errorf("invalid or missing authentication token"))
+		return
+	}
+
+	tokenString := authHeader[7:]
+	app.logger.Debugw("token received for refresh", "token_length", len(tokenString))
+
+	// Parse and validate the token
+	token, err := app.authenticator.ValidateToken(tokenString)
+	if err != nil {
+		app.logger.Errorw("token validation failed", "error", err)
+		app.unauthorizedErrorResponse(w, r, fmt.Errorf("invalid token: %w", err))
+		return
+	}
+
+	// Verify the token is valid
+	if !token.Valid {
+		app.logger.Errorw("token marked as invalid")
+		app.unauthorizedErrorResponse(w, r, fmt.Errorf("invalid token"))
+		return
+	}
+
+	// Extract claims from token
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		app.logger.Errorw("failed to extract token claims")
+		app.internalServerError(w, r, fmt.Errorf("unable to extract token claims"))
+		return
+	}
+
+	// Get user ID from claims
+	userID, ok := claims["sub"]
+	if !ok {
+		app.logger.Errorw("missing subject claim in token")
+		app.internalServerError(w, r, fmt.Errorf("missing subject claim"))
+		return
+	}
+
+	// Create new token with fresh expiry
+	newClaims := jwt.MapClaims{
+		"sub": userID,
+		"exp": time.Now().Add(app.config.auth.token.exp).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Unix(),
+		"iss": app.config.auth.token.iss,
+		"aud": app.config.auth.token.iss,
+	}
+
+	// Generate new token
+	newToken, err := app.authenticator.GenerateToken(newClaims)
+	if err != nil {
+		app.logger.Errorw("failed to generate new token", "error", err)
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	app.logger.Infow("token refreshed successfully", "user_id", userID)
+
+	// Return the new token
+	if err := app.jsonResponse(w, http.StatusOK, newToken); err != nil {
+		app.internalServerError(w, r, err)
+	}
+}

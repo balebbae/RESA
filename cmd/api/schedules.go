@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -44,8 +45,10 @@ func (app *application) getSchedulesHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	ctx := r.Context()
+
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(ctx, restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -62,10 +65,24 @@ func (app *application) getSchedulesHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	schedules, err := app.store.Schedules.ListByRestaurant(r.Context(), restaurantID)
+	schedules, err := app.store.Schedules.ListByRestaurant(ctx, restaurantID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
+	}
+
+	// Cache individual schedules if cacheStorage is available
+	if app.config.redisCfg.enabled && app.cacheStorage.Schedules != nil {
+		for _, schedule := range schedules {
+			// Skip nil schedules
+			if schedule == nil {
+				continue
+			}
+			
+			if err := app.cacheStorage.Schedules.Set(ctx, schedule); err != nil {
+				app.logger.Warnw("failed to cache schedule", "schedule_id", schedule.ID, "error", err)
+			}
+		}
 	}
 
 	err = app.jsonResponse(w, http.StatusOK, schedules)
@@ -157,6 +174,13 @@ func (app *application) createScheduleHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// After creating a schedule, we should cache it
+	if app.config.redisCfg.enabled && app.cacheStorage.Schedules != nil {
+		if err := app.cacheStorage.Schedules.Set(r.Context(), schedule); err != nil {
+			app.logger.Warnw("failed to cache new schedule", "schedule_id", schedule.ID, "error", err)
+		}
+	}
+
 	err = app.jsonResponse(w, http.StatusCreated, schedule)
 	if err != nil {
 		app.internalServerError(w, r, err)
@@ -192,8 +216,32 @@ func (app *application) getScheduleHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	ctx := r.Context()
+
+	// Try to get from cache first if cacheStorage is available
+	if app.config.redisCfg.enabled && app.cacheStorage.Schedules != nil {
+		cachedSchedule, err := app.cacheStorage.Schedules.Get(ctx, scheduleID)
+		if err == nil && cachedSchedule != nil {
+			// Verify restaurant ownership
+			if cachedSchedule.RestaurantID == restaurantID {
+				// Verify user has access
+				user := getUserFromContext(r)
+				restaurant, err := app.store.Restaurants.GetByID(ctx, restaurantID)
+				if err == nil && restaurant.UserID == user.ID {
+					app.logger.Debugw("cache hit for schedule", "schedule_id", scheduleID)
+					err = app.jsonResponse(w, http.StatusOK, cachedSchedule)
+					if err != nil {
+						app.internalServerError(w, r, err)
+					}
+					return
+				}
+			}
+		}
+	}
+
+	// Cache miss or validation failed - get from database
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(ctx, restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -211,7 +259,7 @@ func (app *application) getScheduleHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Get the schedule
-	schedule, err := app.store.Schedules.GetByID(r.Context(), scheduleID)
+	schedule, err := app.store.Schedules.GetByID(ctx, scheduleID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -227,10 +275,18 @@ func (app *application) getScheduleHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Cache for future requests if cacheStorage is available
+	if app.config.redisCfg.enabled && app.cacheStorage.Schedules != nil {
+		if err := app.cacheStorage.Schedules.Set(ctx, schedule); err != nil {
+			app.logger.Warnw("failed to cache schedule", "schedule_id", scheduleID, "error", err)
+		} else {
+			app.logger.Debugw("cached schedule", "schedule_id", scheduleID)
+		}
+	}
+
 	err = app.jsonResponse(w, http.StatusOK, schedule)
 	if err != nil {
 		app.internalServerError(w, r, err)
-		return
 	}
 }
 
@@ -353,6 +409,13 @@ func (app *application) updateScheduleHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// After updating, update the cache as well
+	if app.config.redisCfg.enabled && app.cacheStorage.Schedules != nil {
+		if err := app.cacheStorage.Schedules.Set(r.Context(), schedule); err != nil {
+			app.logger.Warnw("failed to update schedule in cache", "schedule_id", schedule.ID, "error", err)
+		}
+	}
+
 	err = app.jsonResponse(w, http.StatusOK, schedule)
 	if err != nil {
 		app.internalServerError(w, r, err)
@@ -433,6 +496,16 @@ func (app *application) deleteScheduleHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// Delete from cache as well if Redis is enabled
+	if app.config.redisCfg.enabled && app.cacheStorage.Schedules != nil {
+		// Use type assertion to access the Delete method
+		if scheduleStore, ok := app.cacheStorage.Schedules.(interface{ Delete(context.Context, int64) error }); ok {
+			if err := scheduleStore.Delete(r.Context(), scheduleID); err != nil {
+				app.logger.Warnw("failed to delete schedule from cache", "schedule_id", scheduleID, "error", err)
+			}
+		}
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -510,6 +583,19 @@ func (app *application) publishScheduleHandler(w http.ResponseWriter, r *http.Re
 	if err := app.store.Schedules.Publish(r.Context(), scheduleID, publishTime); err != nil {
 		app.internalServerError(w, r, err)
 		return
+	}
+
+	// Update schedule in cache after publishing
+	if app.config.redisCfg.enabled && app.cacheStorage.Schedules != nil {
+		// Need to fetch the updated schedule with the published timestamp
+		updatedSchedule, err := app.store.Schedules.GetByID(r.Context(), scheduleID)
+		if err == nil {
+			if err := app.cacheStorage.Schedules.Set(r.Context(), updatedSchedule); err != nil {
+				app.logger.Warnw("failed to update published schedule in cache", "schedule_id", scheduleID, "error", err)
+			}
+		} else {
+			app.logger.Warnw("could not fetch updated schedule for cache", "schedule_id", scheduleID, "error", err)
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)

@@ -67,6 +67,13 @@ func (app *application) createRestaurantHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// Cache the newly created restaurant
+	if app.config.redisCfg.enabled && app.cacheStorage.Restaurants != nil {
+		if err := app.cacheStorage.Restaurants.Set(ctx, restaurant); err != nil {
+			app.logger.Warnw("failed to cache new restaurant", "restaurant_id", restaurant.ID, "error", err)
+		}
+	}
+
 	// Send JSON response
 	if err = app.jsonResponse(w, http.StatusCreated, restaurant); err != nil {
 		app.internalServerError(w, r, err)
@@ -89,11 +96,40 @@ func (app *application) createRestaurantHandler(w http.ResponseWriter, r *http.R
 //	@Router			/restaurants/{id} [get]
 func (app *application) getRestaurantHandler(w http.ResponseWriter, r *http.Request) {
 	restaurant := getRestaurantFromContext(r)
+	restaurantID := restaurant.ID
+	ctx := r.Context()
 
-	_, err := app.store.Restaurants.GetByID(r.Context(), restaurant.ID)
+	// Try to get from cache first if available
+	if app.config.redisCfg.enabled && app.cacheStorage.Restaurants != nil {
+		cachedRestaurant, err := app.cacheStorage.Restaurants.Get(ctx, restaurantID)
+		if err == nil && cachedRestaurant != nil {
+			// Verify user ownership
+			user := getUserFromContext(r)
+			if cachedRestaurant.UserID == user.ID {
+				app.logger.Debugw("cache hit for restaurant", "restaurant_id", restaurantID)
+				err = app.jsonResponse(w, http.StatusOK, cachedRestaurant)
+				if err != nil {
+					app.internalServerError(w, r, err)
+				}
+				return
+			}
+		}
+	}
+
+	// Cache miss or validation failed - get from database
+	_, err := app.store.Restaurants.GetByID(ctx, restaurant.ID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return 
+	}
+
+	// Cache for future requests if cacheStorage is available
+	if app.config.redisCfg.enabled && app.cacheStorage.Restaurants != nil {
+		if err := app.cacheStorage.Restaurants.Set(ctx, restaurant); err != nil {
+			app.logger.Warnw("failed to cache restaurant", "restaurant_id", restaurantID, "error", err)
+		} else {
+			app.logger.Debugw("cached restaurant", "restaurant_id", restaurantID)
+		}
 	}
 
 	err = app.jsonResponse(w, http.StatusOK, restaurant)
@@ -161,9 +197,16 @@ func (app *application) updateRestaurantHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// Update the restaurant in cache
+	if app.config.redisCfg.enabled && app.cacheStorage.Restaurants != nil {
+		if err := app.cacheStorage.Restaurants.Set(r.Context(), restaurant); err != nil {
+			app.logger.Warnw("failed to update restaurant in cache", "restaurant_id", restaurant.ID, "error", err)
+		}
+	}
+
 	err = app.jsonResponse(w, http.StatusOK, restaurant)
 	if err != nil {
-		app.internalServerError(w, r, err) 
+		app.internalServerError(w, r, err)
 	}
 }
 
@@ -201,6 +244,8 @@ func (app *application) deleteRestaurantHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// Note: We would need to add a Delete method to the cache interface to remove from cache
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -218,11 +263,26 @@ func (app *application) deleteRestaurantHandler(w http.ResponseWriter, r *http.R
 //	@Router			/restaurants [get]
 func (app *application) getRestaurantsHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromContext(r)
+	ctx := r.Context()
 
-	restaurants, err := app.store.Restaurants.ListByUser(r.Context(), user.ID)
+	restaurants, err := app.store.Restaurants.ListByUser(ctx, user.ID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
+	}
+
+	// Skip caching entirely rather than risk nil pointer dereference
+	if app.config.redisCfg.enabled && app.cacheStorage.Restaurants != nil {
+		for _, restaurant := range restaurants {
+			// Skip nil restaurants
+			if restaurant == nil {
+				continue
+			}
+			
+			if err := app.cacheStorage.Restaurants.Set(ctx, restaurant); err != nil {
+				app.logger.Warnw("failed to cache restaurant", "restaurant_id", restaurant.ID, "error", err)
+			}
+		}
 	}
 
 	err = app.jsonResponse(w, http.StatusOK, restaurants)

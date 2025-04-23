@@ -147,16 +147,3 @@ func (app *application) checkRestaurantOwnership(next http.HandlerFunc) http.Han
 		next.ServeHTTP(w, r)
 	})
 }
-
-func (app *application) getSchedule(ctx context.Context, id int64) (*store.Schedule, error) {
-	if !app.config.redisCfg.enabled {
-		return app.store.Schedules.GetByID(ctx, id)
-	}
-
-	schedule, err := app.cacheStorage.Schedules.Get(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return schedule, nil
-}

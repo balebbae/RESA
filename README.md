@@ -62,7 +62,7 @@ RESA uses a secure, passwordless authentication system with magic links:
 
 - **Frontend**: Next.js (TypeScript, Tailwind CSS, ShadCN UI)
 - **Backend (Clean Architecture/Repository Pattern)**: Go (Chi framework)
-- **APIs**: Twilio (SMS), SendGrid (Email)
+- **APIs**: SendGrid (Email)
 - **Database**: PostgreSQL (No ORM)
 - **Caching**: Redis
 - **Authentication**: JWT Tokens + Magic Links
@@ -73,7 +73,7 @@ The application uses a relational database schema with the following key entitie
 
 - **Users**: Application users (owners and employees)
 - **Restaurants**: Restaurant information and ownership
-- **Roles**: Employee roles within restaurants
+- **Roles**: Employee roles(positions) within restaurants
 - **Employees**: Employee information for each restaurant
 - **Schedules**: Weekly work schedules
 - **Shifts**: Individual work shifts within schedules

@@ -15,24 +15,24 @@ var (
 )
 
 type Storage struct {
-	User          *UserStore
-	Restaurant    *RestaurantStore
-	Employee      *EmployeeStore
-	Role          *RoleStore
-	ShiftTemplate *ShiftTemplateStore
-	Schedule      *ScheduleStore
-	ScheduledShift *ScheduledShiftStore
+	Users          *UserStore
+	Restaurants    *RestaurantStore
+	Employees      *EmployeeStore
+	Roles          *RoleStore
+	ShiftTemplates *ShiftTemplateStore
+	Schedules      *ScheduleStore
+	ScheduledShifts *ScheduledShiftStore
 }
 
 func NewStorage(db *sql.DB) *Storage {
 	return &Storage{
-		User:          &UserStore{db},
-		Restaurant:    &RestaurantStore{db},
-		Employee:      &EmployeeStore{db},
-		Role:          &RoleStore{db},
-		ShiftTemplate: &ShiftTemplateStore{db},
-		Schedule:      &ScheduleStore{db},
-		ScheduledShift: &ScheduledShiftStore{db},
+		Users:          &UserStore{db},
+		Restaurants:    &RestaurantStore{db},
+		Employees:      &EmployeeStore{db},
+		Roles:          &RoleStore{db},
+		ShiftTemplates: &ShiftTemplateStore{db},
+		Schedules:      &ScheduleStore{db},
+		ScheduledShifts: &ScheduledShiftStore{db},
 	}
 }
 

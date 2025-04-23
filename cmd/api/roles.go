@@ -41,7 +41,7 @@ func (app *application) getRolesHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -58,7 +58,7 @@ func (app *application) getRolesHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	roles, err := app.store.Role.ListByRestaurant(r.Context(), restaurantID)
+	roles, err := app.store.Roles.ListByRestaurant(r.Context(), restaurantID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -95,7 +95,7 @@ func (app *application) createRoleHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -128,7 +128,7 @@ func (app *application) createRoleHandler(w http.ResponseWriter, r *http.Request
 		Name:         payload.Name,
 	}
 
-	if err := app.store.Role.Create(r.Context(), role); err != nil {
+	if err := app.store.Roles.Create(r.Context(), role); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -169,7 +169,7 @@ func (app *application) getRoleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -186,7 +186,7 @@ func (app *application) getRoleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role, err := app.store.Role.GetByID(r.Context(), roleID)
+	role, err := app.store.Roles.GetByID(r.Context(), roleID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -240,7 +240,7 @@ func (app *application) updateRoleHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -258,7 +258,7 @@ func (app *application) updateRoleHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Get existing role
-	role, err := app.store.Role.GetByID(r.Context(), roleID)
+	role, err := app.store.Roles.GetByID(r.Context(), roleID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -292,7 +292,7 @@ func (app *application) updateRoleHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Save updates
-	if err := app.store.Role.Update(r.Context(), role); err != nil {
+	if err := app.store.Roles.Update(r.Context(), role); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -333,7 +333,7 @@ func (app *application) deleteRoleHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -351,7 +351,7 @@ func (app *application) deleteRoleHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Get existing role
-	role, err := app.store.Role.GetByID(r.Context(), roleID)
+	role, err := app.store.Roles.GetByID(r.Context(), roleID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -368,7 +368,7 @@ func (app *application) deleteRoleHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Delete role
-	if err := app.store.Role.Delete(r.Context(), roleID); err != nil {
+	if err := app.store.Roles.Delete(r.Context(), roleID); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
 			return

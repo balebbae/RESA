@@ -61,7 +61,7 @@ func (app *application) createRestaurantHandler(w http.ResponseWriter, r *http.R
 	ctx := r.Context()
 
 	// Insert into DB
-	err := app.store.Restaurant.Create(ctx, restaurant)
+	err := app.store.Restaurants.Create(ctx, restaurant)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -90,7 +90,7 @@ func (app *application) createRestaurantHandler(w http.ResponseWriter, r *http.R
 func (app *application) getRestaurantHandler(w http.ResponseWriter, r *http.Request) {
 	restaurant := getRestaurantFromContext(r)
 
-	_, err := app.store.Restaurant.GetByID(r.Context(), restaurant.ID)
+	_, err := app.store.Restaurants.GetByID(r.Context(), restaurant.ID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return 
@@ -155,7 +155,7 @@ func (app *application) updateRestaurantHandler(w http.ResponseWriter, r *http.R
 		restaurant.Phone = nil
 	}
 
-	err = app.store.Restaurant.Update(r.Context(), restaurant)
+	err = app.store.Restaurants.Update(r.Context(), restaurant)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -190,7 +190,7 @@ func (app *application) deleteRestaurantHandler(w http.ResponseWriter, r *http.R
 
 	ctx := r.Context()
 
-	err = app.store.Restaurant.Delete(ctx, id)
+	err = app.store.Restaurants.Delete(ctx, id)
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrNotFound):
@@ -219,7 +219,7 @@ func (app *application) deleteRestaurantHandler(w http.ResponseWriter, r *http.R
 func (app *application) getRestaurantsHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromContext(r)
 
-	restaurants, err := app.store.Restaurant.ListByUser(r.Context(), user.ID)
+	restaurants, err := app.store.Restaurants.ListByUser(r.Context(), user.ID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return

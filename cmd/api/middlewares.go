@@ -25,7 +25,7 @@ func (app *application) restaurantsContextMiddleware(next http.Handler) http.Han
 
 		ctx := r.Context()
 
-		restaurant, err := app.store.Restaurant.GetByID(ctx, id)
+		restaurant, err := app.store.Restaurants.GetByID(ctx, id)
 		if err != nil {
 			switch {
 			case errors.Is(err, store.ErrNotFound):
@@ -85,10 +85,10 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 
 		ctx := r.Context()
 
-		user, err := app.store.User.GetByID(ctx, userID)
+		user, err := app.store.Users.GetByID(ctx, userID)
 		if err != nil {
 			app.unauthorizedErrorResponse(w, r, err)
-			return
+			return 
 		}
 
 		ctx = context.WithValue(ctx, userCtx, user)
@@ -146,4 +146,17 @@ func (app *application) checkRestaurantOwnership(next http.HandlerFunc) http.Han
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (app *application) getSchedule(ctx context.Context, id int64) (*store.Schedule, error) {
+	if !app.config.redisCfg.enabled {
+		return app.store.Schedules.GetByID(ctx, id)
+	}
+
+	schedule, err := app.cacheStorage.Schedules.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return schedule, nil
 }

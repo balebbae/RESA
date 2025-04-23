@@ -8,15 +8,15 @@ import (
 )
 
 type Storage struct {
-	Restaurants interface {
-		Get(context.Context, int64) (*store.Restaurant, error)
-		Set(context.Context, *store.Restaurant) error
+	Schedules interface {
+		Get(context.Context, int64) (*store.Schedule, error)
+		Set(context.Context, *store.Schedule) error
 	}
 }
 
 func NewRedisStorage(rdb *redis.Client) Storage {
 	return Storage{
-		Restaurants: &RestaurantStore{rdb: rdb},
+		Schedules: &ScheduleStore{rdb: rdb},
 	}
 }
 

@@ -61,7 +61,7 @@ func (app *application) getScheduledShiftsHandler(w http.ResponseWriter, r *http
 	}
 
 	// Get shifts for this schedule
-	shifts, err := app.store.ScheduledShift.ListBySchedule(r.Context(), scheduleID)
+	shifts, err := app.store.ScheduledShifts.ListBySchedule(r.Context(), scheduleID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -127,7 +127,7 @@ func (app *application) createScheduledShiftHandler(w http.ResponseWriter, r *ht
 		Notes:           req.Notes,
 	}
 
-	if err := app.store.ScheduledShift.Create(r.Context(), shift); err != nil {
+	if err := app.store.ScheduledShifts.Create(r.Context(), shift); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -159,7 +159,7 @@ func (app *application) getScheduledShiftHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	shift, err := app.store.ScheduledShift.GetByID(r.Context(), shiftID)
+	shift, err := app.store.ScheduledShifts.GetByID(r.Context(), shiftID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -198,7 +198,7 @@ func (app *application) updateScheduledShiftHandler(w http.ResponseWriter, r *ht
 	}
 
 	// Get the existing shift
-	shift, err := app.store.ScheduledShift.GetByID(r.Context(), shiftID)
+	shift, err := app.store.ScheduledShifts.GetByID(r.Context(), shiftID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -259,7 +259,7 @@ func (app *application) updateScheduledShiftHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if err := app.store.ScheduledShift.Update(r.Context(), shift); err != nil {
+	if err := app.store.ScheduledShifts.Update(r.Context(), shift); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
 			return
@@ -295,7 +295,7 @@ func (app *application) deleteScheduledShiftHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if err := app.store.ScheduledShift.Delete(r.Context(), shiftID); err != nil {
+	if err := app.store.ScheduledShifts.Delete(r.Context(), shiftID); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
 			return
@@ -339,7 +339,7 @@ func (app *application) assignEmployeeToShiftHandler(w http.ResponseWriter, r *h
 		return
 	}
 
-	if err := app.store.ScheduledShift.AssignEmployee(r.Context(), shiftID, req.EmployeeID); err != nil {
+	if err := app.store.ScheduledShifts.AssignEmployee(r.Context(), shiftID, req.EmployeeID); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
 			return
@@ -348,8 +348,8 @@ func (app *application) assignEmployeeToShiftHandler(w http.ResponseWriter, r *h
 		return
 	}
 
-	// Retrieve updated shift
-	shift, err := app.store.ScheduledShift.GetByID(r.Context(), shiftID)
+	// Retrieve updated shift	
+	shift, err := app.store.ScheduledShifts.GetByID(r.Context(), shiftID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -384,7 +384,7 @@ func (app *application) unassignEmployeeFromShiftHandler(w http.ResponseWriter, 
 
 	// Pass nil to unassign
 	var nilEmployeeID *int64 = nil
-	if err := app.store.ScheduledShift.AssignEmployee(r.Context(), shiftID, nilEmployeeID); err != nil {
+	if err := app.store.ScheduledShifts.AssignEmployee(r.Context(), shiftID, nilEmployeeID); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
 			return
@@ -394,7 +394,7 @@ func (app *application) unassignEmployeeFromShiftHandler(w http.ResponseWriter, 
 	}
 
 	// Retrieve updated shift
-	shift, err := app.store.ScheduledShift.GetByID(r.Context(), shiftID)
+	shift, err := app.store.ScheduledShifts.GetByID(r.Context(), shiftID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return

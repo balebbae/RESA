@@ -49,7 +49,7 @@ func (app *application) getShiftTemplatesHandler(w http.ResponseWriter, r *http.
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -66,7 +66,7 @@ func (app *application) getShiftTemplatesHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	templates, err := app.store.ShiftTemplate.ListByRestaurant(r.Context(), restaurantID)
+	templates, err := app.store.ShiftTemplates.ListByRestaurant(r.Context(), restaurantID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -103,7 +103,7 @@ func (app *application) createShiftTemplateHandler(w http.ResponseWriter, r *htt
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -132,7 +132,7 @@ func (app *application) createShiftTemplateHandler(w http.ResponseWriter, r *htt
 	}
 
 	// Check if role exists and belongs to this restaurant
-	role, err := app.store.Role.GetByID(r.Context(), payload.RoleID)
+	role, err := app.store.Roles.GetByID(r.Context(), payload.RoleID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.badRequestResponse(w, r, errors.New("role not found"))
@@ -172,7 +172,7 @@ func (app *application) createShiftTemplateHandler(w http.ResponseWriter, r *htt
 		EndTime:      payload.EndTime,
 	}
 
-	if err := app.store.ShiftTemplate.Create(r.Context(), template); err != nil {
+	if err := app.store.ShiftTemplates.Create(r.Context(), template); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -213,7 +213,7 @@ func (app *application) getShiftTemplateHandler(w http.ResponseWriter, r *http.R
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -231,7 +231,7 @@ func (app *application) getShiftTemplateHandler(w http.ResponseWriter, r *http.R
 	}
 
 	// Get the shift template
-	template, err := app.store.ShiftTemplate.GetByID(r.Context(), templateID)
+	template, err := app.store.ShiftTemplates.GetByID(r.Context(), templateID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -285,7 +285,7 @@ func (app *application) updateShiftTemplateHandler(w http.ResponseWriter, r *htt
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -303,7 +303,7 @@ func (app *application) updateShiftTemplateHandler(w http.ResponseWriter, r *htt
 	}
 
 	// Get existing template
-	template, err := app.store.ShiftTemplate.GetByID(r.Context(), templateID)
+	template, err := app.store.ShiftTemplates.GetByID(r.Context(), templateID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -334,7 +334,7 @@ func (app *application) updateShiftTemplateHandler(w http.ResponseWriter, r *htt
 	// Update fields if provided
 	if payload.RoleID != nil {
 		// Check if role exists and belongs to this restaurant
-		role, err := app.store.Role.GetByID(r.Context(), *payload.RoleID)
+		role, err := app.store.Roles.GetByID(r.Context(), *payload.RoleID)
 		if err != nil {
 			if errors.Is(err, store.ErrNotFound) {
 				app.badRequestResponse(w, r, errors.New("role not found"))
@@ -389,7 +389,7 @@ func (app *application) updateShiftTemplateHandler(w http.ResponseWriter, r *htt
 	template.EndTime = endTime
 
 	// Save updates
-	if err := app.store.ShiftTemplate.Update(r.Context(), template); err != nil {
+	if err := app.store.ShiftTemplates.Update(r.Context(), template); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -430,7 +430,7 @@ func (app *application) deleteShiftTemplateHandler(w http.ResponseWriter, r *htt
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -448,7 +448,7 @@ func (app *application) deleteShiftTemplateHandler(w http.ResponseWriter, r *htt
 	}
 
 	// Get existing template to verify ownership
-	template, err := app.store.ShiftTemplate.GetByID(r.Context(), templateID)
+	template, err := app.store.ShiftTemplates.GetByID(r.Context(), templateID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -465,7 +465,7 @@ func (app *application) deleteShiftTemplateHandler(w http.ResponseWriter, r *htt
 	}
 
 	// Delete template
-	if err := app.store.ShiftTemplate.Delete(r.Context(), templateID); err != nil {
+	if err := app.store.ShiftTemplates.Delete(r.Context(), templateID); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
 			return

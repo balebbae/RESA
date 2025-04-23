@@ -45,7 +45,7 @@ func (app *application) getSchedulesHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -62,7 +62,7 @@ func (app *application) getSchedulesHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	schedules, err := app.store.Schedule.ListByRestaurant(r.Context(), restaurantID)
+	schedules, err := app.store.Schedules.ListByRestaurant(r.Context(), restaurantID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -99,7 +99,7 @@ func (app *application) createScheduleHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -152,7 +152,7 @@ func (app *application) createScheduleHandler(w http.ResponseWriter, r *http.Req
 		EndDate:      payload.EndDate,
 	}
 
-	if err := app.store.Schedule.Create(r.Context(), schedule); err != nil {
+	if err := app.store.Schedules.Create(r.Context(), schedule); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -193,7 +193,7 @@ func (app *application) getScheduleHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -211,7 +211,7 @@ func (app *application) getScheduleHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Get the schedule
-	schedule, err := app.store.Schedule.GetByID(r.Context(), scheduleID)
+	schedule, err := app.store.Schedules.GetByID(r.Context(), scheduleID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -265,7 +265,7 @@ func (app *application) updateScheduleHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -283,7 +283,7 @@ func (app *application) updateScheduleHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Get existing schedule
-	schedule, err := app.store.Schedule.GetByID(r.Context(), scheduleID)
+	schedule, err := app.store.Schedules.GetByID(r.Context(), scheduleID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -348,7 +348,7 @@ func (app *application) updateScheduleHandler(w http.ResponseWriter, r *http.Req
 	schedule.EndDate = endDate
 
 	// Save updates
-	if err := app.store.Schedule.Update(r.Context(), schedule); err != nil {
+	if err := app.store.Schedules.Update(r.Context(), schedule); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -389,7 +389,7 @@ func (app *application) deleteScheduleHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -407,7 +407,7 @@ func (app *application) deleteScheduleHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Get existing schedule to verify ownership
-	schedule, err := app.store.Schedule.GetByID(r.Context(), scheduleID)
+	schedule, err := app.store.Schedules.GetByID(r.Context(), scheduleID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -424,7 +424,7 @@ func (app *application) deleteScheduleHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Delete schedule
-	if err := app.store.Schedule.Delete(r.Context(), scheduleID); err != nil {
+	if err := app.store.Schedules.Delete(r.Context(), scheduleID); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
 			return
@@ -465,7 +465,7 @@ func (app *application) publishScheduleHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -483,7 +483,7 @@ func (app *application) publishScheduleHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	// Get existing schedule to verify ownership
-	schedule, err := app.store.Schedule.GetByID(r.Context(), scheduleID)
+	schedule, err := app.store.Schedules.GetByID(r.Context(), scheduleID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -507,7 +507,7 @@ func (app *application) publishScheduleHandler(w http.ResponseWriter, r *http.Re
 
 	// Publish schedule with current timestamp
 	publishTime := time.Now()
-	if err := app.store.Schedule.Publish(r.Context(), scheduleID, publishTime); err != nil {
+	if err := app.store.Schedules.Publish(r.Context(), scheduleID, publishTime); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

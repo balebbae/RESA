@@ -18,7 +18,7 @@ const userCtx userKey = "user"
 //	@Tags			users
 //	@Produce		json
 //	@Param			token	path		string	true	"Invitation token"
-//	@Success		204		{string}	string	"User activatied"
+//	@Success		204		{string}	string	"User activated"
 //	@Failure		404		{object}	error	
 //	@Failure		500		{object}	error
 //	@Security		ApiKeyAuth
@@ -26,7 +26,7 @@ const userCtx userKey = "user"
 func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
 	token := chi.URLParam(r, "token")
 
-	err := app.store.User.Activate(r.Context(), token)
+	err := app.store.Users.Activate(r.Context(), token)
 	if err != nil {
 		switch err {
 		case store.ErrNotFound:

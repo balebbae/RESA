@@ -48,7 +48,7 @@ func (app *application) getEmployeesHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -65,7 +65,7 @@ func (app *application) getEmployeesHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	employees, err := app.store.Employee.ListByRestaurant(r.Context(), restaurantID)
+	employees, err := app.store.Employees.ListByRestaurant(r.Context(), restaurantID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -102,7 +102,7 @@ func (app *application) createEmployeeHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -137,7 +137,7 @@ func (app *application) createEmployeeHandler(w http.ResponseWriter, r *http.Req
 		Email:        payload.Email,
 	}
 
-	if err := app.store.Employee.Create(r.Context(), employee); err != nil {
+	if err := app.store.Employees.Create(r.Context(), employee); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -178,7 +178,7 @@ func (app *application) getEmployeeHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -195,7 +195,7 @@ func (app *application) getEmployeeHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	employee, err := app.store.Employee.GetByID(r.Context(), employeeID)
+	employee, err := app.store.Employees.GetByID(r.Context(), employeeID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -249,7 +249,7 @@ func (app *application) updateEmployeeHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -267,7 +267,7 @@ func (app *application) updateEmployeeHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Get existing employee
-	employee, err := app.store.Employee.GetByID(r.Context(), employeeID)
+	employee, err := app.store.Employees.GetByID(r.Context(), employeeID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -305,7 +305,7 @@ func (app *application) updateEmployeeHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Save updates
-	if err := app.store.Employee.Update(r.Context(), employee); err != nil {
+	if err := app.store.Employees.Update(r.Context(), employee); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -346,7 +346,7 @@ func (app *application) deleteEmployeeHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -364,7 +364,7 @@ func (app *application) deleteEmployeeHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Get existing employee
-	employee, err := app.store.Employee.GetByID(r.Context(), employeeID)
+	employee, err := app.store.Employees.GetByID(r.Context(), employeeID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -381,7 +381,7 @@ func (app *application) deleteEmployeeHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Delete employee
-	if err := app.store.Employee.Delete(r.Context(), employeeID); err != nil {
+	if err := app.store.Employees.Delete(r.Context(), employeeID); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
 			return
@@ -424,7 +424,7 @@ func (app *application) addEmployeeRolesHandler(w http.ResponseWriter, r *http.R
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -442,7 +442,7 @@ func (app *application) addEmployeeRolesHandler(w http.ResponseWriter, r *http.R
 	}
 
 	// Check if employee exists and belongs to this restaurant
-	employee, err := app.store.Employee.GetByID(r.Context(), employeeID)
+	employee, err := app.store.Employees.GetByID(r.Context(), employeeID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -471,7 +471,7 @@ func (app *application) addEmployeeRolesHandler(w http.ResponseWriter, r *http.R
 
 	// Verify all roles exist and belong to this restaurant
 	for _, roleID := range payload.RoleIDs {
-		role, err := app.store.Role.GetByID(r.Context(), roleID)
+		role, err := app.store.Roles.GetByID(r.Context(), roleID)
 		if err != nil {
 			if errors.Is(err, store.ErrNotFound) {
 				app.badRequestResponse(w, r, errors.New("one or more roles do not exist"))
@@ -488,7 +488,7 @@ func (app *application) addEmployeeRolesHandler(w http.ResponseWriter, r *http.R
 	}
 
 	// Assign roles to employee
-	if err := app.store.Employee.AssignRoles(r.Context(), employeeID, payload.RoleIDs); err != nil {
+	if err := app.store.Employees.AssignRoles(r.Context(), employeeID, payload.RoleIDs); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -532,7 +532,7 @@ func (app *application) removeEmployeeRoleHandler(w http.ResponseWriter, r *http
 	}
 
 	// Check if restaurant exists and user has access to it
-	restaurant, err := app.store.Restaurant.GetByID(r.Context(), restaurantID)
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -550,7 +550,7 @@ func (app *application) removeEmployeeRoleHandler(w http.ResponseWriter, r *http
 	}
 
 	// Check if employee exists and belongs to this restaurant
-	employee, err := app.store.Employee.GetByID(r.Context(), employeeID)
+	employee, err := app.store.Employees.GetByID(r.Context(), employeeID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -566,7 +566,7 @@ func (app *application) removeEmployeeRoleHandler(w http.ResponseWriter, r *http
 	}
 
 	// Check if role exists and belongs to this restaurant
-	role, err := app.store.Role.GetByID(r.Context(), roleID)
+	role, err := app.store.Roles.GetByID(r.Context(), roleID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, err)
@@ -582,7 +582,7 @@ func (app *application) removeEmployeeRoleHandler(w http.ResponseWriter, r *http
 	}
 
 	// Remove role from employee
-	err = app.store.Employee.RemoveRole(r.Context(), employeeID, roleID)
+	err = app.store.Employees.RemoveRole(r.Context(), employeeID, roleID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundResponse(w, r, errors.New("employee does not have this role"))

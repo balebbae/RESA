@@ -103,8 +103,6 @@ func main() {
 		logger.Info("redis connection established")
 	}
 
-
-
 	store := store.NewStorage(db)
 	cacheStorage := cache.NewRedisStorage(rdb)
 

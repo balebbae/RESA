@@ -14,7 +14,7 @@ type ScheduleStore struct {
 	rdb *redis.Client
 }
 
-const ScheduleExpTime = time.Minute // TODO: Change to 1 hour
+const ScheduleExpTime = time.Hour // TODO: Change to 1 hour
 
 func (s *ScheduleStore) Get(ctx context.Context, id int64) (*store.Schedule, error) {
 	cacheKey := fmt.Sprintf("schedule-%v", id)

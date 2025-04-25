@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -99,14 +100,27 @@ func (app *application) getRestaurantHandler(w http.ResponseWriter, r *http.Requ
 	restaurantID := restaurant.ID
 	ctx := r.Context()
 
+	// Add debug info to investigate cache issues
+	app.logger.Debugw("Restaurant handler cache check", 
+		"redisCfg.enabled", app.config.redisCfg.enabled,
+		"cacheStorage.Restaurants is nil", app.cacheStorage.Restaurants == nil)
+
 	// Try to get from cache first if available
 	if app.config.redisCfg.enabled && app.cacheStorage.Restaurants != nil {
+		fmt.Println("Passes this condition")
+		app.logger.Debugw("trying to get from cache", "restaurant_id", restaurantID)
 		cachedRestaurant, err := app.cacheStorage.Restaurants.Get(ctx, restaurantID)
+		app.logger.Debugw("cache result", "err", err, "found", cachedRestaurant != nil)
 		if err == nil && cachedRestaurant != nil {
 			// Verify user ownership
 			user := getUserFromContext(r)
+			app.logger.Debugw("checking user ownership", 
+				"cachedRestaurant.UserID", cachedRestaurant.UserID, 
+				"user.ID", user.ID,
+				"match", cachedRestaurant.UserID == user.ID)
 			if cachedRestaurant.UserID == user.ID {
 				app.logger.Debugw("cache hit for restaurant", "restaurant_id", restaurantID)
+				fmt.Println("CACHE HIT")
 				err = app.jsonResponse(w, http.StatusOK, cachedRestaurant)
 				if err != nil {
 					app.internalServerError(w, r, err)
@@ -233,6 +247,16 @@ func (app *application) deleteRestaurantHandler(w http.ResponseWriter, r *http.R
 
 	ctx := r.Context()
 
+	// Delete from cache before deleting from database
+	if app.config.redisCfg.enabled && app.cacheStorage.Restaurants != nil {
+		err := app.cacheStorage.Restaurants.Delete(ctx, id)
+		if err != nil {
+			app.logger.Warnw("failed to delete restaurant from cache", "restaurant_id", id, "error", err)
+		} else {
+			app.logger.Debugw("deleted restaurant from cache", "restaurant_id", id)
+		}
+	}
+
 	err = app.store.Restaurants.Delete(ctx, id)
 	if err != nil {
 		switch {
@@ -243,8 +267,6 @@ func (app *application) deleteRestaurantHandler(w http.ResponseWriter, r *http.R
 		}
 		return
 	}
-
-	// Note: We would need to add a Delete method to the cache interface to remove from cache
 
 	w.WriteHeader(http.StatusNoContent)
 }

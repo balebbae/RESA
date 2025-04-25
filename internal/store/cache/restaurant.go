@@ -14,7 +14,7 @@ type RestaurantStore struct {
 	rdb *redis.Client
 }
 
-const RestaurantExpTime = time.Minute // TODO: Change to 1 hour
+const RestaurantExpTime = time.Hour // TODO: Change to 1 hour
 
 func (s *RestaurantStore) Get(ctx context.Context, id int64) (*store.Restaurant, error) {
 	cacheKey := fmt.Sprintf("restaurant-%v", id)

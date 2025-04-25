@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"time"
 
@@ -101,10 +102,28 @@ func main() {
 	if cfg.redisCfg.enabled {
 		rdb = cache.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.password, cfg.redisCfg.db)
 		logger.Info("redis connection established")
+
+		defer rdb.Close()
+
+		// Test Redis connection
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		
+		_, err := rdb.Ping(ctx).Result()
+		if err != nil {
+			logger.Errorw("Failed to connect to Redis", "error", err)
+			cfg.redisCfg.enabled = false
+		}
 	}
 
 	store := store.NewStorage(db)
-	cacheStorage := cache.NewRedisStorage(rdb)
+	var cacheStorage cache.Storage
+	if cfg.redisCfg.enabled && rdb != nil {
+		cacheStorage = cache.NewRedisStorage(rdb)
+		logger.Infow("Redis cache enabled", 
+			"addr", cfg.redisCfg.addr,
+			"restaurants_nil", cacheStorage.Restaurants == nil)
+	}
 
 	mailer := mailer.NewSendGrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
 

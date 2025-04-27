@@ -12,7 +12,9 @@ import (
 
 	"github.com/balebbae/RESA/docs" // This is required to genearte swagger docs
 	"github.com/balebbae/RESA/internal/auth"
+	"github.com/balebbae/RESA/internal/env"
 	"github.com/balebbae/RESA/internal/mailer"
+	"github.com/balebbae/RESA/internal/ratelimiter"
 	"github.com/balebbae/RESA/internal/store"
 	"github.com/balebbae/RESA/internal/store/cache"
 	"go.uber.org/zap"
@@ -30,6 +32,7 @@ type application struct {
 	logger *zap.SugaredLogger
 	mailer mailer.Client
 	authenticator auth.Authenticator
+	rateLimiter ratelimiter.Limiter
 }
 
 type config struct {
@@ -41,6 +44,7 @@ type config struct {
 	frontendURL string
 	auth authConfig
 	redisCfg redisConfig
+	rateLimiter ratelimiter.Config
 }
 
 type redisConfig struct {
@@ -90,20 +94,23 @@ func (app *application) mount() http.Handler {
   	r.Use(middleware.RealIP)
   	r.Use(middleware.Logger)
   	r.Use(middleware.Recoverer)
+	  
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{env.GetString("CORS_ALLOWED_ORIGIN", "http://localhost:3000")},
+		
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
+	
+	if app.config.rateLimiter.Enabled {
+		r.Use(app.RateLimiterMiddleware)
+	}	
 
 	r.Use(middleware.Timeout(60 * time.Second))
-
-	// Enable CORS
-    r.Use(cors.Handler(cors.Options{
-        AllowedOrigins:   []string{app.config.frontendURL},
-
-        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-        AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-        ExposedHeaders:   []string{"Link"},
-        AllowCredentials: false,
-        MaxAge:           300,
-    }))
-
+	
 	r.Route("/v1", func(r chi.Router) {
 		// ───── Public + basic‑auth ─────────────────────────
 		r.With(app.BasicAuthMiddleware()).Get("/health", app.healthCheckHandler) // Basic auth middleware

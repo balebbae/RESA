@@ -3,7 +3,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/balebbae/RESA/internal/db"
 	"github.com/balebbae/RESA/internal/env"
 	"github.com/balebbae/RESA/internal/mailer"
+	"github.com/balebbae/RESA/internal/ratelimiter"
 	"github.com/balebbae/RESA/internal/store"
 	"github.com/balebbae/RESA/internal/store/cache"
 	"github.com/go-redis/redis/v8"
@@ -77,6 +77,11 @@ func main() {
 				iss: "RESA",
 			},
 		},
+		rateLimiter: ratelimiter.Config{
+			RequestPerTimeFrame: env.GetInt("RATELIMITER_REQUESTS_COUNT", 20),
+			TimeFrame: time.Second * 5,
+			Enabled: env.GetBool("RATE_LIMITER_ENABLED", true),
+		},
 	}
 
 	logger := zap.Must(zap.NewProduction()).Sugar()
@@ -104,17 +109,13 @@ func main() {
 		logger.Info("redis connection established")
 
 		defer rdb.Close()
-
-		// Test Redis connection
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		
-		_, err := rdb.Ping(ctx).Result()
-		if err != nil {
-			logger.Errorw("Failed to connect to Redis", "error", err)
-			cfg.redisCfg.enabled = false
-		}
 	}
+
+	// Rate limiter
+	rateLimiter := ratelimiter.NewFixedWindowLimiter(
+		cfg.rateLimiter.RequestPerTimeFrame,
+		cfg.rateLimiter.TimeFrame,
+	)
 
 	store := store.NewStorage(db)
 	var cacheStorage cache.Storage
@@ -140,6 +141,7 @@ func main() {
 		logger: logger,
 		mailer: mailer,
 		authenticator: jwtAuthenticator,
+		rateLimiter: rateLimiter,
 	}
 
 	mux := app.mount()

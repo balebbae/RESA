@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"expvar"
 	"fmt"
 	"net/http"
 	"os"
@@ -113,7 +114,10 @@ func (app *application) mount() http.Handler {
 	
 	r.Route("/v1", func(r chi.Router) {
 		// ───── Public + basic‑auth ─────────────────────────
+
+		// operations
 		r.With(app.BasicAuthMiddleware()).Get("/health", app.healthCheckHandler) // Basic auth middleware
+		r.With(app.BasicAuthMiddleware()).Get("/debug/vars", expvar.Handler().ServeHTTP)
 
 		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
 		r.With(app.BasicAuthMiddleware()).Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL))) // Basic auth middleware

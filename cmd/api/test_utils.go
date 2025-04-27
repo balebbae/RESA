@@ -14,8 +14,8 @@ import (
 func newTestApplication(t *testing.T) *application {
 	t.Helper()
 
-	logger := zap.Must(zap.NewProduction()).Sugar()
-	// logger := zap.NewNop().Sugar()
+	// logger := zap.Must(zap.NewProduction()).Sugar()
+	logger := zap.NewNop().Sugar()
 	mockStore := store.NewMockStore()
 	mockCacheStore := cache.NewMockStore()
 	testAuth := &auth.TestAuthenticator{}

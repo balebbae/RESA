@@ -19,6 +19,7 @@ func NewJWTAuthenticator(secret, aud, iss string) *JWTAuthenticator {
 
 func (a *JWTAuthenticator) GenerateToken(claims jwt.Claims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
 	tokenString, err := token.SignedString([]byte(a.secret))
 	if err != nil {
 		return "", err
@@ -35,9 +36,9 @@ func (a *JWTAuthenticator) ValidateToken(token string) (*jwt.Token, error) {
 
 		return []byte(a.secret), nil
 	},
-	jwt.WithExpirationRequired(),
-	jwt.WithAudience(a.aud),
-	jwt.WithIssuer(a.iss),
-	jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name}),
-)
+		jwt.WithExpirationRequired(),
+		jwt.WithAudience(a.aud),
+		jwt.WithIssuer(a.aud),
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name}),
+	)
 }

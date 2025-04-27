@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/balebbae/RESA/docs" // This is required to genearte swagger docs
@@ -224,7 +229,35 @@ func (app *application) run(mux http.Handler) error {
 		IdleTimeout: time.Minute,
 	}
 
-		app.logger.Infow("server has started", "addr", app.config.addr, "env", app.config.env)
+	shutdown := make(chan error)
 
-	return server.ListenAndServe()
+	go func () {
+		quit := make(chan os.Signal, 1)
+
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		s := <-quit
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5 *time.Second)
+		defer cancel()
+
+		app.logger.Infow("server caught", "signal", s.String())
+
+		shutdown <- server.Shutdown(ctx)
+	}()
+
+	app.logger.Infow("server has started", "addr", app.config.addr, "env", app.config.env)
+
+	err := server.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <-shutdown
+	if err != nil {
+		return err
+	}
+
+	app.logger.Infow("server has stopped", "addr", app.config.addr, "env", app.config.env)
+
+	return nil
 }

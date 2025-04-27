@@ -25,7 +25,7 @@ func (a *TestAuthenticator) GenerateToken(claims jwt.Claims) (string, error) {
 }
 
 func (a *TestAuthenticator) ValidateToken(token string) (*jwt.Token, error) {
-	return jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+	return jwt.Parse(token, func(t *jwt.Token) (any, error) {
 		return []byte(secret), nil
 	})
 }

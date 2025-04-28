@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Version automatically updated
 const version = "0.0.1"
 
 //	@title			RESA API

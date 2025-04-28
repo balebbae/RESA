@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/balebbae/RESA/compare/v1.1.1...v1.1.2) (2025-04-28)
+
+
+### Bug Fixes
+
+* var to const in updating api version ([f678e46](https://github.com/balebbae/RESA/commit/f678e467c1e1b238c8eb454dd590b22062bb6a69))
+
 ## [1.1.1](https://github.com/balebbae/RESA/compare/v1.1.0...v1.1.1) (2025-04-28)
 
 

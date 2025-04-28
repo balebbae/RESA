@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/balebbae/RESA/compare/v1.1.0...v1.1.1) (2025-04-28)
+
+
+### Bug Fixes
+
+* test ([7fe3e8b](https://github.com/balebbae/RESA/commit/7fe3e8b1f97aedc7168a41e7fb873b50e3ca9b76))
+* update api version automatically ([6842b9a](https://github.com/balebbae/RESA/commit/6842b9ad5f9dbb080cddac79cef7a0cc0c0fdbc3))
+
 ## [1.1.0](https://github.com/balebbae/RESA/compare/v1.0.0...v1.1.0) (2025-04-28)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/balebbae/RESA/compare/v1.0.0...v1.1.0) (2025-04-28)
+
+
+### Features
+
+* test ([0f028f2](https://github.com/balebbae/RESA/commit/0f028f24f35ae47607798e16d4393b45e8a2d64b))
+
 ## 1.0.0 (2025-04-27)
 
 

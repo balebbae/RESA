@@ -21,7 +21,7 @@ import (
 )
 
 // Version automatically updated
-const version = "0.0.1"
+const version = "1.1.2"
 
 //	@title			RESA API
 //	@description	API for Restaurant Employee Scheduling Application (RESA)

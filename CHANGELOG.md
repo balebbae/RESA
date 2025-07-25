@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0](https://github.com/balebbae/RESA/compare/v1.1.2...v1.2.0) (2025-07-25)
+
+
+### Features
+
+* basic layout frontend ([356a05c](https://github.com/balebbae/RESA/commit/356a05c18b0a977e5d6ac15a35315f680617fa8c))
+* hero page ([3ccde86](https://github.com/balebbae/RESA/commit/3ccde86fe95a5c1abab71a4103c9deaaa69c94df))
+
+
+### Bug Fixes
+
+* github workflow ([70bc351](https://github.com/balebbae/RESA/commit/70bc3517e926d31e58317dcd944f16b859f5f9ba))
+* github workflow ([55962de](https://github.com/balebbae/RESA/commit/55962de7cbef50dee2bcfb14cdde4a880a846b92))
+
 ## [1.1.2](https://github.com/balebbae/RESA/compare/v1.1.1...v1.1.2) (2025-04-28)
 
 

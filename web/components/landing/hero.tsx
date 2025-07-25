@@ -41,47 +41,64 @@ const Hero = React.forwardRef<HTMLDivElement, HeroProps>(
         <HeroHeader />
         <div
           ref={ref}
-          className={cn("flex flex-col items-center bg-[#f3f1ea]", className)}
+          className={cn(
+            "flex flex-col items-center bg-[#f3f1ea] relative",
+            className
+          )}
           {...props}
         >
-          {eyebrow && (
-            <p className="font-sans uppercase tracking-[0.3em] sm:tracking-[0.4em] md:tracking-[0.51em] leading-[133%] text-center text-[14px] sm:text-[16px] md:text-[19px] mt-[100px] sm:mt-[150px] md:mt-[200px] lg:mt-[249px] mb-4 sm:mb-6 md:mb-8 text-[#000000] animate-appear opacity-0">
-              {eyebrow}
-            </p>
-          )}
+          <div
+            className="absolute inset-0 z-0"
+            style={{
+              backgroundImage: "url('/heroBackground.png')",
+              backgroundSize: "55%",
+              backgroundPosition: "center 10%",
+              backgroundRepeat: "no-repeat",
+              filter: "brightness(0.8)",
+            }}
+          />
+          {/* Background overlay for better text readability */}
+          <div className="absolute inset-0 bg-[#f3f1ea]/70 z-0"></div>
+          <div className="relative z-10 w-full flex flex-col items-center">
+            {eyebrow && (
+              <p className="font-sans uppercase tracking-[0.3em] sm:tracking-[0.4em] md:tracking-[0.51em] leading-[133%] text-center text-[14px] sm:text-[16px] md:text-[19px] mt-[100px] sm:mt-[150px] md:mt-[200px] lg:mt-[249px] mb-4 sm:mb-6 md:mb-8 text-[#000000] animate-appear opacity-0">
+                {eyebrow}
+              </p>
+            )}
 
-          <h1 className="text-[32px] sm:text-[48px] md:text-[56px] lg:text-[64px] leading-tight sm:leading-[60px] md:leading-[70px] lg:leading-[83px] text-center px-4 sm:px-8 md:px-16 lg:px-[314px] text-[#000000] animate-appear opacity-0 delay-100">
-            {title}
-          </h1>
+            <h1 className="text-[32px] sm:text-[48px] md:text-[56px] lg:text-[64px] leading-tight sm:leading-[60px] md:leading-[70px] lg:leading-[83px] text-center px-4 sm:px-8 md:px-16 lg:px-[314px] text-[#000000] animate-appear opacity-0 delay-100">
+              {title}
+            </h1>
 
-          {subtitle && (
-            <p className="text-[18px] sm:text-[22px] md:text-[26px] lg:text-[28px] text-center font-sans font-light px-4 sm:px-8 md:px-16 lg:px-[314px] mt-[15px] sm:mt-[20px] md:mt-[25px] mb-[24px] sm:mb-[36px] md:mb-[48px] leading-[133%] text-[#000000] animate-appear opacity-0 delay-300">
-              {subtitle}
-            </p>
-          )}
+            {subtitle && (
+              <p className="text-[18px] sm:text-[22px] md:text-[26px] lg:text-[28px] text-center font-sans font-light px-4 sm:px-8 md:px-16 lg:px-[314px] mt-[15px] sm:mt-[20px] md:mt-[25px] mb-[24px] sm:mb-[36px] md:mb-[48px] leading-[133%] text-[#000000] animate-appear opacity-0 delay-300">
+                {subtitle}
+              </p>
+            )}
 
-          {ctaText && ctaLink && (
-            <Link href={ctaLink}>
-              <div className="inline-flex items-center justify-center bg-[#000000] text-[#ffffff] rounded-xl hover:bg-[#000000]/90 transition-colors font-sans w-[160px] sm:w-[170px] md:w-[180px] h-[48px] sm:h-[50px] md:h-[52px] animate-appear opacity-0 delay-500 gap-[8px] sm:gap-[10px] md:gap-[12px] px-[16px] sm:px-[18px] md:px-[20px]">
-                <span className="text-[16px] sm:text-[17px] md:text-[19px] whitespace-nowrap flex items-center">
-                  {ctaText}
-                </span>
+            {ctaText && ctaLink && (
+              <Link href={ctaLink}>
+                <div className="inline-flex items-center justify-center bg-[#000000] text-[#ffffff] rounded-xl hover:bg-[#000000]/90 transition-colors font-sans w-[160px] sm:w-[170px] md:w-[180px] h-[48px] sm:h-[50px] md:h-[52px] animate-appear opacity-0 delay-500 gap-[8px] sm:gap-[10px] md:gap-[12px] px-[16px] sm:px-[18px] md:px-[20px]">
+                  <span className="text-[16px] sm:text-[17px] md:text-[19px] whitespace-nowrap flex items-center">
+                    {ctaText}
+                  </span>
+                </div>
+              </Link>
+            )}
+
+            {mockupImage && (
+              <div className="mt-10 sm:mt-16 md:mt-20 w-full relative animate-appear opacity-0 delay-700 flex justify-center px-4 sm:px-6 md:px-8">
+                <Image
+                  src={mockupImage.src}
+                  alt={mockupImage.alt}
+                  width={mockupImage.width}
+                  height={mockupImage.height}
+                  className="w-full max-w-sm sm:max-w-md md:max-w-4xl lg:max-w-6xl rounded-lg border border-black"
+                  priority
+                />
               </div>
-            </Link>
-          )}
-
-          {mockupImage && (
-            <div className="mt-10 sm:mt-16 md:mt-20 w-full relative animate-appear opacity-0 delay-700 flex justify-center px-4 sm:px-6 md:px-8">
-              <Image
-                src={mockupImage.src}
-                alt={mockupImage.alt}
-                width={mockupImage.width}
-                height={mockupImage.height}
-                className="w-full max-w-sm sm:max-w-md md:max-w-4xl lg:max-w-6xl rounded-lg border border-black"
-                priority
-              />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </>
     );
@@ -224,4 +241,38 @@ const Logo = ({ className }: { className?: string }) => {
   );
 };
 
-export { Hero };
+const HeroSection = () => {
+  return (
+    <Hero
+      eyebrow="INTRODUCING RESA MANAGEMENT"
+      title={
+        <>
+          <div className="whitespace-nowrap">
+            <span className="font-serif font-normal">AI management, </span>
+            <span className="font-serif font-normal italic">seamlessly </span>
+            <span className="font-serif font-normal">connected</span>
+          </div>
+          <div className="font-serif font-normal">to your restaurant</div>
+        </>
+      }
+      subtitle={
+        <>
+          <span className="font-bold">R</span>estaurant{" "}
+          <span className="font-bold">E</span>mployee{" "}
+          <span className="font-bold">S</span>cheduling{" "}
+          <span className="font-bold">A</span>pplication
+        </>
+      }
+      ctaText="Join Waitlist"
+      ctaLink="/hero-demo"
+      mockupImage={{
+        src: "/dashboard.png",
+        alt: "RESA Dashboard Interface",
+        width: 1274,
+        height: 1043,
+      }}
+    />
+  );
+};
+
+export default HeroSection;

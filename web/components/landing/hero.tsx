@@ -42,7 +42,7 @@ const Hero = React.forwardRef<HTMLDivElement, HeroProps>(
         <div
           ref={ref}
           className={cn(
-            "flex flex-col items-center bg-[#f3f1ea] relative",
+            "flex flex-col items-center bg-brand-background relative",
             className
           )}
           {...props}
@@ -57,8 +57,14 @@ const Hero = React.forwardRef<HTMLDivElement, HeroProps>(
               filter: "brightness(0.8)",
             }}
           />
+          {/* Gradient background effect */}
+          <div className="flex flex-col items-end absolute right-60 top-10 blur-xl z-0">
+            <div className="h-[10rem] rounded-full w-[60rem] z-1 bg-gradient-to-b blur-[6rem] from-purple-600 to-sky-600"></div>
+            <div className="h-[10rem] rounded-full w-[90rem] z-1 bg-gradient-to-b blur-[6rem] from-pink-900 to-yellow-400"></div>
+            <div className="h-[10rem] rounded-full w-[60rem] z-1 bg-gradient-to-b blur-[6rem] from-yellow-600 to-sky-500"></div>
+          </div>
           {/* Background overlay for better text readability */}
-          <div className="absolute inset-0 bg-[#f3f1ea]/70 z-0"></div>
+          <div className="absolute inset-0 bg-brand-background/70 z-0"></div>
           <div className="relative z-10 w-full flex flex-col items-center">
             {eyebrow && (
               <p className="font-sans uppercase tracking-[0.3em] sm:tracking-[0.4em] md:tracking-[0.51em] leading-[133%] text-center text-[14px] sm:text-[16px] md:text-[19px] mt-[100px] sm:mt-[150px] md:mt-[200px] lg:mt-[249px] mb-4 sm:mb-6 md:mb-8 text-[#000000] animate-appear opacity-0">
@@ -93,7 +99,7 @@ const Hero = React.forwardRef<HTMLDivElement, HeroProps>(
                   alt={mockupImage.alt}
                   width={mockupImage.width}
                   height={mockupImage.height}
-                  className="w-full max-w-sm sm:max-w-md md:max-w-4xl lg:max-w-6xl rounded-lg border border-black"
+                  className="w-full max-h-full max-w-sm sm:max-w-sm md:max-w-4xl lg:max-w-6xl rounded-lg border border-black"
                   priority
                 />
               </div>
@@ -164,7 +170,7 @@ const HeroHeader = () => {
                   <li key={index}>
                     <Link
                       href={item.href}
-                      className="text-muted-foreground hover:text-accent-foreground block duration-150"
+                      className="text-muted-foreground hover:text-accent-foreground text-slate-600 block duration-150"
                     >
                       <span>{item.name}</span>
                     </Link>
@@ -180,7 +186,7 @@ const HeroHeader = () => {
                     <li key={index}>
                       <Link
                         href={item.href}
-                        className="text-muted-foreground hover:text-accent-foreground block duration-150"
+                        className="text-muted-foreground hover:text-accent-foreground text-slate-600 block duration-150"
                       >
                         <span>{item.name}</span>
                       </Link>
@@ -213,7 +219,7 @@ const HeroHeader = () => {
                   size="sm"
                   className={cn(isScrolled ? "lg:inline-flex" : "hidden")}
                 >
-                  <Link href="#">
+                  <Link href="/waitlist">
                     <span>Join Waitlist</span>
                   </Link>
                 </Button>
@@ -227,6 +233,15 @@ const HeroHeader = () => {
 };
 
 const Logo = ({ className }: { className?: string }) => {
+  const [shouldSpin, setShouldSpin] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setShouldSpin(true);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <Image
       src="/logo.svg"
@@ -235,8 +250,15 @@ const Logo = ({ className }: { className?: string }) => {
       height={32}
       className={cn(
         "h-8 w-8 hover:rotate-[360deg] transition-transform duration-500",
+        shouldSpin && "animate-spin",
         className
       )}
+      style={
+        shouldSpin
+          ? { animationDuration: "1s", animationIterationCount: "1" }
+          : undefined
+      }
+      onAnimationEnd={() => setShouldSpin(false)}
     />
   );
 };
@@ -264,12 +286,12 @@ const HeroSection = () => {
         </>
       }
       ctaText="Join Waitlist"
-      ctaLink="/hero-demo"
+      ctaLink="/waitlist"
       mockupImage={{
         src: "/dashboard.png",
         alt: "RESA Dashboard Interface",
-        width: 1274,
-        height: 1043,
+        width: 900,
+        height: 740,
       }}
     />
   );

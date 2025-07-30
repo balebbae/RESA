@@ -1,62 +1,54 @@
-import { motion } from 'framer-motion'
-import { QuoteIcon } from 'lucide-react';
-import React from 'react'
-import { Card } from '../ui/card';
+"use client";
+import React from "react";
+import { motion } from "framer-motion";
+import {
+  TestimonialsColumn,
+  testimonials,
+} from "@/components/ui/testimonials-columns-1";
 
-function TestimonialSection() {
+const firstColumn = testimonials.slice(0, 3);
+const secondColumn = testimonials.slice(3, 6);
+const thirdColumn = testimonials.slice(6, 9);
+
+const TestimonialSection = () => {
   return (
-    <motion.section
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5, delay: 0.8 }}
-      className="w-full py-12 md:py-24 lg:py-32 bg-muted"
-    >
-      <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6 lg:gap-10">
-        <div className="space-y-3">
-          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-            User Experiences with Framer Motion
+    <section className="bg-brand-background my-20 relative">
+      <div className="container z-10 mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          viewport={{ once: true }}
+          className="flex flex-col items-center justify-center max-w-[540px] mx-auto"
+        >
+          <div className="flex justify-center">
+            <div className="border py-1 px-4 rounded-lg">Testimonials</div>
+          </div>
+
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tighter mt-5">
+            What our users say
           </h2>
-          <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-            Read how Framer Motion has enabled designers and developers to
-            create more dynamic and engaging user interfaces.
+          <p className="text-center mt-5 opacity-75">
+            See what our customers have to say about us.
           </p>
-        </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <TestimonialCard
-            quote="Framer Motion has been a game-changer for our UI designs, making animations smoother and more intuitive."
-            author="Sarah Johnson"
-            role="Lead Designer, TechCorp"
+        </motion.div>
+
+        <div className="flex justify-center gap-6 mt-10 [mask-image:linear-gradient(to_bottom,transparent,black_25%,black_75%,transparent)] max-h-[740px] overflow-hidden">
+          <TestimonialsColumn testimonials={firstColumn} duration={15} />
+          <TestimonialsColumn
+            testimonials={secondColumn}
+            className="hidden md:block"
+            duration={19}
           />
-          <TestimonialCard
-            quote="Integrating Framer Motion into our workflow has simplified the animation process, making it accessible to our entire team."
-            author="Michael Chen"
-            role="Senior Developer, InnovateTech"
-          />
-          <TestimonialCard
-            quote="The ability to export animations as SVGs has streamlined our design-to-development process significantly."
-            author="Emily Rodriguez"
-            role="Creative Director, DesignMasters"
+          <TestimonialsColumn
+            testimonials={thirdColumn}
+            className="hidden lg:block"
+            duration={17}
           />
         </div>
       </div>
-    </motion.section>
-  )
-}
+    </section>
+  );
+};
 
-export default TestimonialSection
-
-// @ts-ignore
-function TestimonialCard({ quote, author, role }) {
-    return (
-      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-        <Card className="flex flex-col items-center justify-center gap-4 rounded-lg border bg-background p-6 shadow-sm transition-all hover:shadow-md">
-          <QuoteIcon className="h-12 w-12 text-muted-foreground" />
-          <p className="text-muted-foreground italic">"{quote}"</p>
-          <div>
-            <p className="font-semibold">{author}</p>
-            <p className="text-sm text-muted-foreground">{role}</p>
-          </div>
-        </Card>
-      </motion.div>
-    );
-  }
+export default TestimonialSection;

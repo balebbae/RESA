@@ -305,7 +305,7 @@ func (app *application) deleteScheduledShiftHandler(w http.ResponseWriter, r *ht
 	}
 
 	message := map[string]string{"message": "scheduled shift deleted"}
-	app.jsonResponse(w, http.StatusOK, message)
+	app.jsonResponse(w, http.StatusNoContent, message)
 }
 
 // assignEmployeeToShiftHandler godoc
@@ -402,3 +402,4 @@ func (app *application) unassignEmployeeFromShiftHandler(w http.ResponseWriter, 
 
 	app.jsonResponse(w, http.StatusOK, shift)
 }
+

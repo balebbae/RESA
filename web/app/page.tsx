@@ -15,10 +15,10 @@ export default function Component() {
       <div className="absolute inset-0 z-0 bg-noise opacity-10"></div>
       <main className="flex-1 w-full">
         <HeroSection />
-        <CustomersSectionDemo />
-        <AboutUsSection />
-        <TestimonialSection />
-        <Gallery4Demo />
+        {/* <CustomersSectionDemo /> */}
+        {/* <AboutUsSection /> */}
+        {/* <TestimonialSection /> */}
+        {/* <Gallery4Demo /> */}
         <PricingSection />
       </main>
       <div className="bg-brand-background">

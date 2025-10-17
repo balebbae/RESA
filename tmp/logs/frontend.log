@@ -1,0 +1,35 @@
+
+> frontend@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.5.5 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.4.137:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1201ms
+ ○ Compiling / ...
+ ✓ Compiled / in 3s
+ GET / 200 in 3489ms
+ ✓ Compiled in 158ms
+ ✓ Compiled in 212ms
+ ✓ Compiled in 173ms
+ ✓ Compiled /login in 373ms
+Error: Route "/login" used `searchParams.notice`. `searchParams` should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at LoginPage (app/login/page.tsx:8:25)
+   6 |
+   7 | export default function LoginPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+>  8 |   const notice = typeof searchParams?.notice === "string" ? searchParams?.notice : undefined
+     |                         ^
+   9 |   return (
+  10 |     <div className="grid min-h-svh lg:grid-cols-2">
+  11 |       <div className="flex flex-col gap-4 p-6 md:p-10">
+ GET /login 200 in 516ms
+ ○ Compiling /home ...
+ ✓ Compiled /home in 728ms
+ GET /home 200 in 846ms
+ ✓ Compiled /_not-found/page in 247ms
+ GET /avatars/shadcn.jpg 404 in 318ms
+ GET /avatars/shadcn.jpg 404 in 65ms
+ GET /avatars/shadcn.jpg 404 in 64ms

@@ -1,0 +1,66 @@
+
+  __    _   ___  
+ / /\  | | | |_) 
+/_/--\ |_| |_| \_ v1.61.7, built with Go go1.23.1
+
+watching .
+!exclude bin
+watching cmd
+watching cmd/api
+watching cmd/migrate
+watching cmd/migrate/migrations
+watching context
+!exclude docs
+watching internal
+watching internal/auth
+watching internal/db
+watching internal/env
+watching internal/mailer
+watching internal/mailer/template
+watching internal/ratelimiter
+watching internal/store
+watching internal/store/cache
+watching tmp
+> make gen-docs
+2025/10/16 19:58:19 Generate swagger docs....
+2025/10/16 19:58:19 Generate general API Info, search dir:cmd
+2025/10/16 19:58:19 warning: failed to get package name in dir: cmd, error: execute go list command, exit status 1, stdout:, stderr:no Go files in /Users/baecal000/programming/RESA/backend/cmd
+2025/10/16 19:58:19 Generate general API Info, search dir:internal
+2025/10/16 19:58:19 warning: failed to get package name in dir: internal, error: execute go list command, exit status 1, stdout:, stderr:no Go files in /Users/baecal000/programming/RESA/backend/internal
+2025/10/16 19:58:19 Generating main.RegisterUserPayload
+2025/10/16 19:58:19 Generating main.UserWithToken
+2025/10/16 19:58:19 Generating store.User
+2025/10/16 19:58:19 Generating main.CreateUserTokenPayload
+2025/10/16 19:58:19 Generating store.Employee
+2025/10/16 19:58:19 Generating main.CreateEmployeePayload
+2025/10/16 19:58:19 Generating main.UpdateEmployeePayload
+2025/10/16 19:58:19 Generating main.AddEmployeeRolesPayload
+2025/10/16 19:58:19 Generating main.CreateRestaurantPayload
+2025/10/16 19:58:19 Generating store.Restaurant
+2025/10/16 19:58:19 Generating main.UpdateRestaurantPayload
+2025/10/16 19:58:19 Generating store.Role
+2025/10/16 19:58:19 Generating main.CreateRolePayload
+2025/10/16 19:58:19 Generating main.UpdateRolePayload
+2025/10/16 19:58:19 Generating store.ScheduledShift
+2025/10/16 19:58:19 Generating main.createScheduledShiftRequest
+2025/10/16 19:58:19 Generating main.updateScheduledShiftRequest
+2025/10/16 19:58:19 Generating main.assignEmployeeRequest
+2025/10/16 19:58:19 Generating store.Schedule
+2025/10/16 19:58:19 Generating main.CreateSchedulePayload
+2025/10/16 19:58:19 Generating main.UpdateSchedulePayload
+2025/10/16 19:58:19 Generating store.ShiftTemplate
+2025/10/16 19:58:19 Generating main.CreateShiftTemplatePayload
+2025/10/16 19:58:19 Generating main.UpdateShiftTemplatePayload
+2025/10/16 19:58:19 create docs.go at docs/docs.go
+2025/10/16 19:58:19 create swagger.json at docs/swagger.json
+2025/10/16 19:58:19 create swagger.yaml at docs/swagger.yaml
+building...
+running...
+{"level":"info","ts":1760669903.000623,"caller":"api/main.go:106","msg":"db connection established"}
+{"level":"info","ts":1760669903.000927,"caller":"api/main.go:112","msg":"redis connection established"}
+{"level":"info","ts":1760669903.000947,"caller":"api/main.go:127","msg":"Redis cache enabled","addr":"localhost:6379","restaurants_nil":false}
+{"level":"info","ts":1760669903.0011961,"caller":"api/api.go:259","msg":"server has started","addr":":8080","env":"production"}
+2025/10/16 20:05:28 [Calebs-MacBook-Air.local/g4PivEmLn1-000001] "OPTIONS http://localhost:8080/v1/authentication/token HTTP/1.1" from [::1]:49354 - 200 0B in 901.792µs
+{"level":"warn","ts":1760670328.345953,"caller":"api/errors.go:43","msg":"unauthorized error%!(EXTRA string=method, string=POST, string=path, string=/v1/authentication/token, string=error, string=crypto/bcrypt: hashedPassword is not the hash of the given password)"}
+2025/10/16 20:05:28 [Calebs-MacBook-Air.local/g4PivEmLn1-000002] "POST http://localhost:8080/v1/authentication/token HTTP/1.1" from [::1]:49354 - 401 25B in 145.140084ms
+2025/10/16 20:05:39 [Calebs-MacBook-Air.local/g4PivEmLn1-000003] "POST http://localhost:8080/v1/authentication/token HTTP/1.1" from [::1]:49357 - 201 209B in 94.94325ms

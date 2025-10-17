@@ -2,6 +2,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'backend/**'
 
 permissions:
   contents: write
@@ -17,3 +19,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: simple
+          path: backend

@@ -13,6 +13,14 @@ migrate-up:
 migrate-down:
 	@migrate -path=$(MIGRATIONS_PATH) -database=$(DB_ADDR) down
 
+.PHONY: migrate-force-0
+migrate-force-0:
+	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_ADDR)" force 0
+
+.PHONY: migrate-force-1
+migrate-force-1:
+	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_ADDR)" force 1
+
 .PHONY: seed
 seed: 
 	@go run cmd/migrate/seed/main.go

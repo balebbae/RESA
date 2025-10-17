@@ -1,29 +1,18 @@
-"use client";
+import { Hero } from "@/components/marketing/Hero";
+import { Navbar } from "@/components/marketing/Navbar";
 
-import React from "react";
-import PricingSection from "@/components/landing/pricing-section";
-import TestimonialSection from "@/components/landing/testimonial-section";
-import SiteFooter from "@/components/landing/site-footer";
-import HeroSection from "@/components/landing/hero";
-import AboutUsSection from "@/components/landing/about-us-section";
-import { CustomersSectionDemo } from "@/components/customers-demo";
-import { Gallery4Demo } from "@/components/gallery-demo";
-
-export default function Component() {
+export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-brand-background w-full overflow-x-hidden">
-      <div className="absolute inset-0 z-0 bg-noise opacity-10"></div>
-      <main className="flex-1 w-full">
-        <HeroSection />
-        {/* <CustomersSectionDemo /> */}
-        {/* <AboutUsSection /> */}
-        {/* <TestimonialSection /> */}
-        {/* <Gallery4Demo /> */}
-        <PricingSection />
+    <>
+    <Navbar />
+    <div className="items-center justify-items-center ">
+      <main className="">
+        <Hero title="Simple Scheduling" description="Free, super simple employee scheduling for small businesses. " primaryButtonText="Get Started" primaryButtonUrl="/" />
       </main>
-      <div className="bg-brand-background">
-        <SiteFooter />
-      </div>
+      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
+        footer
+      </footer>
     </div>
+    </>
   );
 }

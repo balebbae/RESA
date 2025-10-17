@@ -248,10 +248,6 @@ RESA uses a passwordless authentication system:
 3. Run tests: `make test` (backend) and `npm run lint` (frontend)
 4. Submit a pull request
 
-## License
-
-This project is private and proprietary.
-
 ## Support
 
-For issues or questions, please contact the development team.
+For issues or questions, please contact the development me.

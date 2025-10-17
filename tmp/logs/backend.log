@@ -22,45 +22,59 @@ watching internal/store
 watching internal/store/cache
 watching tmp
 > make gen-docs
-2025/10/16 19:58:19 Generate swagger docs....
-2025/10/16 19:58:19 Generate general API Info, search dir:cmd
-2025/10/16 19:58:19 warning: failed to get package name in dir: cmd, error: execute go list command, exit status 1, stdout:, stderr:no Go files in /Users/baecal000/programming/RESA/backend/cmd
-2025/10/16 19:58:19 Generate general API Info, search dir:internal
-2025/10/16 19:58:19 warning: failed to get package name in dir: internal, error: execute go list command, exit status 1, stdout:, stderr:no Go files in /Users/baecal000/programming/RESA/backend/internal
-2025/10/16 19:58:19 Generating main.RegisterUserPayload
-2025/10/16 19:58:19 Generating main.UserWithToken
-2025/10/16 19:58:19 Generating store.User
-2025/10/16 19:58:19 Generating main.CreateUserTokenPayload
-2025/10/16 19:58:19 Generating store.Employee
-2025/10/16 19:58:19 Generating main.CreateEmployeePayload
-2025/10/16 19:58:19 Generating main.UpdateEmployeePayload
-2025/10/16 19:58:19 Generating main.AddEmployeeRolesPayload
-2025/10/16 19:58:19 Generating main.CreateRestaurantPayload
-2025/10/16 19:58:19 Generating store.Restaurant
-2025/10/16 19:58:19 Generating main.UpdateRestaurantPayload
-2025/10/16 19:58:19 Generating store.Role
-2025/10/16 19:58:19 Generating main.CreateRolePayload
-2025/10/16 19:58:19 Generating main.UpdateRolePayload
-2025/10/16 19:58:19 Generating store.ScheduledShift
-2025/10/16 19:58:19 Generating main.createScheduledShiftRequest
-2025/10/16 19:58:19 Generating main.updateScheduledShiftRequest
-2025/10/16 19:58:19 Generating main.assignEmployeeRequest
-2025/10/16 19:58:19 Generating store.Schedule
-2025/10/16 19:58:19 Generating main.CreateSchedulePayload
-2025/10/16 19:58:19 Generating main.UpdateSchedulePayload
-2025/10/16 19:58:19 Generating store.ShiftTemplate
-2025/10/16 19:58:19 Generating main.CreateShiftTemplatePayload
-2025/10/16 19:58:19 Generating main.UpdateShiftTemplatePayload
-2025/10/16 19:58:19 create docs.go at docs/docs.go
-2025/10/16 19:58:19 create swagger.json at docs/swagger.json
-2025/10/16 19:58:19 create swagger.yaml at docs/swagger.yaml
+2025/10/16 21:46:55 Generate swagger docs....
+2025/10/16 21:46:55 Generate general API Info, search dir:cmd
+2025/10/16 21:46:55 warning: failed to get package name in dir: cmd, error: execute go list command, exit status 1, stdout:, stderr:no Go files in /Users/baecal000/programming/RESA/backend/cmd
+2025/10/16 21:46:55 Generate general API Info, search dir:internal
+2025/10/16 21:46:55 warning: failed to get package name in dir: internal, error: execute go list command, exit status 1, stdout:, stderr:no Go files in /Users/baecal000/programming/RESA/backend/internal
+2025/10/16 21:46:55 Generating main.RegisterUserPayload
+2025/10/16 21:46:55 Generating main.UserWithToken
+2025/10/16 21:46:55 Generating store.User
+2025/10/16 21:46:55 Generating main.CreateUserTokenPayload
+2025/10/16 21:46:55 Generating store.Employee
+2025/10/16 21:46:55 Generating main.CreateEmployeePayload
+2025/10/16 21:46:55 Generating main.UpdateEmployeePayload
+2025/10/16 21:46:55 Generating main.AddEmployeeRolesPayload
+2025/10/16 21:46:55 Generating main.CreateRestaurantPayload
+2025/10/16 21:46:55 Generating store.Restaurant
+2025/10/16 21:46:55 Generating main.UpdateRestaurantPayload
+2025/10/16 21:46:55 Generating store.Role
+2025/10/16 21:46:55 Generating main.CreateRolePayload
+2025/10/16 21:46:55 Generating main.UpdateRolePayload
+2025/10/16 21:46:55 Generating store.ScheduledShift
+2025/10/16 21:46:55 Generating main.createScheduledShiftRequest
+2025/10/16 21:46:55 Generating main.updateScheduledShiftRequest
+2025/10/16 21:46:55 Generating main.assignEmployeeRequest
+2025/10/16 21:46:55 Generating store.Schedule
+2025/10/16 21:46:55 Generating main.CreateSchedulePayload
+2025/10/16 21:46:55 Generating main.UpdateSchedulePayload
+2025/10/16 21:46:55 Generating store.ShiftTemplate
+2025/10/16 21:46:55 Generating main.CreateShiftTemplatePayload
+2025/10/16 21:46:55 Generating main.UpdateShiftTemplatePayload
+2025/10/16 21:46:55 create docs.go at docs/docs.go
+2025/10/16 21:46:55 create swagger.json at docs/swagger.json
+2025/10/16 21:46:55 create swagger.yaml at docs/swagger.yaml
 building...
 running...
-{"level":"info","ts":1760669903.000623,"caller":"api/main.go:106","msg":"db connection established"}
-{"level":"info","ts":1760669903.000927,"caller":"api/main.go:112","msg":"redis connection established"}
-{"level":"info","ts":1760669903.000947,"caller":"api/main.go:127","msg":"Redis cache enabled","addr":"localhost:6379","restaurants_nil":false}
-{"level":"info","ts":1760669903.0011961,"caller":"api/api.go:259","msg":"server has started","addr":":8080","env":"production"}
-2025/10/16 20:05:28 [Calebs-MacBook-Air.local/g4PivEmLn1-000001] "OPTIONS http://localhost:8080/v1/authentication/token HTTP/1.1" from [::1]:49354 - 200 0B in 901.792µs
-{"level":"warn","ts":1760670328.345953,"caller":"api/errors.go:43","msg":"unauthorized error%!(EXTRA string=method, string=POST, string=path, string=/v1/authentication/token, string=error, string=crypto/bcrypt: hashedPassword is not the hash of the given password)"}
-2025/10/16 20:05:28 [Calebs-MacBook-Air.local/g4PivEmLn1-000002] "POST http://localhost:8080/v1/authentication/token HTTP/1.1" from [::1]:49354 - 401 25B in 145.140084ms
-2025/10/16 20:05:39 [Calebs-MacBook-Air.local/g4PivEmLn1-000003] "POST http://localhost:8080/v1/authentication/token HTTP/1.1" from [::1]:49357 - 201 209B in 94.94325ms
+{"level":"info","ts":1760676419.3622131,"caller":"api/main.go:106","msg":"db connection established"}
+{"level":"info","ts":1760676419.362428,"caller":"api/main.go:112","msg":"redis connection established"}
+{"level":"info","ts":1760676419.362447,"caller":"api/main.go:127","msg":"Redis cache enabled","addr":"localhost:6379","restaurants_nil":false}
+{"level":"info","ts":1760676419.3627179,"caller":"api/api.go:259","msg":"server has started","addr":":8080","env":"production"}
+2025/10/16 21:47:11 [Calebs-MacBook-Air.local/7XxdhKoMlc-000001] "POST http://localhost:8080/v1/authentication/token HTTP/1.1" from [::1]:53839 - 201 209B in 118.452084ms
+2025/10/16 21:51:19 [Calebs-MacBook-Air.local/7XxdhKoMlc-000002] "OPTIONS http://localhost:8080/v1/authentication/token HTTP/1.1" from [::1]:54295 - 200 0B in 810.042µs
+2025/10/16 21:51:19 [Calebs-MacBook-Air.local/7XxdhKoMlc-000003] "POST http://localhost:8080/v1/authentication/token HTTP/1.1" from [::1]:54295 - 201 209B in 117.564916ms
+2025/10/16 21:57:10 [Calebs-MacBook-Air.local/7XxdhKoMlc-000004] "OPTIONS http://localhost:8080/v1/authentication/token HTTP/1.1" from [::1]:54674 - 200 0B in 832µs
+2025/10/16 21:57:10 [Calebs-MacBook-Air.local/7XxdhKoMlc-000005] "POST http://localhost:8080/v1/authentication/token HTTP/1.1" from [::1]:54674 - 201 209B in 128.036708ms
+2025/10/16 22:08:02 [Calebs-MacBook-Air.local/7XxdhKoMlc-000006] "OPTIONS http://localhost:8080/v1/restaurants HTTP/1.1" from [::1]:54941 - 200 0B in 8.813375ms
+2025/10/16 22:08:02 [Calebs-MacBook-Air.local/7XxdhKoMlc-000007] "GET http://localhost:8080/v1/restaurants HTTP/1.1" from [::1]:54941 - 200 193B in 52.698292ms
+2025/10/16 22:08:20 [Calebs-MacBook-Air.local/7XxdhKoMlc-000008] "GET http://localhost:8080/v1/restaurants HTTP/1.1" from [::1]:54994 - 200 193B in 40.565709ms
+2025/10/16 22:08:20 [Calebs-MacBook-Air.local/7XxdhKoMlc-000009] "GET http://localhost:8080/v1/restaurants HTTP/1.1" from [::1]:54996 - 200 193B in 17.568167ms
+2025/10/16 22:08:21 [Calebs-MacBook-Air.local/7XxdhKoMlc-000010] "GET http://localhost:8080/v1/restaurants HTTP/1.1" from [::1]:54996 - 200 193B in 18.928375ms
+2025/10/16 22:08:21 [Calebs-MacBook-Air.local/7XxdhKoMlc-000011] "GET http://localhost:8080/v1/restaurants HTTP/1.1" from [::1]:54994 - 200 193B in 6.046292ms
+2025/10/16 22:09:00 [Calebs-MacBook-Air.local/7XxdhKoMlc-000012] "GET http://localhost:8080/v1/restaurants HTTP/1.1" from [::1]:55040 - 200 193B in 56.61025ms
+2025/10/16 22:09:00 [Calebs-MacBook-Air.local/7XxdhKoMlc-000013] "GET http://localhost:8080/v1/restaurants HTTP/1.1" from [::1]:55040 - 200 193B in 4.67725ms
+2025/10/16 22:09:33 [Calebs-MacBook-Air.local/7XxdhKoMlc-000014] "GET http://localhost:8080/v1/restaurants HTTP/1.1" from [::1]:55101 - 200 193B in 45.840125ms
+2025/10/16 22:09:33 [Calebs-MacBook-Air.local/7XxdhKoMlc-000015] "GET http://localhost:8080/v1/restaurants HTTP/1.1" from [::1]:55102 - 200 193B in 4.825292ms
+2025/10/16 22:11:20 [Calebs-MacBook-Air.local/7XxdhKoMlc-000016] "OPTIONS http://localhost:8080/v1/restaurants HTTP/1.1" from [::1]:55117 - 200 0B in 3.703083ms
+2025/10/16 22:11:20 [Calebs-MacBook-Air.local/7XxdhKoMlc-000017] "POST http://localhost:8080/v1/restaurants HTTP/1.1" from [::1]:55117 - 201 185B in 46.837125ms
+2025/10/16 22:11:20 [Calebs-MacBook-Air.local/7XxdhKoMlc-000018] "GET http://localhost:8080/v1/restaurants HTTP/1.1" from [::1]:55117 - 200 369B in 1.878417ms

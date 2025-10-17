@@ -11,37 +11,45 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { getApiBase } from "@/lib/api"
+import { useAuth } from "@/lib/auth"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+
+const loginSchema = z.object({
+  email: z.email("Please enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+})
+
+type LoginFormData = z.infer<typeof loginSchema>
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
-  const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { login } = useAuth()
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  })
+
+  const onSubmit = async (data: LoginFormData) => {
     setError(null)
 
-    const form = e.currentTarget
-    const formData = new FormData(form)
-    const email = String(formData.get("email") || "").trim()
-    const password = String(formData.get("password") || "")
-
-    if (!email || !password) {
-      setError("Email and password are required.")
-      return
-    }
-
     try {
-      setSubmitting(true)
       const res = await fetch(`${getApiBase()}/authentication/token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: data.email, password: data.password }),
       })
 
       if (!res.ok) {
@@ -54,23 +62,27 @@ export function LoginForm({
         throw new Error(`${message} (${res.status})`)
       }
 
-      // API returns a JSON string (the JWT)
-      const token: string = await res.json()
+      // API returns {"data": "JWT_TOKEN"}
+      const response = await res.json()
+      const token = response.data
 
-      // Store token as needed (consider HttpOnly cookie on server for better security)
-      localStorage.setItem("auth_token", token)
+      if (!token || typeof token !== "string") {
+        throw new Error("Invalid token received from server")
+      }
 
-      // Optionally navigate after login
-      router.push("/home")
+      // Store token and update auth context
+      login(token)
+
+      // Redirect to intended destination or default to home
+      const redirectUrl = searchParams.get("redirect") || "/home"
+      router.push(redirectUrl)
     } catch (err: any) {
       setError(err?.message || "Something went wrong. Please try again.")
-    } finally {
-      setSubmitting(false)
     }
   }
 
   return (
-    <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit} {...props}>
+    <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit(onSubmit)} {...props}>
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Login to your account</h1>
@@ -83,11 +95,19 @@ export function LoginForm({
 
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
-          <Input id="email" name="email" type="email" placeholder="caleb@example.com" required />
+          <Input
+            id="email"
+            type="email"
+            placeholder="caleb@example.com"
+            {...register("email")}
+          />
+          {errors.email && (
+            <p className="text-sm text-red-600">{errors.email.message}</p>
+          )}
         </Field>
         <Field>
           <div className="flex items-center">
-            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <FieldLabel htmlFor="password" >Password</FieldLabel>
             <a
               href="#"
               className="ml-auto text-sm underline-offset-4 hover:underline"
@@ -95,11 +115,19 @@ export function LoginForm({
               Forgot your password?
             </a>
           </div>
-          <Input id="password" name="password" type="password" required />
+          <Input
+            id="password"
+            type="password"
+            placeholder="********"
+            {...register("password")}
+          />
+          {errors.password && (
+            <p className="text-sm text-red-600">{errors.password.message}</p>
+          )}
         </Field>
         <Field>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "Logging in..." : "Login"}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Logging in..." : "Login"}
           </Button>
         </Field>
         <FieldSeparator>Or continue with</FieldSeparator>

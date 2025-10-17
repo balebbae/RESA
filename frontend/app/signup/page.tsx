@@ -1,11 +1,40 @@
+"use client"
+
 import { GalleryVerticalEnd } from "lucide-react"
 import { Livvic } from "next/font/google";
+import { useAuth } from "@/lib/auth"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 import { SignupForm } from "@/components/marketing/SignupForm"
 
 const livvic = Livvic({ subsets: ["latin"], weight: ["600"] });
 
 export default function SignupPage() {
+  const { isAuthenticated, isLoading } = useAuth()
+  const router = useRouter()
+
+  // Redirect authenticated users away from signup page
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.push("/home")
+    }
+  }, [isAuthenticated, isLoading, router])
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    )
+  }
+
+  // Don't render signup form if already authenticated (will redirect)
+  if (isAuthenticated) {
+    return null
+  }
+
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">

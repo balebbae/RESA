@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/baecal000/programming/RESA/**)",
+      "Bash(ls:*)",
+      "Read(//var/folders/z5/zm82r9b537x2tywnv0yq0shh0000gn/T/TemporaryItems/NSIRD_screencaptureui_CgQ1rS/**)",
+      "Read(//var/folders/z5/zm82r9b537x2tywnv0yq0shh0000gn/T/TemporaryItems/NSIRD_screencaptureui_AQFtsV/**)",
+      "Read(//var/folders/z5/zm82r9b537x2tywnv0yq0shh0000gn/T/TemporaryItems/NSIRD_screencaptureui_tspLAX/**)",
+      "Bash(curl:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

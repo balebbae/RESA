@@ -16,19 +16,19 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar"
 
-export function Calendars({
-  calendars,
+export function Employees({
+  employees,
 }: {
-  calendars: {
+  employees: {
     name: string
     items: string[]
   }[]
 }) {
   return (
     <>
-      {calendars.map((calendar, index) => (
-        <React.Fragment key={calendar.name}>
-          <SidebarGroup key={calendar.name} className="py-0">
+      {employees.map((employee, index) => (
+        <React.Fragment key={employee.name}>
+          <SidebarGroup key={employee.name} className="py-0">
             <Collapsible
               defaultOpen={index === 0}
               className="group/collapsible"
@@ -38,14 +38,14 @@ export function Calendars({
                 className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
               >
                 <CollapsibleTrigger>
-                  {calendar.name}{" "}
+                  {employee.name}{" "}
                   <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
                 </CollapsibleTrigger>
               </SidebarGroupLabel>
               <CollapsibleContent>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {calendar.items.map((item, index) => (
+                    {employee.items.map((item, index) => (
                       <SidebarMenuItem key={item}>
                         <SidebarMenuButton>
                           <div

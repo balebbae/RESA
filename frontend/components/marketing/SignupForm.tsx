@@ -13,53 +13,60 @@ import {
 import { Input } from "@/components/ui/input"
 import { getApiBase } from "@/lib/api"
 import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+
+const signupSchema = z.object({
+  fullName: z.string().min(1, "Full name is required").refine(
+    (name) => {
+      const parts = name.trim().split(/\s+/)
+      return parts.length >= 2 && parts[0] && parts[parts.length - 1]
+    },
+    { message: "Please enter your full name (first and last)" }
+  ),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+})
+
+type SignupFormData = z.infer<typeof signupSchema>
 
 export function SignupForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
   const router = useRouter()
-  const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-  const [success, setSuccess] = React.useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+  })
+
+  const onSubmit = async (data: SignupFormData) => {
     setError(null)
-    setSuccess(null)
-
-    const form = e.currentTarget
-    const formData = new FormData(form)
-
-    const fullName = String(formData.get("fullName") || "").trim()
-    const email = String(formData.get("email") || "").trim()
-    const password = String(formData.get("password") || "")
-    const confirmPassword = String(formData.get("confirmPassword") || "")
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.")
-      return
-    }
 
     // Split "Full Name" into first/last (best-effort)
-    const nameParts = fullName.split(/\s+/)
+    const nameParts = data.fullName.trim().split(/\s+/)
     const firstName = nameParts.shift() || ""
     const lastName = nameParts.join(" ")
 
-    if (!firstName || !lastName) {
-      setError("Please enter your full name (first and last).")
-      return
-    }
-
     const payload = {
-      email,
+      email: data.email,
       first_name: firstName,
       last_name: lastName,
-      password,
+      password: data.password,
     }
 
     try {
-      setSubmitting(true)
       const res = await fetch(`${getApiBase()}/authentication/user`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -76,17 +83,15 @@ export function SignupForm({
       }
 
       // 201 Created. Redirect to login with a notice to check email
-      form.reset()
+      reset()
       router.push("/login?notice=check-email")
     } catch (err: any) {
       setError(err?.message || "Something went wrong. Please try again.")
-    } finally {
-      setSubmitting(false)
     }
   }
 
   return (
-    <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit} {...props}>
+    <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit(onSubmit)} {...props}>
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Create your account</h1>
@@ -98,38 +103,70 @@ export function SignupForm({
         {error ? (
           <p className="text-sm text-red-600">{error}</p>
         ) : null}
-        {success ? (
-          <p className="text-sm text-green-600">{success}</p>
-        ) : null}
 
         <Field>
           <FieldLabel htmlFor="name">Full Name</FieldLabel>
-          <Input id="name" name="fullName" type="text" placeholder="Caleb Bae" required />
+          <Input
+            id="name"
+            type="text"
+            placeholder="Caleb Bae"
+            {...register("fullName")}
+          />
+          {errors.fullName && (
+            <p className="text-sm text-red-600">{errors.fullName.message}</p>
+          )}
         </Field>
 
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
-          <Input id="email" name="email" type="email" placeholder="caleb@example.com" required />
-          <FieldDescription>
-            We&apos;ll use this to contact you. We will not share your email with anyone else.
-          </FieldDescription>
+          <Input
+            id="email"
+            type="email"
+            placeholder="caleb@example.com"
+            {...register("email")}
+          />
+          {errors.email ? (
+            <p className="text-sm text-red-600">{errors.email.message}</p>
+          ) : (
+            <FieldDescription>
+              We&apos;ll use this to contact you. We will not share your email with anyone else.
+            </FieldDescription>
+          )}
         </Field>
 
         <Field>
           <FieldLabel htmlFor="password">Password</FieldLabel>
-          <Input id="password" name="password" type="password" required />
-          <FieldDescription>Must be at least 8 characters long.</FieldDescription>
+          <Input
+            id="password"
+            type="password"
+            placeholder="********"
+            {...register("password")}
+          />
+          {errors.password ? (
+            <p className="text-sm text-red-600">{errors.password.message}</p>
+          ) : (
+            <FieldDescription>Must be at least 8 characters long.</FieldDescription>
+          )}
         </Field>
 
         <Field>
           <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
-          <Input id="confirm-password" name="confirmPassword" type="password" required />
-          <FieldDescription>Please confirm your password.</FieldDescription>
+          <Input
+            id="confirm-password"
+            type="password"
+            placeholder="********"
+            {...register("confirmPassword")}
+          />
+          {errors.confirmPassword ? (
+            <p className="text-sm text-red-600">{errors.confirmPassword.message}</p>
+          ) : (
+            <FieldDescription>Please confirm your password.</FieldDescription>
+          )}
         </Field>
 
         <Field>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "Creating..." : "Create Account"}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Account"}
           </Button>
         </Field>
 

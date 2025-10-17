@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Plus } from "lucide-react"
 
-import { Calendars } from "@/components/resa/calendars"
+import { Employees } from "@/components/resa/employees"
 import { DatePicker } from "@/components/resa/date-picker"
 import { NavUser } from "@/components/resa/nav-user"
 import {
@@ -23,19 +23,19 @@ const data = {
     email: "m@example.com",
     avatar: "/avatars/shadcn.jpg",
   },
-  calendars: [
+  employees: [
     {
-      name: "My Calendars",
-      items: ["Personal", "Work", "Family"],
+      name: "Cooks",
+      items: ["John Doe", "Jane Smith", "Mike Johnson"],
     },
     {
-      name: "Favorites",
-      items: ["Holidays", "Birthdays"],
+      name: "Servers",
+      items: ["Alice Johnson", "Bob Smith", "Charlie Davis"],
     },
     {
-      name: "Other",
-      items: ["Travel", "Reminders", "Deadlines"],
-    },
+      name: "Bartenders",
+      items: ["Alice Johnson", "Bob Smith", "Charlie Davis"],
+    }
   ],
 }
 
@@ -48,14 +48,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <DatePicker />
         <SidebarSeparator className="mx-0" />
-        <Calendars calendars={data.calendars} />
+        <Employees employees={data.employees} />
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton>
               <Plus />
-              <span>New Calendar</span>
+              <span>Create Employee</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

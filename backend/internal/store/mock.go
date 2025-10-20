@@ -67,3 +67,21 @@ func (s *MockUserStore) Delete(ctx context.Context, id int64) error {
 func (s *MockUserStore) Activate(ctx context.Context, token string) error {
 	return nil
 }
+
+func (s *MockUserStore) GetByGoogleID(ctx context.Context, googleID string) (*User, error) {
+	return &User{ID: 1, FirstName: "Test", LastName: "User", Email: "test@example.com"}, nil
+}
+
+func (s *MockUserStore) CreateWithGoogle(ctx context.Context, tx *sql.Tx, user *User, googleID, avatarURL string) error {
+	user.ID = 1
+	return nil
+}
+
+func (s *MockUserStore) CreateUserWithGoogle(ctx context.Context, user *User, googleID, avatarURL string) error {
+	user.ID = 1
+	return nil
+}
+
+func (s *MockUserStore) LinkGoogleAccount(ctx context.Context, userID int64, googleID, avatarURL string) error {
+	return nil
+}

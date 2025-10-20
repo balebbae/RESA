@@ -27,13 +27,14 @@ import (
 )
 
 type application struct {
-	config config
-	store store.Storage
-	cacheStorage cache.Storage
-	logger *zap.SugaredLogger
-	mailer mailer.Client
+	config        config
+	store         store.Storage
+	cacheStorage  cache.Storage
+	logger        *zap.SugaredLogger
+	mailer        mailer.Client
 	authenticator auth.Authenticator
-	rateLimiter ratelimiter.Limiter
+	oauthProvider *auth.GoogleOAuthProvider
+	rateLimiter   ratelimiter.Limiter
 }
 
 type config struct {
@@ -56,8 +57,9 @@ type redisConfig struct {
 }
 
 type authConfig struct {
-	basic basicConfig
-	token tokenConfig
+	basic  basicConfig
+	token  tokenConfig
+	google googleOAuthConfig
 }
 
 type tokenConfig struct {
@@ -67,8 +69,14 @@ type tokenConfig struct {
 }
 
 type basicConfig struct {
-	user string 
+	user string
 	pass string
+}
+
+type googleOAuthConfig struct {
+	clientID     string
+	clientSecret string
+	redirectURL  string
 }
 
 type mailConfig struct {
@@ -98,8 +106,8 @@ func (app *application) mount() http.Handler {
 	  
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{env.GetString("CORS_ALLOWED_ORIGIN", "http://localhost:3000")},
-		
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: false,
@@ -128,6 +136,9 @@ func (app *application) mount() http.Handler {
 			r.Post("/token", app.createTokenHandler)
 			r.Post("/refresh", app.refreshTokenHandler)
 
+			// Google OAuth routes
+			r.Post("/google", app.googleLoginHandler)
+			r.Post("/google/callback", app.googleCallbackHandler)
 		})
 		
 		// ───── User self‑service ───────────────────────────

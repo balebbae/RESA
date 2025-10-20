@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -270,4 +271,190 @@ func (app *application) refreshTokenHandler(w http.ResponseWriter, r *http.Reque
 	if err := app.jsonResponse(w, http.StatusOK, newToken); err != nil {
 		app.internalServerError(w, r, err)
 	}
+}
+
+type GoogleLoginResponse struct {
+	AuthURL string `json:"auth_url"`
+	State   string `json:"state"`
+}
+
+// googleLoginHandler godoc
+//
+//	@Summary		Initiates Google OAuth login
+//	@Description	Generates and returns the Google OAuth authorization URL
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	GoogleLoginResponse	"OAuth URL and state token"
+//	@Failure		500	{object}	error
+//	@Router			/authentication/google [post]
+func (app *application) googleLoginHandler(w http.ResponseWriter, r *http.Request) {
+	// Generate state token for CSRF protection
+	state := uuid.New().String()
+
+	// Get OAuth authorization URL
+	authURL := app.oauthProvider.GetAuthURL(state)
+
+	response := GoogleLoginResponse{
+		AuthURL: authURL,
+		State:   state,
+	}
+
+	app.logger.Infow("Google OAuth initiated", "state", state)
+
+	if err := app.jsonResponse(w, http.StatusOK, response); err != nil {
+		app.internalServerError(w, r, err)
+	}
+}
+
+type GoogleCallbackPayload struct {
+	Code  string `json:"code" validate:"required"`
+	State string `json:"state" validate:"required"`
+}
+
+// googleCallbackHandler godoc
+//
+//	@Summary		Handles Google OAuth callback
+//	@Description	Exchanges authorization code for user info and creates/authenticates user
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		GoogleCallbackPayload	true	"OAuth callback data"
+//	@Success		200		{string}	string					"JWT token"
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		500		{object}	error
+//	@Router			/authentication/google/callback [post]
+func (app *application) googleCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	var payload GoogleCallbackPayload
+	if err := readJSON(w, r, &payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := Validate.Struct(payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	ctx := r.Context()
+
+	// Exchange code for Google user info
+	googleUser, err := app.oauthProvider.ExchangeCode(ctx, payload.Code)
+	if err != nil {
+		app.logger.Errorw("failed to exchange OAuth code", "error", err)
+		app.unauthorizedErrorResponse(w, r, fmt.Errorf("failed to authenticate with Google"))
+		return
+	}
+
+	app.logger.Infow("Google user info retrieved", "email", googleUser.Email, "google_id", googleUser.ID)
+
+	// Try to find user by Google ID first
+	user, err := app.store.Users.GetByGoogleID(ctx, googleUser.ID)
+	if err == nil {
+		// Existing Google user - generate token and return
+		app.logger.Infow("Existing Google user logged in", "user_id", user.ID)
+		token, err := app.generateTokenForUser(user)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		if err := app.jsonResponse(w, http.StatusOK, token); err != nil {
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	// User not found by Google ID, try to find by email (for account linking)
+	if err != store.ErrNotFound {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	user, err = app.store.Users.GetByEmailIncludingInactive(ctx, googleUser.Email)
+	if err == nil {
+		// User exists with this email - link Google account
+		app.logger.Infow("Linking Google account to existing user", "user_id", user.ID, "email", user.Email)
+
+		err = app.store.Users.LinkGoogleAccount(ctx, user.ID, googleUser.ID, googleUser.Picture)
+		if err != nil {
+			app.logger.Errorw("failed to link Google account", "error", err)
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		// Update user struct with new info
+		user.GoogleID = &googleUser.ID
+		user.AvatarURL = &googleUser.Picture
+
+		token, err := app.generateTokenForUser(user)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		if err := app.jsonResponse(w, http.StatusOK, token); err != nil {
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	// User doesn't exist - create new user with Google OAuth
+	if err != store.ErrNotFound {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	app.logger.Infow("Creating new user with Google OAuth", "email", googleUser.Email)
+
+	newUser := &store.User{
+		Email:     googleUser.Email,
+		FirstName: googleUser.GivenName,
+		LastName:  googleUser.FamilyName,
+	}
+
+	// Create user with Google OAuth (handles transaction internally)
+	err = app.createUserWithGoogle(ctx, newUser, googleUser.ID, googleUser.Picture)
+	if err != nil {
+		app.logger.Errorw("failed to create user with Google", "error", err)
+		switch err {
+		case store.ErrDuplicateEmail:
+			app.badRequestResponse(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	app.logger.Infow("New user created with Google OAuth", "user_id", newUser.ID, "email", newUser.Email)
+
+	token, err := app.generateTokenForUser(newUser)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.jsonResponse(w, http.StatusCreated, token); err != nil {
+		app.internalServerError(w, r, err)
+	}
+}
+
+// generateTokenForUser is a helper function to generate JWT token for a user
+func (app *application) generateTokenForUser(user *store.User) (string, error) {
+	claims := jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(app.config.auth.token.exp).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Unix(),
+		"iss": app.config.auth.token.iss,
+		"aud": app.config.auth.token.iss,
+	}
+
+	return app.authenticator.GenerateToken(claims)
+}
+
+// createUserWithGoogle is a helper function to create a user with Google OAuth
+func (app *application) createUserWithGoogle(ctx context.Context, user *store.User, googleID, avatarURL string) error {
+	return app.store.Users.CreateUserWithGoogle(ctx, user, googleID, avatarURL)
 }

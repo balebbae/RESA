@@ -86,6 +86,23 @@ definitions:
     - email
     - password
     type: object
+  main.GoogleCallbackPayload:
+    properties:
+      code:
+        type: string
+      state:
+        type: string
+    required:
+    - code
+    - state
+    type: object
+  main.GoogleLoginResponse:
+    properties:
+      auth_url:
+        type: string
+      state:
+        type: string
+    type: object
   main.RegisterUserPayload:
     properties:
       email:
@@ -158,11 +175,15 @@ definitions:
     type: object
   main.UserWithToken:
     properties:
+      avatar_url:
+        type: string
       created_at:
         type: string
       email:
         type: string
       first_name:
+        type: string
+      google_id:
         type: string
       id:
         type: integer
@@ -343,6 +364,56 @@ info:
   termsOfService: http://swagger.io/terms/
   title: RESA API
 paths:
+  /authentication/google:
+    post:
+      consumes:
+      - application/json
+      description: Generates and returns the Google OAuth authorization URL
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OAuth URL and state token
+          schema:
+            $ref: '#/definitions/main.GoogleLoginResponse'
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Initiates Google OAuth login
+      tags:
+      - authentication
+  /authentication/google/callback:
+    post:
+      consumes:
+      - application/json
+      description: Exchanges authorization code for user info and creates/authenticates
+        user
+      parameters:
+      - description: OAuth callback data
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.GoogleCallbackPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT token
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Handles Google OAuth callback
+      tags:
+      - authentication
   /authentication/refresh:
     post:
       consumes:

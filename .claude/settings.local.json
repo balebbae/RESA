@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(git branch:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(go get:*)",
+      "Bash(go build:*)",
+      "Read(//var/folders/z5/zm82r9b537x2tywnv0yq0shh0000gn/T/TemporaryItems/NSIRD_screencaptureui_tg365H/**)",
+      "Read(//var/folders/z5/zm82r9b537x2tywnv0yq0shh0000gn/T/TemporaryItems/NSIRD_screencaptureui_8idLfG/**)",
+      "Bash(npm run build:*)",
+      "Read(//private/tmp/**)"
     ],
     "deny": [],
     "ask": []

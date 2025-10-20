@@ -22,6 +22,11 @@ type Storage struct {
 		Activate(context.Context, string) error
 		Delete(context.Context, int64) error
 		GetByEmail(context.Context, string) (*User, error)
+		GetByEmailIncludingInactive(context.Context, string) (*User, error)
+		GetByGoogleID(context.Context, string) (*User, error)
+		CreateWithGoogle(context.Context, *sql.Tx, *User, string, string) error
+		CreateUserWithGoogle(context.Context, *User, string, string) error
+		LinkGoogleAccount(context.Context, int64, string, string) error
 	}
 	Restaurants interface {
 		Create(context.Context, *Restaurant) error

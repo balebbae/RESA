@@ -71,13 +71,18 @@ func main() {
 		},
 		auth: authConfig{
 			basic: basicConfig{
-				user: env.GetString("AUTH_BASIC_USER", "admin"), // <= TODO:: change that to have no default 
+				user: env.GetString("AUTH_BASIC_USER", "admin"), // <= TODO:: change that to have no default
 				pass: env.GetString("AUTH_BASIC_PASS", "admin"),
 			},
 			token: tokenConfig{
 				secret: env.GetString("AUTH_TOKEN_SECRET", "example"), // <= TODO:: SET SECRET no default
 				exp: time.Hour * 24,
 				iss: "RESA",
+			},
+			google: googleOAuthConfig{
+				clientID:     env.GetString("GOOGLE_CLIENT_ID", ""),
+				clientSecret: env.GetString("GOOGLE_CLIENT_SECRET", ""),
+				redirectURL:  env.GetString("GOOGLE_REDIRECT_URL", "http://localhost:8080/v1/authentication/google/callback"),
 			},
 		},
 		rateLimiter: ratelimiter.Config{
@@ -132,19 +137,26 @@ func main() {
 	mailer := mailer.NewSendGrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
 
 	jwtAuthenticator := auth.NewJWTAuthenticator(
-		cfg.auth.token.secret, 
-		cfg.auth.token.iss, 
+		cfg.auth.token.secret,
+		cfg.auth.token.iss,
 		cfg.auth.token.iss,
 	)
 
+	oauthProvider := auth.NewGoogleOAuthProvider(
+		cfg.auth.google.clientID,
+		cfg.auth.google.clientSecret,
+		cfg.auth.google.redirectURL,
+	)
+
 	app := &application{
-		config: cfg,
-		store: store,
-		cacheStorage: cacheStorage,
-		logger: logger,
-		mailer: mailer,
+		config:        cfg,
+		store:         store,
+		cacheStorage:  cacheStorage,
+		logger:        logger,
+		mailer:        mailer,
 		authenticator: jwtAuthenticator,
-		rateLimiter: rateLimiter,
+		oauthProvider: oauthProvider,
+		rateLimiter:   rateLimiter,
 	}
 
 	// Metrics collected

@@ -25,6 +25,8 @@ type User struct {
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 	IsActive bool `db:"is_active" json:"is_active"`
+	GoogleID *string `db:"google_id" json:"google_id,omitempty"`
+	AvatarURL *string `db:"avatar_url" json:"avatar_url,omitempty"`
 }
 
 type password struct {
@@ -270,8 +272,8 @@ func (s *UserStore) delete(ctx context.Context, tx *sql.Tx, id int64) error {
 
 func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error) {
 	query := `
-	SELECT id, email, password, first_name, last_name, created_at
-		FROM users 
+	SELECT id, email, password, first_name, last_name, created_at, google_id, avatar_url
+		FROM users
 	WHERE email = $1 AND is_active = true;
 	`
 
@@ -291,6 +293,8 @@ func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error)
 		&user.FirstName,
 		&user.LastName,
 		&user.CreatedAt,
+		&user.GoogleID,
+		&user.AvatarURL,
 	)
 
 	if err != nil {
@@ -303,4 +307,164 @@ func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error)
 	}
 
 	return user, nil
+}
+
+// GetByEmailIncludingInactive retrieves a user by email, including inactive users
+// Used for OAuth account linking to find existing unactivated accounts
+func (s *UserStore) GetByEmailIncludingInactive(ctx context.Context, email string) (*User, error) {
+	query := `
+	SELECT id, email, password, first_name, last_name, created_at, google_id, avatar_url, is_active
+		FROM users
+	WHERE email = $1;
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	user := &User{}
+
+	err := s.db.QueryRowContext(
+		ctx,
+		query,
+		email,
+	).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Password.hash,
+		&user.FirstName,
+		&user.LastName,
+		&user.CreatedAt,
+		&user.GoogleID,
+		&user.AvatarURL,
+		&user.IsActive,
+	)
+
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return user, nil
+}
+
+// GetByGoogleID retrieves a user by their Google ID
+func (s *UserStore) GetByGoogleID(ctx context.Context, googleID string) (*User, error) {
+	query := `
+		SELECT id, email, password, first_name, last_name, created_at, google_id, avatar_url
+		FROM users
+		WHERE google_id = $1 AND is_active = true;
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	user := &User{}
+
+	err := s.db.QueryRowContext(
+		ctx,
+		query,
+		googleID,
+	).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Password.hash,
+		&user.FirstName,
+		&user.LastName,
+		&user.CreatedAt,
+		&user.GoogleID,
+		&user.AvatarURL,
+	)
+
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return user, nil
+}
+
+// CreateWithGoogle creates a new user with Google OAuth (no password required)
+// User is automatically activated since Google has verified their email
+func (s *UserStore) CreateWithGoogle(ctx context.Context, tx *sql.Tx, user *User, googleID, avatarURL string) error {
+	query := `
+		INSERT INTO users (email, first_name, last_name, google_id, avatar_url, is_active)
+		VALUES ($1, $2, $3, $4, $5, true)
+		RETURNING id, created_at
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	err := tx.QueryRowContext(
+		ctx,
+		query,
+		user.Email,
+		user.FirstName,
+		user.LastName,
+		googleID,
+		avatarURL,
+	).Scan(
+		&user.ID,
+		&user.CreatedAt,
+	)
+
+	if err != nil {
+		switch {
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+			return ErrDuplicateEmail
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_google_id_key"`:
+			return errors.New("a user with that Google account already exists")
+		default:
+			return err
+		}
+	}
+
+	user.GoogleID = &googleID
+	user.AvatarURL = &avatarURL
+	user.IsActive = true
+
+	return nil
+}
+
+// LinkGoogleAccount links a Google account to an existing user
+func (s *UserStore) LinkGoogleAccount(ctx context.Context, userID int64, googleID, avatarURL string) error {
+	query := `
+		UPDATE users
+		SET google_id = $1, avatar_url = $2, updated_at = NOW()
+		WHERE id = $3
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	result, err := s.db.ExecContext(ctx, query, googleID, avatarURL, userID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+// CreateUserWithGoogle creates a new user with Google OAuth in a transaction
+func (s *UserStore) CreateUserWithGoogle(ctx context.Context, user *User, googleID, avatarURL string) error {
+	return withTx(s.db, ctx, func(tx *sql.Tx) error {
+		return s.CreateWithGoogle(ctx, tx, user, googleID, avatarURL)
+	})
 }

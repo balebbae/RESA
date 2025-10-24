@@ -3,7 +3,7 @@ import { Plus } from "lucide-react"
 
 import { Employees } from "@/components/resa/employees"
 import { DatePicker } from "@/components/resa/date-picker"
-import { NavUser } from "@/components/resa/nav-user"
+import { NavUser } from "@/components/ui/nav-user"
 import {
   Sidebar,
   SidebarContent,
@@ -14,7 +14,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
   SidebarSeparator,
-} from "@/components/resa/sidebar/sidebar"
+} from "@/components/resa/sidebar/core/sidebar"
 
 // This is sample data.
 const data = {

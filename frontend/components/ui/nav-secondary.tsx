@@ -8,7 +8,7 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/resa/sidebar/sidebar"
+} from "@/components/resa/sidebar/core/sidebar"
 
 export function NavSecondary({
   items,

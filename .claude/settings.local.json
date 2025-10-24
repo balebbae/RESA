@@ -15,7 +15,8 @@
       "Bash(curl -X OPTIONS http://localhost:8080/v1/restaurants/3 -H \"Origin: http://localhost:3000\" -H \"Access-Control-Request-Method: PATCH\" -H \"Access-Control-Request-Headers: content-type,authorization\" -i)",
       "Bash(curl -X OPTIONS http://localhost:8080/v1/restaurants/3 -H \"Origin: http://localhost:3000\" -H \"Access-Control-Request-Method: PATCH\" -H \"Access-Control-Request-Headers: content-type,authorization\" -v)",
       "Read(//tmp/**)",
-      "Bash(kill 72067 60983)"
+      "Bash(kill 72067 60983)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

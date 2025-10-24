@@ -13,7 +13,7 @@ import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/resa/sidebar/sidebar"
+} from "@/components/resa/sidebar/core/sidebar"
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"

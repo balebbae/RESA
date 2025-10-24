@@ -17,7 +17,7 @@ import {
   SidebarContent,
   SidebarHeader,
   SidebarRail,
-} from "@/components/ui/sidebar"
+} from "@/components/resa/sidebar/sidebar"
 import { NavUser } from "./nav-user"
 
 

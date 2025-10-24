@@ -16,11 +16,18 @@ import (
 
 func (app *application) restaurantsContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip middleware logic for OPTIONS requests (CORS preflight)
+		// The CORS middleware will handle these requests
+		if r.Method == http.MethodOptions {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		idParam := chi.URLParam(r, "restaurantID")
 		id, err := strconv.ParseInt(idParam, 10, 64)
 		if err != nil {
 			app.internalServerError(w, r, err)
-			return 
+			return
 		}
 
 		ctx := r.Context()
@@ -33,7 +40,7 @@ func (app *application) restaurantsContextMiddleware(next http.Handler) http.Han
 			default:
 				app.internalServerError(w, r, err)
 			}
-			return 
+			return
 		}
 
 		ctx = context.WithValue(ctx, restaurantCtx, restaurant)
@@ -54,17 +61,24 @@ func getRestaurantFromContext(r *http.Request) *store.Restaurant {
 
 func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip authentication for OPTIONS requests (CORS preflight)
+		// The CORS middleware will handle these requests
+		if r.Method == http.MethodOptions {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			app.unauthorizedErrorResponse(w, r, fmt.Errorf("authorization header is missing"))
-			return 
+			return
 		}
 
 		// parse it -> get the base64
 		parts := strings.Split(authHeader, " ") // authorization: Bearer <token>
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			app.unauthorizedErrorResponse(w, r, fmt.Errorf("authorization header is malformed"))
-			return 
+			return
 		}
 
 		token := parts[1]
@@ -72,7 +86,7 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 		jwtToken, err := app.authenticator.ValidateToken(token)
 		if err != nil {
 			app.unauthorizedErrorResponse(w, r, err)
-			return 
+			return
 		}
 
 		claims, _ := jwtToken.Claims.(jwt.MapClaims)
@@ -80,7 +94,7 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 		userID, err := strconv.ParseInt(fmt.Sprintf("%.f", claims["sub"]), 10, 64)
 		if err != nil {
 			app.unauthorizedErrorResponse(w, r, err)
-			return 
+			return
 		}
 
 		ctx := r.Context()
@@ -88,7 +102,7 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 		user, err := app.store.Users.GetByID(ctx, userID)
 		if err != nil {
 			app.unauthorizedErrorResponse(w, r, err)
-			return 
+			return
 		}
 
 		ctx = context.WithValue(ctx, userCtx, user)

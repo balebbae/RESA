@@ -25,7 +25,7 @@ import { getApiBase } from "@/lib/api"
 import { fetchWithAuth } from "@/lib/auth"
 
 const restaurantSchema = z.object({
-  name: z.string().min(1, "Restaurant name is required").max(255, "Name must be less than 255 characters"),
+  name: z.string().min(1, "Workplace name is required").max(255, "Name must be less than 255 characters"),
   address: z.string().min(1, "Address is required").max(500, "Address must be less than 500 characters"),
   phone: z.string().max(20, "Phone number must be less than 20 characters").optional().or(z.literal("")),
 })
@@ -102,18 +102,18 @@ export function CreateRestaurantCard({ onSuccess }: CreateRestaurantCardProps) {
             <Plus className="text-primary h-6 w-6" />
           </div>
           <div className="flex flex-col items-center gap-1 px-4">
-            <h3 className="text-base font-semibold">Add Restaurant</h3>
+            <h3 className="text-base font-semibold">Add Workplace</h3>
             <p className="text-muted-foreground text-center text-xs">
-              Create a new restaurant
+              Create a new workplace
             </p>
           </div>
         </button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create New Restaurant</DialogTitle>
+          <DialogTitle>Create New Workplace</DialogTitle>
           <DialogDescription>
-            Add a new restaurant to manage schedules and employees.
+            Add a new workplace to manage schedules and employees.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -121,7 +121,7 @@ export function CreateRestaurantCard({ onSuccess }: CreateRestaurantCardProps) {
 
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="name">Restaurant Name</FieldLabel>
+              <FieldLabel htmlFor="name">Workplace Name</FieldLabel>
               <Input
                 id="name"
                 type="text"
@@ -162,7 +162,7 @@ export function CreateRestaurantCard({ onSuccess }: CreateRestaurantCardProps) {
                 <p className="text-sm text-red-600">{errors.phone.message}</p>
               ) : (
                 <FieldDescription>
-                  Optional contact number for the restaurant
+                  Optional contact number for the workplace
                 </FieldDescription>
               )}
             </Field>
@@ -181,7 +181,7 @@ export function CreateRestaurantCard({ onSuccess }: CreateRestaurantCardProps) {
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Restaurant"}
+              {isSubmitting ? "Creating..." : "Create Workplace"}
             </Button>
           </div>
         </form>

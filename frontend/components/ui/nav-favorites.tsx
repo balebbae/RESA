@@ -23,7 +23,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/resa/sidebar/sidebar"
 
 export function NavFavorites({
   favorites,

@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RESA - Restaurant Employee Scheduling",
-  description: "Manage restaurant schedules and employees efficiently",
+  title: "RESA - Workplace Employee Scheduling",
+  description: "Manage workplace schedules and employees efficiently",
 };
 
 export default function RootLayout({

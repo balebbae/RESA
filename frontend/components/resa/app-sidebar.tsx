@@ -14,7 +14,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
   SidebarSeparator,
-} from "@/components/ui/sidebar"
+} from "@/components/resa/sidebar/sidebar"
 
 // This is sample data.
 const data = {

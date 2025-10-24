@@ -8,7 +8,14 @@
       "Read(//var/folders/z5/zm82r9b537x2tywnv0yq0shh0000gn/T/TemporaryItems/NSIRD_screencaptureui_tg365H/**)",
       "Read(//var/folders/z5/zm82r9b537x2tywnv0yq0shh0000gn/T/TemporaryItems/NSIRD_screencaptureui_8idLfG/**)",
       "Bash(npm run build:*)",
-      "Read(//private/tmp/**)"
+      "Read(//private/tmp/**)",
+      "Bash(go mod graph)",
+      "Bash(curl -X OPTIONS \"http://localhost:8080/v1/restaurants/3\" )",
+      "Bash(curl -X OPTIONS \"http://localhost:8080/v1/restaurants/3\" -H \"Origin: http://localhost:3000\" -H \"Access-Control-Request-Method: PATCH\" -H \"Access-Control-Request-Headers: content-type,authorization\" -i)",
+      "Bash(curl -X OPTIONS http://localhost:8080/v1/restaurants/3 -H \"Origin: http://localhost:3000\" -H \"Access-Control-Request-Method: PATCH\" -H \"Access-Control-Request-Headers: content-type,authorization\" -i)",
+      "Bash(curl -X OPTIONS http://localhost:8080/v1/restaurants/3 -H \"Origin: http://localhost:3000\" -H \"Access-Control-Request-Method: PATCH\" -H \"Access-Control-Request-Headers: content-type,authorization\" -v)",
+      "Read(//tmp/**)",
+      "Bash(kill 72067 60983)"
     ],
     "deny": [],
     "ask": []

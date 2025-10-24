@@ -51,6 +51,10 @@ func (s *MockUserStore) GetByEmail(ctx context.Context, email string) (*User, er
 	return &User{ID: 1, FirstName: "Test", LastName: "User", Email: email}, nil
 }
 
+func (s *MockUserStore) GetByEmailIncludingInactive(ctx context.Context, email string) (*User, error) {
+	return &User{ID: 1, FirstName: "Test", LastName: "User", Email: email}, nil
+}
+
 func (s *MockUserStore) CreateAndInvite(ctx context.Context, user *User, token string, exp time.Duration) error {
 	user.ID = 1
 	return nil

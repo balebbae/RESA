@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuAction,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/resa/sidebar/sidebar"
 import { CreateWorkspaceForm } from "@/components/resa/create-workspace-form"
 
 export function NavWorkspaces({
@@ -41,7 +41,7 @@ export function NavWorkspaces({
           {workplaces.length === 0 ? (
             <div className="px-2 py-4 text-center">
               <p className="text-sm text-muted-foreground">
-                No restaurants yet. Click the + button to create one.
+                No workplaces yet. Click the + button to create one.
               </p>
             </div>
           ) : (

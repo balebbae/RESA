@@ -10,6 +10,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Field,
   FieldGroup,
   FieldLabel,
@@ -25,7 +35,7 @@ import { getApiBase } from "@/lib/api"
 import { fetchWithAuth } from "@/lib/auth"
 
 const restaurantSchema = z.object({
-  name: z.string().min(1, "Restaurant name is required").max(255, "Name must be less than 255 characters"),
+  name: z.string().min(1, "Workplace name is required").max(255, "Name must be less than 255 characters"),
   address: z.string().min(1, "Address is required").max(500, "Address must be less than 500 characters"),
   phone: z.string().max(20, "Phone number must be less than 20 characters").optional().or(z.literal("")),
 })
@@ -52,6 +62,9 @@ export function CreateWorkspaceForm({
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState("")
 
   // Use external open state if provided, otherwise use internal state
   const dialogOpen = externalOpen !== undefined ? externalOpen : open
@@ -91,8 +104,11 @@ export function CreateWorkspaceForm({
             throw new Error(`Failed to fetch restaurant (${res.status})`)
           }
 
-          const restaurant = await res.json()
-          console.log("Fetched restaurant for editing:", restaurant)
+          const response = await res.json()
+          console.log("Fetched restaurant for editing:", response)
+
+          // Extract restaurant from response (API wraps it in {data: {...}})
+          const restaurant = response.data || response
 
           // Pre-fill the form with restaurant data using reset() to properly update all fields
           reset({
@@ -176,12 +192,60 @@ export function CreateWorkspaceForm({
     }
   }
 
+  const handleDelete = async () => {
+    if (!restaurantId) {
+      setError("Restaurant ID is required for deletion")
+      return
+    }
+
+    setIsDeleting(true)
+    setError(null)
+
+    try {
+      const endpoint = `${getApiBase()}/restaurants/${restaurantId}`
+      console.log(`DELETE request to:`, endpoint)
+
+      const res = await fetchWithAuth(endpoint, {
+        method: "DELETE",
+      })
+
+      console.log(`Delete response status: ${res.status}`)
+
+      if (!res.ok) {
+        let message = "Failed to delete restaurant"
+        try {
+          const text = await res.text()
+          console.error("Error response:", text)
+          message = text.slice(0, 300)
+        } catch {}
+        throw new Error(`${message} (${res.status})`)
+      }
+
+      // Success - restaurant deleted (204 No Content)
+      setShowDeleteConfirm(false)
+      setDeleteConfirmText("")
+      setDialogOpen(false)
+      reset()
+
+      // Notify parent component of successful deletion
+      if (onSuccess) {
+        onSuccess(null)
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to delete restaurant. Please try again.")
+      setShowDeleteConfirm(false)
+      setDeleteConfirmText("")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const isEditMode = mode === "edit"
-  const dialogTitle = isEditMode ? "Edit Restaurant" : "Create New Restaurant"
+  const dialogTitle = isEditMode ? "Edit Workplace" : "Create New Workplace"
   const dialogDescription = isEditMode
-    ? "Update restaurant information."
-    : "Add a new restaurant to manage schedules and employees."
-  const submitButtonText = isSubmitting ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update Restaurant" : "Create Restaurant")
+    ? "Update workplace information."
+    : "Add a new workplace to manage schedules and employees."
+  const submitButtonText = isSubmitting ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update Workplace" : "Create Workplace")
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -204,12 +268,12 @@ export function CreateWorkspaceForm({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {(error || isLoading) && (
-            <p className="text-sm text-red-600">{error || "Loading restaurant details..."}</p>
+            <p className="text-sm text-red-600">{error || "Loading workplace details..."}</p>
           )}
 
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="name">Restaurant Name</FieldLabel>
+              <FieldLabel htmlFor="name">Workplace Name</FieldLabel>
               <Input
                 id="name"
                 type="text"
@@ -250,30 +314,77 @@ export function CreateWorkspaceForm({
                 <p className="text-sm text-red-600">{errors.phone.message}</p>
               ) : (
                 <FieldDescription>
-                  Optional contact number for the restaurant
+                  Optional contact number for the workplace
                 </FieldDescription>
               )}
             </Field>
           </FieldGroup>
 
-          <div className="flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setDialogOpen(false)
-                setError(null)
-                reset()
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting || isLoading}>
-              {submitButtonText}
-            </Button>
+          <div className="flex justify-between gap-3">
+            {isEditMode ? (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </Button>
+            ) : (
+              <div />
+            )}
+            <div className="flex gap-3">
+              <Button type="submit" disabled={isSubmitting || isLoading}>
+                {submitButtonText}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={showDeleteConfirm}
+        onOpenChange={(open) => {
+          setShowDeleteConfirm(open)
+          if (!open) {
+            setDeleteConfirmText("")
+          }
+        }}
+      >
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this workplace and all associated data including employees, roles, schedules, and shifts. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <FieldLabel htmlFor="delete-confirm">
+              Type <span className="font-semibold">"GOODBYE FOREVER"</span> to confirm
+            </FieldLabel>
+            <Input
+              id="delete-confirm"
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="GOODBYE FOREVER"
+              className="mt-2"
+              disabled={isDeleting}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting || deleteConfirmText !== "GOODBYE FOREVER"}
+              className="bg-destructive text-destructive-foreground text-white hover:bg-destructive/80"
+            >
+              {isDeleting ? "Deleting..." : "Delete Workplace"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }

@@ -153,6 +153,7 @@ func (s *RestaurantStore) ListByUser(ctx context.Context, userID int64) ([]*Rest
 		SELECT id, employer_id, name, address, phone, created_at, updated_at, version
 		FROM restaurants
 		WHERE employer_id = $1
+		ORDER BY id ASC
 	`
 
 	var restaurants []*Restaurant

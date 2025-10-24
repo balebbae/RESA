@@ -29,7 +29,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/resa/sidebar/sidebar"
+import { useAuth } from "@/lib/auth"
 
 export function NavUser({
   user,
@@ -41,6 +42,7 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const { logout } = useAuth()
 
   return (
     <SidebarMenu>
@@ -91,9 +93,9 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut />
-              Log out
+            <DropdownMenuItem onClick={logout}>
+            <LogOut />
+            Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

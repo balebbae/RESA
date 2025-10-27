@@ -18,6 +18,7 @@ import {
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth"
+import { RestaurantProvider } from "@/lib/restaurant-context"
 
 /**
  * Protected layout for authenticated routes
@@ -54,31 +55,33 @@ export default function ResaLayout({
   }
 
   // User is authenticated, render the protected content
-  return <>
-    <SidebarProvider>
-      <SidebarLeft />
-      <SidebarInset>
-        <header className="bg-background sticky top-0 flex h-14 shrink-0 items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 px-3">
-            <SidebarTrigger />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbPage className="line-clamp-1">
-                    Workplaces
-                  </BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
-  {children}
-      </SidebarInset>
-      <SidebarRight />
-    </SidebarProvider>
-  </>
+  return (
+    <RestaurantProvider>
+      <SidebarProvider>
+        <SidebarLeft />
+        <SidebarInset>
+          <header className="bg-background sticky top-0 flex h-14 shrink-0 items-center gap-2">
+            <div className="flex flex-1 items-center gap-2 px-3">
+              <SidebarTrigger />
+              <Separator
+                orientation="vertical"
+                className="mr-2 data-[orientation=vertical]:h-4"
+              />
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="line-clamp-1">
+                      Workplaces
+                    </BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+          </header>
+          {children}
+        </SidebarInset>
+        <SidebarRight />
+      </SidebarProvider>
+    </RestaurantProvider>
+  )
 }

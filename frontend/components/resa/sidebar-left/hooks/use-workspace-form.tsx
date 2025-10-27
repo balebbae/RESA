@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { getApiBase } from "@/lib/api"
 import { fetchWithAuth } from "@/lib/auth"
-import type { WorkspaceFormData } from "../types/workspace"
+import type { WorkspaceFormData } from "@/components/resa/sidebar-left/types/workspace"
 
 const workspaceSchema = z.object({
   name: z.string().min(1, "Workplace name is required").max(255, "Name must be less than 255 characters"),
@@ -40,6 +40,8 @@ export function useWorkspaceForm({
     formState: { errors, isSubmitting },
     reset,
     setValue,
+    watch,
+    trigger,
   } = useForm<WorkspaceFormData>({
     resolver: zodResolver(workspaceSchema),
     defaultValues: {
@@ -142,5 +144,7 @@ export function useWorkspaceForm({
     error,
     reset,
     setValue,
+    watch,
+    trigger,
   }
 }

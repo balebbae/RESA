@@ -14,7 +14,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-} from "@/components/resa/sidebar/core/sidebar"
+} from "@/components/resa/sidebar-core/sidebar"
 
 export function Employees({
   employees,

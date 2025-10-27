@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { getApiBase } from "@/lib/api"
 import { fetchWithAuth } from "@/lib/auth"
-import type { Workspace, UseWorkspacesReturn } from "../types/workspace"
+import type { Workspace, UseWorkspacesReturn } from "@/components/resa/sidebar-left/types/workspace"
 
 /**
  * Custom hook for fetching and managing workplaces (restaurants)

@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input"
 import { useWorkspaceForm } from "../hooks/use-workspace-form"
 import { useWorkspaceDelete } from "../hooks/use-workspace-delete"
 import { WorkspaceDeleteDialog } from "./workspace-delete-dialog"
+import { PlacesAutocompleteInput } from "./components/places-autocomplete-input"
 
 interface WorkspaceFormDialogProps {
   mode?: "create" | "edit"
@@ -69,6 +70,9 @@ export function WorkspaceFormDialog({
     isLoading,
     error,
     reset,
+    setValue,
+    watch,
+    trigger,
   } = useWorkspaceForm({
     mode,
     workspaceId,
@@ -146,18 +150,26 @@ export function WorkspaceFormDialog({
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="address">Address</FieldLabel>
-                <Input
-                  id="address"
-                  type="text"
-                  placeholder="123 Main St, City, State 12345"
-                  {...register("address")}
+                <FieldLabel>Address</FieldLabel>
+                <PlacesAutocompleteInput
+                  value={watch("address") || ""}
+                  onChange={(address, details) => {
+                    setValue("address", address, { shouldValidate: true })
+                    // Log place details for future use (lat/lng, structured address)
+                    if (details && process.env.NODE_ENV === "development") {
+                      console.log("Place details:", details)
+                    }
+                  }}
+                  onBlur={() => trigger("address")}
+                  placeholder="Start typing to search for an address..."
+                  disabled={isSubmitting || isLoading}
+                  error={errors.address?.message}
                 />
                 {errors.address ? (
                   <p className="text-sm text-red-600">{errors.address.message}</p>
                 ) : (
                   <FieldDescription>
-                    Full street address including city and state
+                    Start typing to search for an address
                   </FieldDescription>
                 )}
               </Field>

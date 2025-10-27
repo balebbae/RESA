@@ -6,10 +6,10 @@ import {
   SidebarContent,
   SidebarHeader,
   SidebarRail,
-} from "@/components/resa/sidebar/core/sidebar"
-import { UserMenu } from "@/components/resa/sidebar/user/user-menu"
-import { WorkspaceList } from "@/components/resa/sidebar/workspaces/workspace-list"
-import { useWorkplaces } from "@/components/resa/sidebar/hooks/use-workplaces"
+} from "@/components/resa/sidebar-core/sidebar"
+import { UserMenu } from "@/components/resa/sidebar-left/user/user-menu"
+import { WorkspaceList } from "@/components/resa/sidebar-left/workspaces/workspace-list"
+import { useWorkplaces } from "@/components/resa/sidebar-left/hooks/use-workplaces"
 
 // TODO: Replace with actual user data from auth context
 const TEMP_USER_DATA = {

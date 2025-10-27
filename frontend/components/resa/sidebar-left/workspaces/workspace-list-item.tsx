@@ -5,9 +5,9 @@ import {
   SidebarMenuButton,
   SidebarMenuAction,
   SidebarMenuItem,
-} from "@/components/resa/sidebar/core/sidebar"
+} from "@/components/resa/sidebar-core/sidebar"
 import { WorkspaceIcon } from "./workspace-icon"
-import type { Workspace } from "../types/workspace"
+import type { Workspace } from "@/components/resa/sidebar-left/types/workspace"
 
 interface WorkspaceListItemProps {
   workspace: Workspace

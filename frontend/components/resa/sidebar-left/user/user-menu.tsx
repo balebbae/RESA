@@ -14,10 +14,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/resa/sidebar/core/sidebar"
+} from "@/components/resa/sidebar-core/sidebar"
 import { UserAvatar } from "./user-avatar"
 import { UserDropdownItems } from "./user-dropdown-items"
-import type { UserMenuProps } from "../types/user"
+import type { UserMenuProps } from "@/components/resa/sidebar-left/types/user"
 
 /**
  * User menu component with avatar and dropdown

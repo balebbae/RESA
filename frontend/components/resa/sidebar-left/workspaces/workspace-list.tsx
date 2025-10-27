@@ -6,11 +6,11 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-} from "@/components/resa/sidebar/core/sidebar"
+} from "@/components/resa/sidebar-core/sidebar"
 import { WorkspaceListItem } from "./workspace-list-item"
 import { WorkspaceEmptyState } from "./workspace-empty-state"
 import { WorkspaceFormDialog } from "./workspace-form-dialog"
-import type { Workspace } from "../types/workspace"
+import type { Workspace } from "@/components/resa/sidebar-left/types/workspace"
 
 interface WorkspaceListProps {
   workplaces: Workspace[]

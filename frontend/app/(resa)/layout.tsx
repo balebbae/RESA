@@ -1,7 +1,7 @@
 "use client"
 
-import { SidebarLeft } from "@/components/resa/sidebar-left"
-import { SidebarRight } from "@/components/resa/sidebar-right"
+import { SidebarLeft } from "@/components/resa/sidebar-left/sidebar-left"
+import { SidebarRight } from "@/components/resa/sidebar-right/sidebar-right"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -13,7 +13,7 @@ import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/resa/sidebar/core/sidebar"
+} from "@/components/resa/sidebar-core/sidebar"
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"

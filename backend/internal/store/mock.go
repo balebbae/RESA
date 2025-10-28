@@ -72,6 +72,10 @@ func (s *MockUserStore) Activate(ctx context.Context, token string) error {
 	return nil
 }
 
+func (s *MockUserStore) ResendInvitation(ctx context.Context, email string, token string, exp time.Duration) (*User, error) {
+	return &User{ID: 1, FirstName: "Test", LastName: "User", Email: email, IsActive: false}, nil
+}
+
 func (s *MockUserStore) GetByGoogleID(ctx context.Context, googleID string) (*User, error) {
 	return &User{ID: 1, FirstName: "Test", LastName: "User", Email: "test@example.com"}, nil
 }

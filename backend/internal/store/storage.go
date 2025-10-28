@@ -20,6 +20,7 @@ type Storage struct {
 		GetByID(context.Context, int64) (*User, error)
 		CreateAndInvite(context.Context, *User, string, time.Duration) error
 		Activate(context.Context, string) error
+		ResendInvitation(context.Context, string, string, time.Duration) (*User, error)
 		Delete(context.Context, int64) error
 		GetByEmail(context.Context, string) (*User, error)
 		GetByEmailIncludingInactive(context.Context, string) (*User, error)

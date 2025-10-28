@@ -120,6 +120,85 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+type ResendConfirmationPayload struct {
+	Email string `json:"email" validate:"required,email,max=255"`
+}
+
+// ResendConfirmationHandler godoc
+//
+//	@Summary		Resends confirmation email
+//	@Description	Resends the confirmation email to an inactive user
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		ResendConfirmationPayload	true	"User email"
+//	@Success		200		{object}	map[string]string			"Success message"
+//	@Failure		400		{object}	error
+//	@Failure		500		{object}	error
+//	@Router			/authentication/resend-confirmation [post]
+func (app *application) resendConfirmationHandler(w http.ResponseWriter, r *http.Request) {
+	var payload ResendConfirmationPayload
+	if err := readJSON(w, r, &payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := Validate.Struct(payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	ctx := r.Context()
+
+	// Generate new activation token
+	plainToken := uuid.New().String()
+
+	// Hash token for database storage
+	hash := sha256.Sum256([]byte(plainToken))
+	hashToken := hex.EncodeToString(hash[:])
+
+	// Resend invitation (creates new token, deletes old one)
+	user, err := app.store.Users.ResendInvitation(ctx, payload.Email, hashToken, app.config.mail.exp)
+	if err != nil {
+		// Don't reveal if user exists or is already active (security best practice)
+		// Just return generic success message
+		app.logger.Infow("Resend confirmation failed", "email", payload.Email, "error", err)
+		if err := app.jsonResponse(w, http.StatusOK, map[string]string{
+			"message": "If an account with that email exists and is not yet activated, a confirmation email has been sent.",
+		}); err != nil {
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	// Build activation URL
+	activationURL := fmt.Sprintf("%s/confirm/%s", app.config.frontendURL, plainToken)
+
+	isProdEnv := app.config.env == "production"
+	vars := struct {
+		FirstName     string
+		ActivationURL string
+	}{
+		FirstName:     user.FirstName,
+		ActivationURL: activationURL,
+	}
+
+	// Send email
+	status, err := app.mailer.Send(mailer.UserWelcomeTemplate, user.FirstName, user.Email, vars, !isProdEnv)
+	if err != nil {
+		app.logger.Errorw("error sending confirmation email", "error", err)
+		app.internalServerError(w, r, err)
+		return
+	}
+	app.logger.Infow("Confirmation email resent", "status code", status, "email", user.Email)
+
+	if err := app.jsonResponse(w, http.StatusOK, map[string]string{
+		"message": "Confirmation email has been sent. Please check your inbox.",
+	}); err != nil {
+		app.internalServerError(w, r, err)
+	}
+}
+
 type CreateUserTokenPayload struct {
 	Email string `json:"email" validate:"required,email,max=255"`
 	Password string `json:"password" validate:"required,min=3,max=72"`

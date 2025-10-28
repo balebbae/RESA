@@ -56,11 +56,16 @@ export function LoginForm({
       if (!res.ok) {
         let message = "Login failed"
         try {
-          const text = await res.text()
-          // Avoid rendering full HTML error bodies from proxies/servers
-          message = text.slice(0, 300)
-        } catch {}
-        throw new Error(`${message} (${res.status})`)
+          const errorData = await res.json()
+          message = errorData.error || errorData.message || "Login failed"
+        } catch {
+          // If JSON parsing fails, fall back to text
+          try {
+            const text = await res.text()
+            message = text.slice(0, 300)
+          } catch {}
+        }
+        throw new Error(message)
       }
 
       // API returns {"data": "JWT_TOKEN"}

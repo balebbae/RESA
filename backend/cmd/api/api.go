@@ -134,6 +134,7 @@ func (app *application) mount() http.Handler {
 			r.Post("/user", app.registerUserHandler)
 			r.Post("/token", app.createTokenHandler)
 			r.Post("/refresh", app.refreshTokenHandler)
+			r.Post("/resend-confirmation", app.resendConfirmationHandler)
 
 			// Google OAuth routes
 			r.Post("/google", app.googleLoginHandler)

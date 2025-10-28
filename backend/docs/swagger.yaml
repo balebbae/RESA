@@ -124,6 +124,14 @@ definitions:
     - last_name
     - password
     type: object
+  main.ResendConfirmationPayload:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+    required:
+    - email
+    type: object
   main.UpdateEmployeePayload:
     properties:
       email:
@@ -436,6 +444,36 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Refreshes an authentication token
+      tags:
+      - authentication
+  /authentication/resend-confirmation:
+    post:
+      consumes:
+      - application/json
+      description: Resends the confirmation email to an inactive user
+      parameters:
+      - description: User email
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.ResendConfirmationPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Resends confirmation email
       tags:
       - authentication
   /authentication/token:

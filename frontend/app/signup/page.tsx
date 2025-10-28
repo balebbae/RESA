@@ -55,7 +55,7 @@ export default function SignupPage() {
         <img
           src="/signup.png"
           alt="Image"
-          className="absolute inset-0 h-full w-full object-cover opacity-70 dark:brightness-[0.5] dark:grayscale "
+          className="absolute inset-0 h-full w-full object-cover opacity-70 "
         />
       </div>
     </div>

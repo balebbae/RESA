@@ -44,12 +44,12 @@ export function WorkspaceListItem({ workspace, onEdit }: WorkspaceListItemProps)
         asChild
         className={isSelected ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}
       >
-        <button onClick={handleSelect} className="flex items-center gap-2 w-full">
+        <button onClick={handleSelect} className="flex items-center gap-2 w-full hover:cursor-pointer">
           <WorkspaceIcon className="h-5 w-5" />
           <span>{workspace.name}</span>
         </button>
       </SidebarMenuButton>
-      <SidebarMenuAction onClick={handleEdit}>
+      <SidebarMenuAction onClick={handleEdit} className="hover:cursor-pointer">
         <Edit2 className="h-4 w-4" />
       </SidebarMenuAction>
     </SidebarMenuItem>

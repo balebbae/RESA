@@ -118,7 +118,7 @@ export function WorkspaceFormDialog({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0"
+              className="h-6 w-6 p-0 hover:cursor-pointer"
               onClick={() => setDialogOpen(true)}
             >
               <Plus className="h-4 w-4" />

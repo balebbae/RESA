@@ -22,13 +22,13 @@ export function UserDropdownItems() {
     <>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuItem>
+        <DropdownMenuItem className="hover:cursor-pointer">
           <Settings />
           Settings
         </DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={logout}>
+      <DropdownMenuItem onClick={logout} className="hover:cursor-pointer">
         <LogOut />
         Log out
       </DropdownMenuItem>

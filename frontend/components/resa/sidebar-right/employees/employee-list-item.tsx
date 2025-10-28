@@ -37,7 +37,7 @@ export function EmployeeListItem({ employee, onEdit }: EmployeeListItemProps) {
           </div>
         </div>
       </SidebarMenuButton>
-      <SidebarMenuAction onClick={handleEdit}>
+      <SidebarMenuAction onClick={handleEdit} className="hover:cursor-pointer">
         <Edit2 className="h-4 w-4" />
       </SidebarMenuAction>
     </SidebarMenuItem>

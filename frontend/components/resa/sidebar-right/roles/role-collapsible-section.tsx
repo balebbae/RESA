@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect, forwardRef, useImperativeHandle, useRef } from "react"
-import { ChevronRight, User } from "lucide-react"
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react"
+import { ChevronRight, Briefcase } from "lucide-react"
 import {
   Collapsible,
   CollapsibleContent,
@@ -17,58 +17,54 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/resa/sidebar-core/sidebar"
-import { useEmployees } from "./hooks/use-employees"
-import { EmployeeDetailSheet } from "./employee-detail-sheet"
-import { RoleCollapsibleSection, type RoleCollapsibleSectionRef } from "../roles/role-collapsible-section"
-import type { Employee } from "@/components/resa/sidebar-right/types/employee"
+import { useRoles } from "./hooks/use-roles"
+import { RoleDetailSheet } from "./role-detail-sheet"
+import type { Role } from "@/components/resa/sidebar-right/types/role"
 
-interface EmployeeCollapsibleSectionsProps {
+interface RoleCollapsibleSectionProps {
   restaurantId: number | null
 }
 
-export interface EmployeeCollapsibleSectionsRef {
+export interface RoleCollapsibleSectionRef {
   refetch: () => void
 }
 
 /**
- * Collapsible sections for employees and roles
- * Matches the original right sidebar pattern with expandable sections
+ * Collapsible section for roles
+ * Displays roles in a collapsible sidebar section with view/edit functionality
+ * Similar to employee collapsible section but for roles
  */
-export const EmployeeCollapsibleSections = forwardRef<
-  EmployeeCollapsibleSectionsRef,
-  EmployeeCollapsibleSectionsProps
->(function EmployeeCollapsibleSections({
+export const RoleCollapsibleSection = forwardRef<
+  RoleCollapsibleSectionRef,
+  RoleCollapsibleSectionProps
+>(function RoleCollapsibleSection({
   restaurantId,
 }, ref) {
-  const { employees, refetch } = useEmployees(restaurantId)
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
+  const { roles, refetch } = useRoles(restaurantId)
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
-  const rolesSectionRef = useRef<RoleCollapsibleSectionRef>(null)
 
-  // Expose refetch method to parent component (refetches both employees and roles)
+  // Expose refetch method to parent component
   useImperativeHandle(ref, () => ({
-    refetch: () => {
-      refetch()
-      rolesSectionRef.current?.refetch()
-    },
+    refetch,
   }))
 
-  // Update selected employee when employees list changes
+  // Update selected role when roles list changes
   useEffect(() => {
-    if (selectedEmployee && employees.length > 0) {
-      const updatedEmployee = employees.find(emp => emp.id === selectedEmployee.id)
-      if (updatedEmployee) {
-        setSelectedEmployee(updatedEmployee)
+    if (selectedRole && roles.length > 0) {
+      const updatedRole = roles.find(r => r.id === selectedRole.id)
+      if (updatedRole) {
+        setSelectedRole(updatedRole)
       }
     }
-  }, [employees, selectedEmployee?.id])
+  }, [roles, selectedRole?.id])
 
-  const handleEmployeeClick = (employee: Employee) => {
-    setSelectedEmployee(employee)
+  const handleRoleClick = (role: Role) => {
+    setSelectedRole(role)
     setIsSheetOpen(true)
   }
 
-  const handleEmployeeUpdate = () => {
+  const handleRoleUpdate = () => {
     refetch()
   }
 
@@ -78,12 +74,12 @@ export const EmployeeCollapsibleSections = forwardRef<
       <>
         <SidebarGroup className="py-0">
           <SidebarGroupLabel className="text-sidebar-foreground text-sm">
-            Employees
+            Roles
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <div className="px-2 py-4 text-center">
               <p className="text-sm text-muted-foreground">
-                Select a workplace to view employees
+                Select a workplace to view roles
               </p>
             </div>
           </SidebarGroupContent>
@@ -93,43 +89,54 @@ export const EmployeeCollapsibleSections = forwardRef<
     )
   }
 
+  // Format dates for display
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    } catch {
+      return dateString
+    }
+  }
+
   return (
     <>
-      {/* Employees Section */}
+      {/* Roles Section */}
       <SidebarGroup className="py-0">
-        <Collapsible defaultOpen={true} className="group/collapsible">
+        <Collapsible defaultOpen={false} className="group/collapsible">
           <SidebarGroupLabel
             asChild
             className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm hover:cursor-pointer"
           >
             <CollapsibleTrigger>
-              Employees{" "}
+              Roles{" "}
               <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
             </CollapsibleTrigger>
-            
-
           </SidebarGroupLabel>
           <CollapsibleContent>
             <SidebarGroupContent>
               <SidebarMenu>
-                {employees.length === 0 ? (
+                {roles.length === 0 ? (
                   <div className="px-2 py-4 text-center">
                     <p className="text-sm text-muted-foreground">
-                      No employees yet
+                      No roles configured yet
                     </p>
                   </div>
                 ) : (
-                  employees.map((employee) => (
-                    <SidebarMenuItem key={employee.id}>
+                  roles.map((role) => (
+                    <SidebarMenuItem key={role.id}>
                       <SidebarMenuButton
-                        onClick={() => handleEmployeeClick(employee)}
+                        onClick={() => handleRoleClick(role)}
                         className="h-auto min-h-14 py-2 hover:cursor-pointer"
                       >
-                        <User className="h-4 w-4" />
+                        <Briefcase className="h-4 w-4" />
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-sm">{employee.full_name}</span>
+                          <span className="text-sm">{role.name}</span>
                           <span className="text-xs text-muted-foreground">
-                            {employee.email}
+                            Created {formatDate(role.created_at)}
                           </span>
                         </div>
                       </SidebarMenuButton>
@@ -143,19 +150,13 @@ export const EmployeeCollapsibleSections = forwardRef<
       </SidebarGroup>
       <SidebarSeparator className="mx-0" />
 
-      {/* Roles Section */}
-      <RoleCollapsibleSection
-        ref={rolesSectionRef}
-        restaurantId={restaurantId}
-      />
-
-      {/* Employee Detail Sheet */}
-      <EmployeeDetailSheet
-        employee={selectedEmployee}
+      {/* Role Detail Sheet */}
+      <RoleDetailSheet
+        role={selectedRole}
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         restaurantId={restaurantId}
-        onSuccess={handleEmployeeUpdate}
+        onSuccess={handleRoleUpdate}
       />
     </>
   )

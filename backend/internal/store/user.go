@@ -156,13 +156,48 @@ func (s *UserStore) Activate(ctx context.Context, token string) error {
 			return err
 		}
 
-	// 3. clean the invitations 
+	// 3. clean the invitations
 		if err := s.deleteUserInvitations(ctx, tx, user.ID); err != nil {
 			return err
 		}
 
 		return nil
 	})
+}
+
+func (s *UserStore) ResendInvitation(ctx context.Context, email string, token string, invitationExp time.Duration) (*User, error) {
+	var user *User
+	err := withTx(s.db, ctx, func(tx *sql.Tx) error {
+		// 1. get user by email (including inactive users)
+		var err error
+		user, err = s.GetByEmailIncludingInactive(ctx, email)
+		if err != nil {
+			return err
+		}
+
+		// 2. ensure user is inactive (active users don't need confirmation)
+		if user.IsActive {
+			return errors.New("user is already active")
+		}
+
+		// 3. delete old invitation tokens
+		if err := s.deleteUserInvitations(ctx, tx, user.ID); err != nil {
+			return err
+		}
+
+		// 4. create new invitation token
+		if err := s.createUserInvitation(ctx, tx, token, invitationExp, user.ID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (s *UserStore) getUserFromInvitation(ctx context.Context, tx *sql.Tx, token string) (*User, error) {

@@ -5,7 +5,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { LoginForm } from "@/components/marketing/LoginForm"
 import { useAuth } from "@/lib/auth"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { getApiBase } from "@/lib/api"
 
 const livvic = Livvic({ subsets: ["latin"], weight: ["600"] });
 
@@ -14,6 +15,46 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const notice = searchParams.get("notice")
+  const email = searchParams.get("email")
+  const [resendStatus, setResendStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
+  const [resendMessage, setResendMessage] = useState("")
+
+  const handleResendConfirmation = async () => {
+    if (!email) return
+
+    setResendStatus("loading")
+    setResendMessage("")
+
+    try {
+      const res = await fetch(`${getApiBase()}/authentication/resend-confirmation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+
+      if (!res.ok) {
+        let message = "Failed to resend email"
+        try {
+          const errorData = await res.json()
+          message = errorData.error || errorData.message || "Failed to resend email"
+        } catch {
+          try {
+            const text = await res.text()
+            message = text.slice(0, 300)
+          } catch {}
+        }
+        throw new Error(message)
+      }
+
+      const data = await res.json()
+      setResendMessage(data.message || "Confirmation email has been sent!")
+      setResendStatus("success")
+    } catch (err) {
+      const error = err as Error
+      setResendMessage(error?.message || "Something went wrong. Please try again.")
+      setResendStatus("error")
+    }
+  }
 
   // Redirect authenticated users away from login page
   useEffect(() => {
@@ -48,7 +89,37 @@ export default function LoginPage() {
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
-            {notice === "check-email" ? (
+            {notice === "check-email" && email ? (
+              <div className="mb-4 space-y-2">
+                <Alert>
+                  <AlertDescription className="text-green-600">
+                    Account created. Please check your email to confirm your account.{" "}
+                    <button
+                      type="button"
+                      onClick={handleResendConfirmation}
+                      disabled={resendStatus === "loading"}
+                      className="underline hover:no-underline hover:cursor-pointer disabled:opacity-50"
+                    >
+                      {resendStatus === "loading" ? "Sending..." : "Click here to send again"}
+                    </button>
+                  </AlertDescription>
+                </Alert>
+                {resendStatus === "success" && resendMessage && (
+                  <Alert>
+                    <AlertDescription className="text-green-600">
+                      {resendMessage}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {resendStatus === "error" && resendMessage && (
+                  <Alert>
+                    <AlertDescription className="text-red-600">
+                      {resendMessage}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            ) : notice === "check-email" ? (
               <div className="mb-4">
                 <Alert>
                   <AlertDescription className="text-green-600">
@@ -65,7 +136,7 @@ export default function LoginPage() {
         <img
           src="/login.png"
           alt="Image"
-          className="absolute inset-0 h-full w-full object-cover opacity-70 dark:brightness-[0.5] dark:grayscale "
+          className="absolute inset-0 h-full w-full object-cover opacity-70 "
         />
       </div>
     </div>

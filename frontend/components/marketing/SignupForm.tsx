@@ -77,15 +77,21 @@ export function SignupForm({
       if (!res.ok) {
         let message = "Request failed"
         try {
-          const text = await res.text()
-          message = text.slice(0, 300)
-        } catch {}
-        throw new Error(`${message} (${res.status})`)
+          const errorData = await res.json()
+          message = errorData.error || errorData.message || "Request failed"
+        } catch {
+          // If JSON parsing fails, fall back to text
+          try {
+            const text = await res.text()
+            message = text.slice(0, 300)
+          } catch {}
+        }
+        throw new Error(message)
       }
 
       // 201 Created. Redirect to login with a notice to check email
       reset()
-      router.push("/login?notice=check-email")
+      router.push(`/login?notice=check-email&email=${encodeURIComponent(data.email)}`)
     } catch (err: any) {
       setError(err?.message || "Something went wrong. Please try again.")
     }

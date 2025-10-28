@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Edit2, Mail, Calendar } from "lucide-react"
+import { Edit2, Calendar, Briefcase } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -10,13 +10,13 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { useEmployeeForm } from "./hooks/use-employee-form"
-import { useEmployeeDelete } from "./hooks/use-employee-delete"
-import { EmployeeDeleteDialog } from "./employee-delete-dialog"
-import type { Employee } from "@/components/resa/sidebar-right/types/employee"
+import { useRoleForm } from "./hooks/use-role-form"
+import { useRoleDelete } from "./hooks/use-role-delete"
+import { RoleDeleteDialog } from "./role-delete-dialog"
+import type { Role } from "@/components/resa/sidebar-right/types/role"
 
-interface EmployeeDetailSheetProps {
-  employee: Employee | null
+interface RoleDetailSheetProps {
+  role: Role | null
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   restaurantId: number | null
@@ -24,16 +24,17 @@ interface EmployeeDetailSheetProps {
 }
 
 /**
- * Modal dialog that displays employee details with inline editing
+ * Modal dialog that displays role details with inline editing
  * Clicking edit button toggles inline edit mode with seamless in-place field replacement
+ * Similar to EmployeeDetailSheet but simpler (only name field)
  */
-export function EmployeeDetailSheet({
-  employee,
+export function RoleDetailSheet({
+  role,
   isOpen,
   onOpenChange,
   restaurantId,
   onSuccess,
-}: EmployeeDetailSheetProps) {
+}: RoleDetailSheetProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
@@ -53,11 +54,11 @@ export function EmployeeDetailSheet({
     isLoading,
     error,
     reset,
-  } = useEmployeeForm({
+  } = useRoleForm({
     mode: "edit",
     restaurantId,
-    employeeId: employee?.id,
-    onSuccess: (updatedEmployee) => {
+    roleId: role?.id,
+    onSuccess: (updatedRole) => {
       setIsEditing(false)
       if (onSuccess) {
         onSuccess()
@@ -66,7 +67,7 @@ export function EmployeeDetailSheet({
     isOpen: isOpen && isEditing,
   })
 
-  const { isDeleting, deleteEmployee } = useEmployeeDelete({
+  const { isDeleting, deleteRole } = useRoleDelete({
     restaurantId,
     onSuccess: () => {
       setShowDeleteConfirm(false)
@@ -78,7 +79,7 @@ export function EmployeeDetailSheet({
     },
   })
 
-  if (!employee) return null
+  if (!role) return null
 
   const handleEditClick = () => {
     setIsEditing(true)
@@ -94,9 +95,9 @@ export function EmployeeDetailSheet({
   }
 
   const handleDeleteConfirm = async () => {
-    if (!employee.id) return
+    if (!role.id) return
     try {
-      await deleteEmployee(employee.id)
+      await deleteRole(role.id)
     } catch {
       // Error is already set by the hook
       setShowDeleteConfirm(false)
@@ -121,7 +122,7 @@ export function EmployeeDetailSheet({
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Employee Details</DialogTitle>
+            <DialogTitle>Role Details</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -130,24 +131,27 @@ export function EmployeeDetailSheet({
               <p className="text-sm text-red-600">{error}</p>
             )}
 
-            {/* Employee Name Section */}
+            {/* Role Name Section */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 {!isEditing ? (
-                  <h2 className="text-2xl font-semibold">{employee.full_name}</h2>
+                  <div className="flex items-center gap-3">
+                    <Briefcase className="h-6 w-6 text-muted-foreground" />
+                    <h2 className="text-2xl font-semibold">{role.name}</h2>
+                  </div>
                 ) : (
                   <div className="space-y-1">
-                    <label htmlFor="full_name" className="text-sm font-medium">
-                      Full Name
+                    <label htmlFor="name" className="text-sm font-medium">
+                      Role Name
                     </label>
                     <Input
-                      id="full_name"
+                      id="name"
                       type="text"
-                      placeholder="John Doe"
-                      {...register("full_name")}
+                      placeholder="Manager"
+                      {...register("name")}
                     />
-                    {errors.full_name && (
-                      <p className="text-sm text-red-600">{errors.full_name.message}</p>
+                    {errors.name && (
+                      <p className="text-sm text-red-600">{errors.name.message}</p>
                     )}
                   </div>
                 )}
@@ -162,46 +166,18 @@ export function EmployeeDetailSheet({
                   type="button"
                 >
                   <Edit2 className="h-4 w-4" />
-                  <span className="sr-only">Edit employee</span>
+                  <span className="sr-only">Edit role</span>
                 </Button>
               )}
             </div>
 
-            {/* Email Section */}
-            <div className="space-y-1">
-              {!isEditing ? (
-                <div className="flex items-start gap-3">
-                  <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium">Email</p>
-                    <p className="text-sm text-muted-foreground">{employee.email}</p>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <label htmlFor="email" className="text-sm font-medium">
-                    Email
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="john.doe@example.com"
-                    {...register("email")}
-                  />
-                  {errors.email && (
-                    <p className="text-sm text-red-600">{errors.email.message}</p>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Added Date Section (always read-only) */}
+            {/* Created Date Section (always read-only) */}
             <div className="flex items-center gap-3">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">Added</p>
+                <p className="text-sm font-medium">Created</p>
                 <p className="text-sm text-muted-foreground">
-                  {formatDate(employee.created_at)}
+                  {formatDate(role.created_at)}
                 </p>
               </div>
             </div>
@@ -240,12 +216,12 @@ export function EmployeeDetailSheet({
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <EmployeeDeleteDialog
+      <RoleDeleteDialog
         open={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}
         onConfirm={handleDeleteConfirm}
         isDeleting={isDeleting}
-        employeeName={employee.full_name}
+        roleName={role.name}
       />
     </>
   )

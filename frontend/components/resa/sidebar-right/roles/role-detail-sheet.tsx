@@ -222,6 +222,8 @@ export function RoleDetailSheet({
         onConfirm={handleDeleteConfirm}
         isDeleting={isDeleting}
         roleName={role.name}
+        roleId={role.id}
+        restaurantId={restaurantId ?? undefined}
       />
     </>
   )

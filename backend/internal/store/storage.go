@@ -44,6 +44,7 @@ type Storage struct {
 		Delete(context.Context, int64) error
 		AssignRoles(context.Context, int64, []int64) error
 		RemoveRole(context.Context, int64, int64) error
+		GetRoles(context.Context, int64, int64) ([]*Role, error)
 	}
 	Roles interface {
 		Create(context.Context, *Role) error
@@ -51,6 +52,7 @@ type Storage struct {
 		ListByRestaurant(context.Context, int64) ([]*Role, error)
 		Update(context.Context, *Role) error
 		Delete(context.Context, int64) error
+		GetEmployees(context.Context, int64, int64) ([]*Employee, error)
 	}
 	ShiftTemplates interface {
 		Create(context.Context, *ShiftTemplate) error

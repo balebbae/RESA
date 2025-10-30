@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Edit2, Mail, Calendar } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { Edit2, Mail, Calendar, Briefcase, X, Plus } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -10,10 +10,21 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useEmployeeForm } from "./hooks/use-employee-form"
 import { useEmployeeDelete } from "./hooks/use-employee-delete"
 import { EmployeeDeleteDialog } from "./employee-delete-dialog"
-import type { Employee } from "@/components/resa/sidebar-right/types/employee"
+import { RoleFormDialog } from "../roles/role-form-dialog"
+import type { Employee, Role } from "@/components/resa/sidebar-right/types/employee"
+import { getApiBase } from "@/lib/api"
+import { fetchWithAuth } from "@/lib/auth"
 
 interface EmployeeDetailSheetProps {
   employee: Employee | null
@@ -37,6 +48,16 @@ export function EmployeeDetailSheet({
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+  // Role state management
+  const [employeeRoles, setEmployeeRoles] = useState<Role[]>([])
+  const [availableRoles, setAvailableRoles] = useState<Role[]>([])
+  const [selectedRoles, setSelectedRoles] = useState<Role[]>([])
+  const [rolesLoading, setRolesLoading] = useState(false)
+  const [rolesError, setRolesError] = useState<string | null>(null)
+  const [isAssigningRoles, setIsAssigningRoles] = useState(false)
+  const [showRoleDialog, setShowRoleDialog] = useState(false)
+  const [selectValue, setSelectValue] = useState<string>("")
+
   // Reset editing state when modal closes
   useEffect(() => {
     if (!isOpen) {
@@ -47,7 +68,7 @@ export function EmployeeDetailSheet({
   const {
     register,
     handleSubmit,
-    onSubmit,
+    onSubmit: originalOnSubmit,
     errors,
     isSubmitting,
     isLoading,
@@ -57,7 +78,69 @@ export function EmployeeDetailSheet({
     mode: "edit",
     restaurantId,
     employeeId: employee?.id,
-    onSuccess: (updatedEmployee) => {
+    onSuccess: async (updatedEmployee: any) => {
+      // Extract employee ID from either the updated employee or the existing employee
+      const employeeId = updatedEmployee?.id || updatedEmployee?.data?.id || employee?.id
+
+      // Handle role updates
+      if (restaurantId && employeeId) {
+        try {
+          setIsAssigningRoles(true)
+
+          // Calculate role differences
+          const rolesToAdd = selectedRoles.filter(
+            sr => !employeeRoles.some(er => er.id === sr.id)
+          )
+          const rolesToRemove = employeeRoles.filter(
+            er => !selectedRoles.some(sr => sr.id === er.id)
+          )
+
+          // Step 1: Remove roles (DELETE)
+          if (rolesToRemove.length > 0) {
+            for (const role of rolesToRemove) {
+              const deleteRes = await fetchWithAuth(
+                `${getApiBase()}/restaurants/${restaurantId}/employees/${employeeId}/roles/${role.id}`,
+                { method: "DELETE" }
+              )
+
+              if (!deleteRes.ok) {
+                const errorText = await deleteRes.text()
+                throw new Error(`Failed to remove role ${role.name}`)
+              }
+            }
+          }
+
+          // Step 2: Add new roles (POST)
+          if (rolesToAdd.length > 0) {
+            const roleIds = rolesToAdd.map(role => role.id)
+
+            const addRes = await fetchWithAuth(
+              `${getApiBase()}/restaurants/${restaurantId}/employees/${employeeId}/roles`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ role_ids: roleIds }),
+              }
+            )
+
+            if (!addRes.ok) {
+              const errorText = await addRes.text()
+              throw new Error("Failed to add roles")
+            }
+          }
+
+          // Update local state with new roles
+          setEmployeeRoles(selectedRoles)
+
+        } catch (err) {
+          setRolesError(err instanceof Error ? err.message : "Failed to update roles")
+          setIsAssigningRoles(false)
+          return // Don't exit edit mode if role assignment fails
+        } finally {
+          setIsAssigningRoles(false)
+        }
+      }
+
       setIsEditing(false)
       if (onSuccess) {
         onSuccess()
@@ -77,6 +160,55 @@ export function EmployeeDetailSheet({
       }
     },
   })
+
+  // Fetch employee roles and available roles
+  const fetchRoles = useCallback(async () => {
+    if (!restaurantId || !employee?.id) return
+
+    try {
+      setRolesLoading(true)
+      setRolesError(null)
+
+      // Fetch all available roles for the restaurant
+      const rolesRes = await fetchWithAuth(`${getApiBase()}/restaurants/${restaurantId}/roles`)
+      if (!rolesRes.ok) {
+        throw new Error(`Failed to fetch roles (${rolesRes.status})`)
+      }
+      const rolesResponse = await rolesRes.json()
+      const roles = Array.isArray(rolesResponse) ? rolesResponse : (rolesResponse.data || [])
+      setAvailableRoles(roles)
+
+      // Fetch employee-specific roles
+      const employeeRolesRes = await fetchWithAuth(`${getApiBase()}/restaurants/${restaurantId}/employees/${employee.id}/roles`)
+      if (!employeeRolesRes.ok) {
+        throw new Error(`Failed to fetch employee roles (${employeeRolesRes.status})`)
+      }
+      const employeeRolesResponse = await employeeRolesRes.json()
+      const empRoles = Array.isArray(employeeRolesResponse) ? employeeRolesResponse : (employeeRolesResponse.data || [])
+      setEmployeeRoles(empRoles)
+
+    } catch (err) {
+      console.error("Error fetching roles:", err)
+      setRolesError(err instanceof Error ? err.message : "Failed to load roles")
+      setAvailableRoles([])
+      setEmployeeRoles([])
+    } finally {
+      setRolesLoading(false)
+    }
+  }, [restaurantId, employee?.id])
+
+  // Fetch employee roles and available roles when dialog opens
+  useEffect(() => {
+    if (!isOpen || !restaurantId || !employee?.id) return
+    fetchRoles()
+  }, [isOpen, restaurantId, employee?.id, fetchRoles])
+
+  // Initialize selected roles when entering edit mode
+  useEffect(() => {
+    if (isEditing) {
+      setSelectedRoles([...employeeRoles])
+    }
+  }, [isEditing, employeeRoles])
 
   if (!employee) return null
 
@@ -103,6 +235,45 @@ export function EmployeeDetailSheet({
     }
   }
 
+  const handleFormSubmit = handleSubmit(originalOnSubmit)
+
+  const handleRoleSelect = (value: string) => {
+    if (value === "create-new") {
+      setShowRoleDialog(true)
+      setSelectValue("") // Reset dropdown immediately
+      return
+    }
+
+    const role = availableRoles.find(r => r.id === parseInt(value))
+    if (role && !selectedRoles.find(r => r.id === role.id)) {
+      setSelectedRoles([...selectedRoles, role])
+      setSelectValue("") // Reset dropdown after adding role
+    }
+  }
+
+  const handleRoleRemove = (roleId: number) => {
+    setSelectedRoles(selectedRoles.filter(r => r.id !== roleId))
+  }
+
+  const handleRoleCreated = async (newRole: unknown) => {
+    // Refetch roles to get the latest list from backend
+    await fetchRoles()
+
+    // Automatically select the newly created role
+    if (newRole && typeof newRole === 'object' && 'id' in newRole) {
+      const role = newRole as Role
+      setSelectedRoles(prev => {
+        // Only add if not already selected
+        if (prev.some(r => r.id === role.id)) {
+          return prev
+        }
+        return [...prev, role]
+      })
+    }
+
+    setShowRoleDialog(false)
+  }
+
   // Format dates for display
   const formatDate = (dateString: string) => {
     try {
@@ -124,7 +295,7 @@ export function EmployeeDetailSheet({
             <DialogTitle>Employee Details</DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleFormSubmit} className="space-y-6">
             {/* Error message (edit mode only) */}
             {error && isEditing && (
               <p className="text-sm text-red-600">{error}</p>
@@ -195,6 +366,91 @@ export function EmployeeDetailSheet({
               )}
             </div>
 
+            {/* Roles Section */}
+            <div className="space-y-2">
+              {!isEditing ? (
+                <div className="flex items-start gap-3">
+                  <Briefcase className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-2">Roles</p>
+                    {rolesLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading roles...</p>
+                    ) : employeeRoles.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {employeeRoles.map((role) => (
+                          <Badge key={role.id} variant="secondary">
+                            {role.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No roles assigned</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <label htmlFor="role" className="text-sm font-medium">
+                    Roles (Optional)
+                  </label>
+                  <Select
+                    value={selectValue}
+                    onValueChange={(value) => {
+                      setSelectValue(value)
+                      handleRoleSelect(value)
+                    }}
+                    disabled={rolesLoading}
+                  >
+                    <SelectTrigger id="role" className="w-full">
+                      <SelectValue placeholder={rolesLoading ? "Loading roles..." : "Select a role"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableRoles.length === 0 && !rolesLoading && (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                          No roles available
+                        </div>
+                      )}
+                      {availableRoles.map((role) => (
+                        <SelectItem
+                          key={role.id}
+                          value={role.id.toString()}
+                          disabled={selectedRoles.some(r => r.id === role.id)}
+                        >
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                      {availableRoles.length > 0 && (
+                        <SelectItem value="create-new" className="text-primary font-medium">
+                          <Plus className="h-4 w-4 inline mr-2" />
+                          Create new role
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {rolesError && (
+                    <p className="text-sm text-red-600">{rolesError}</p>
+                  )}
+                  {selectedRoles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {selectedRoles.map((role) => (
+                        <Badge key={role.id} variant="secondary" className="gap-1">
+                          {role.name}
+                          <button
+                            type="button"
+                            onClick={() => handleRoleRemove(role.id)}
+                            className="ml-1 rounded-full hover:bg-muted"
+                            aria-label={`Remove ${role.name}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
             {/* Added Date Section (always read-only) */}
             <div className="flex items-center gap-3">
               <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -213,7 +469,7 @@ export function EmployeeDetailSheet({
                   type="button"
                   variant="destructive"
                   onClick={handleDeleteClick}
-                  disabled={isDeleting || isSubmitting}
+                  disabled={isDeleting || isSubmitting || isAssigningRoles}
                 >
                   Delete
                 </Button>
@@ -222,15 +478,15 @@ export function EmployeeDetailSheet({
                     type="button"
                     variant="outline"
                     onClick={handleCancelClick}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isAssigningRoles}
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
-                    disabled={isSubmitting || isLoading}
+                    disabled={isSubmitting || isLoading || isAssigningRoles}
                   >
-                    {isSubmitting ? "Saving..." : "Save"}
+                    {isAssigningRoles ? "Assigning roles..." : isSubmitting ? "Saving..." : "Save"}
                   </Button>
                 </div>
               </div>
@@ -246,6 +502,15 @@ export function EmployeeDetailSheet({
         onConfirm={handleDeleteConfirm}
         isDeleting={isDeleting}
         employeeName={employee.full_name}
+      />
+
+      {/* Role Creation Dialog */}
+      <RoleFormDialog
+        mode="create"
+        restaurantId={restaurantId}
+        isOpen={showRoleDialog}
+        onOpenChange={setShowRoleDialog}
+        onSuccess={handleRoleCreated}
       />
     </>
   )

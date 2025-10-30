@@ -882,6 +882,44 @@ paths:
       tags:
       - employee
   /restaurants/{restaurant_id}/employees/{id}/roles:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all roles assigned to a specific employee
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Role'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get employee roles
+      tags:
+      - employee
     post:
       consumes:
       - application/json
@@ -1159,6 +1197,45 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Updates a role
+      tags:
+      - role
+  /restaurants/{restaurant_id}/roles/{id}/employees:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all employees assigned to a specific role
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Employee'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get employees for a role
       tags:
       - role
   /restaurants/{restaurant_id}/schedules:

@@ -245,3 +245,44 @@ func (s *EmployeeStore) RemoveRole(ctx context.Context, employeeID int64, roleID
 
 	return nil
 }
+
+func (s *EmployeeStore) GetRoles(ctx context.Context, employeeID, restaurantID int64) ([]*Role, error) {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `
+		SELECT r.id, r.restaurant_id, r.name, r.created_at, r.updated_at
+		FROM roles r
+		INNER JOIN employee_roles er ON r.id = er.role_id
+		WHERE er.employee_id = $1
+		  AND r.restaurant_id = $2
+		ORDER BY r.name ASC`
+
+	rows, err := s.db.QueryContext(ctx, query, employeeID, restaurantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var roles []*Role
+	for rows.Next() {
+		var role Role
+		err := rows.Scan(
+			&role.ID,
+			&role.RestaurantID,
+			&role.Name,
+			&role.CreatedAt,
+			&role.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		roles = append(roles, &role)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return roles, nil
+}

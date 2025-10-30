@@ -172,6 +172,9 @@ func (app *application) mount() http.Handler {
 						r.Get("/",    app.getRoleHandler)
 						r.Patch("/",  app.checkRestaurantOwnership(app.updateRoleHandler))
 						r.Delete("/", app.checkRestaurantOwnership(app.deleteRoleHandler))
+
+						// get employees for role
+						r.Get("/employees", app.getRoleEmployeesHandler)
 					})
 				})
 
@@ -185,6 +188,7 @@ func (app *application) mount() http.Handler {
 						r.Delete("/", app.checkRestaurantOwnership(app.deleteEmployeeHandler))
 
 						// manage employee ⇄ role
+						r.Get("/roles",                 app.getEmployeeRolesHandler)
 						r.Post("/roles",                app.checkRestaurantOwnership(app.addEmployeeRolesHandler))
 						r.Delete("/roles/{roleID}",     app.checkRestaurantOwnership(app.removeEmployeeRoleHandler))
 					})

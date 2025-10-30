@@ -159,3 +159,45 @@ func (s *RoleStore) Delete(ctx context.Context, id int64) error {
 
 	return nil
 }
+
+func (s *RoleStore) GetEmployees(ctx context.Context, roleID, restaurantID int64) ([]*Employee, error) {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `
+		SELECT e.id, e.restaurant_id, e.full_name, e.email, e.created_at, e.updated_at
+		FROM employees e
+		INNER JOIN employee_roles er ON e.id = er.employee_id
+		WHERE er.role_id = $1
+		  AND e.restaurant_id = $2
+		ORDER BY e.full_name ASC`
+
+	rows, err := s.db.QueryContext(ctx, query, roleID, restaurantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var employees []*Employee
+	for rows.Next() {
+		var employee Employee
+		err := rows.Scan(
+			&employee.ID,
+			&employee.RestaurantID,
+			&employee.FullName,
+			&employee.Email,
+			&employee.CreatedAt,
+			&employee.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		employees = append(employees, &employee)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return employees, nil
+}

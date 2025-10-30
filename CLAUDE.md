@@ -4,152 +4,480 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-RESA (Restaurant Employee Scheduling Application) is a full-stack monorepo with a Go backend and Next.js frontend. The backend is complete; the frontend is under development.
+RESA (Restaurant Employee Scheduling Application) is a full-stack web application for restaurant owners to manage employee shift scheduling. The backend is production-ready Go/PostgreSQL, while the frontend (Next.js/React) is under active development.
 
 **Tech Stack:**
-- Backend: Go 1.23.1 with Chi router, PostgreSQL (no ORM), Redis caching
-- Frontend: Next.js 15.5.5 with React 19, TypeScript, Tailwind CSS 4, ShadCN UI
-- Authentication: JWT tokens + Magic Links (passwordless)
-- External Services: SendGrid (email)
+- **Backend:** Go 1.23.1, Chi router, PostgreSQL (raw SQL), Redis (optional caching), JWT auth, SendGrid emails
+- **Frontend:** Next.js 15.5.5 (App Router), React 19, TypeScript, Tailwind CSS 4, ShadCN UI
 
 ## Development Commands
 
-### Backend (from `/backend`)
+### Starting the Application
 
 ```bash
-# Start development server with hot reload (uses Air)
-air
+# Start all services (backend + frontend + Docker) with tmux
+make dev
 
-# Build the application
-go build -o ./bin/main ./cmd/api
+# Start without tmux (background processes with logs)
+make dev-no-tmux
 
-# Run tests
-make test
-# or
-go test -v ./...
+# Stop development servers (keeps Docker running)
+make stop
 
-# Database migrations
-make migrate-up         # Run all pending migrations
-make migrate-down       # Rollback last migration
-make migrate-create <name>  # Create new migration file
-
-# Seed database with test data
-make seed
-
-# Generate Swagger API documentation
-make gen-docs
+# Tail application logs
+make logs
 ```
 
-**Environment Setup:** The backend requires a `.env` file in `/backend`. Reference `backend/cmd/api/main.go:48-88` for required variables (DB_ADDR, REDIS_ADDR, SENDGRID_API_KEY, AUTH_TOKEN_SECRET, etc.).
+The `make dev` command:
+- Starts PostgreSQL and Redis via Docker Compose in `backend/` directory
+- Runs backend with Air (hot reload) on `localhost:8080`
+- Runs frontend with Turbopack on `localhost:3000`
+- Uses tmux for easy window management (if available)
 
-**Database:** PostgreSQL connection string defaults to `postgres://admin:adminpassword@localhost:5432/resa?sslmode=disable`. Use Docker Compose: `docker-compose up -d` from `/backend`.
-
-### Frontend (from `/frontend`)
+### Backend Commands
 
 ```bash
-# Start development server with Turbopack
+cd backend
+
+# Development with hot reload (requires Air: go install github.com/air-verse/air@latest)
+air
+
+# Manual build
+go build -o ./bin/main ./cmd/api
+
+# Generate Swagger API documentation (regenerate after changing handlers)
+make gen-docs
+
+# Database migrations (requires golang-migrate)
+make migrate-up         # Apply all pending migrations
+make migrate-down       # Rollback last migration
+make migrate-create <name>  # Create new migration files
+```
+
+**Note:** Migrations are in `backend/cmd/migrate/migrations/` as sequential `.up.sql` and `.down.sql` files.
+
+### Frontend Commands
+
+```bash
+cd frontend
+
+# Development server with Turbopack
 npm run dev
 
-# Build for production
+# Production build
 npm run build
 
-# Start production server
-npm start
-
-# Run linter
+# Lint
 npm run lint
 ```
 
-**Environment Setup:** Frontend requires `NEXT_PUBLIC_API_URL` environment variable to connect to the backend API (see `frontend/lib/api.ts:2-4`).
-
 ## Architecture
 
-### Backend Architecture (Clean Architecture / Repository Pattern)
+### Backend Structure
 
 ```
 backend/
 ├── cmd/
-│   ├── api/           # HTTP handlers, middleware, routing, server setup
-│   └── migrate/       # Database migrations (SQL files)
+│   ├── api/              # HTTP layer - handlers, middleware, routing
+│   │   ├── main.go       # Entry point, app initialization
+│   │   ├── api.go        # Route definitions in mount() function
+│   │   ├── {resource}.go # Handlers per resource (employees.go, roles.go, etc.)
+│   │   └── middlewares.go # AuthTokenMiddleware, BasicAuthMiddleware, etc.
+│   └── migrate/
+│       └── migrations/   # SQL migrations (numbered sequentially)
 ├── internal/
-│   ├── store/         # Data access layer (repository pattern)
-│   │   ├── cache/     # Redis caching implementations
-│   │   ├── *.go       # Entity-specific stores (user, restaurant, etc.)
-│   │   └── storage.go # Storage interface definitions
-│   ├── auth/          # JWT authentication logic
-│   ├── mailer/        # SendGrid email integration
-│   ├── db/            # Database connection setup
-│   ├── env/           # Environment variable utilities
-│   └── ratelimiter/   # Rate limiting implementation
-└── docs/              # Swagger documentation (auto-generated)
+│   ├── store/            # Data access layer (Repository Pattern)
+│   │   ├── storage.go    # Interface definitions for all repositories
+│   │   ├── {resource}.go # Repository implementations (employee.go, role.go, etc.)
+│   │   └── cache/        # Redis caching implementations
+│   ├── auth/             # JWT token generation/validation
+│   ├── mailer/           # SendGrid email integration
+│   ├── db/               # Database connection setup
+│   ├── env/              # Environment variable utilities
+│   └── ratelimiter/      # Rate limiting
+└── docs/                 # Auto-generated Swagger docs (don't edit manually)
 ```
 
 **Key Patterns:**
 
-1. **Storage Layer** (`internal/store/storage.go:17-86`): Interface-based repository pattern with dedicated stores for each entity (Users, Restaurants, Employees, Roles, ShiftTemplates, Schedules, ScheduledShifts). All database operations go through these interfaces.
+1. **Repository Pattern:** All database operations go through interfaces in `storage.go`. No direct DB access from handlers.
 
-2. **Redis Caching** (`internal/store/cache/`): Optional Redis caching for restaurants and schedules. Enabled via `REDIS_ENABLED` env var. Cache invalidation happens automatically on updates.
+2. **Clean Architecture:**
+   - Handlers parse requests and handle HTTP concerns
+   - Store methods handle database queries
+   - Clear separation between layers
 
-3. **User Creation Saga** (README.md:42-50): Multi-step user registration with magic link verification:
-   - User Registration → Email Verification → Account Activation → Profile Completion
-   - Each step must complete before proceeding; includes compensation for failures
+3. **No ORM:** Raw SQL with parameterized queries (`$1, $2, $3` placeholders)
 
-4. **Magic Links** (README.md:52-60): Passwordless authentication using time-limited JWT tokens sent via SendGrid.
+4. **Context Timeouts:** All DB queries use `QueryTimeoutDuration` (5 seconds)
 
-5. **No ORM**: Raw SQL queries throughout. Use `context.Context` for all database operations with 5-second timeout (see `store.QueryTimeoutDuration`).
+5. **Optional Caching:** Redis can be enabled/disabled via `REDIS_ENABLED` env var without breaking functionality
 
-### Frontend Architecture (Next.js App Router)
+6. **Authorization Pattern:**
+   - All restaurant-scoped endpoints verify ownership
+   - Return `404` (not `401`) to non-owners to prevent information disclosure
+   - Use `checkRestaurantOwnership()` middleware wrapper
+
+### Frontend Structure
 
 ```
 frontend/
 ├── app/
-│   ├── (resa)/        # Authenticated routes (route group)
-│   │   ├── home/
-│   │   ├── calendar/
-│   │   ├── settings/
-│   │   └── onboard/
-│   ├── login/         # Login page
-│   ├── signup/        # Sign up page
-│   ├── confirm/       # Magic link confirmation
-│   └── dashboard/     # Dashboard (legacy/migration?)
+│   ├── (resa)/          # Protected routes - route group requiring auth
+│   │   ├── layout.tsx   # Auth boundary with sidebar layout
+│   │   └── dashboard/
+│   ├── login/
+│   ├── signup/
+│   └── confirm/         # Magic link email confirmation
 ├── components/
-│   ├── ui/            # ShadCN UI components (56 components)
-│   ├── marketing/     # Marketing page components
-│   └── resa/          # Application-specific components
-└── lib/
-    ├── api.ts         # API base URL configuration
-    └── utils.ts       # Utility functions
+│   ├── ui/              # ShadCN UI primitives (shadcn-ui.com)
+│   ├── marketing/
+│   └── resa/            # App-specific components
+│       ├── sidebar-left/    # Navigation sidebar
+│       ├── sidebar-right/   # Context panels (employee/role details)
+│       └── sidebar-core/    # Shared sidebar primitives
+├── lib/
+│   ├── auth.tsx         # Auth context, token management, fetchWithAuth()
+│   ├── api.ts           # API client utilities
+│   ├── restaurant-context.tsx  # Current restaurant state management
+│   └── utils.ts         # General utilities
+└── hooks/               # Custom React hooks
 ```
 
-**Routing:** Uses Next.js 15 App Router with route groups. `(resa)` group likely contains authenticated routes requiring login.
+**Key Patterns:**
 
-**UI Components:** Built with ShadCN UI + Radix UI primitives. Import from `@/components/ui/*`.
+1. **Route Groups:** `(resa)` is a Next.js route group - groups routes without affecting URL structure
 
-**Styling:** Tailwind CSS 4 with custom animations via `tw-animate-css`.
+2. **Authentication:**
+   - JWT tokens stored in localStorage
+   - `AuthProvider` context wraps the app
+   - `useAuth()` hook provides login/logout/user state
+   - `fetchWithAuth()` handles automatic token refresh on 401
 
-## Database Schema
+3. **Protected Routes:**
+   - `app/(resa)/layout.tsx` checks auth and redirects to `/login` if needed
+   - All pages under `(resa)/` are automatically protected
 
-Key entities (see backend/README.md:70-80 for details):
-- **users** - Application users (owners and employees)
-- **restaurants** - Restaurant info and ownership
-- **roles** - Employee positions within restaurants
-- **employees** - Employee records per restaurant
-- **schedules** - Weekly work schedules
-- **shifts** - Individual shifts within schedules
+4. **Restaurant Context:**
+   - `RestaurantProvider` manages currently selected restaurant
+   - Wraps protected routes in `(resa)/layout.tsx`
 
-Migrations are in `backend/cmd/migrate/migrations/` as sequentially numbered SQL files.
+5. **API Integration:**
+   - Base URL from `NEXT_PUBLIC_API_URL` env var (defaults to `http://localhost:8080/v1`)
+   - Use `fetchWithAuth()` from `lib/auth.tsx` for authenticated requests
+
+## Database
+
+**Connection:** PostgreSQL via Docker Compose (`backend/docker-compose.yml`)
+
+**Schema:** Migrations in `backend/cmd/migrate/migrations/`
+
+**Core Entities:**
+- `users` - Application users (owners and employees)
+- `restaurants` - Restaurant locations owned by users
+- `employees` - Employee records per restaurant
+- `roles` - Job positions (many-to-many with employees via `employee_roles`)
+- `shift_templates` - Recurring shift patterns
+- `schedules` - Weekly schedule containers
+- `scheduled_shifts` - Individual shifts within schedules
+
+**Migration Pattern:**
+- Sequential numbered files: `000001_name.up.sql` and `000001_name.down.sql`
+- Always write both up and down migrations
+- Use `make migrate-create <name>` to generate new migration pair
+
+## Authentication Flow
+
+RESA uses **passwordless authentication** (magic links):
+
+1. User signs up with email
+2. Backend sends magic link via SendGrid
+3. User clicks link → account activated
+4. JWT token issued (24h expiry)
+5. Token stored in localStorage
+6. Auto-refresh at 80% of token lifetime
+
+**For Development:**
+- Backend: JWT secret in `AUTH_TOKEN_SECRET` env var
+- Frontend: Tokens managed by `lib/auth.tsx`
+- API requires `Authorization: Bearer <token>` header for protected routes
 
 ## API Documentation
 
-Swagger docs are auto-generated and available at `/v1/swagger/` with basic auth when the backend is running. Credentials default to `admin:admin` (configurable via `AUTH_BASIC_USER` and `AUTH_BASIC_PASS`).
+Swagger UI available at `http://localhost:8080/v1/swagger/` (basic auth: `admin:admin`)
 
-Regenerate docs after API changes: `make gen-docs` from `/backend`.
+**Regenerating Docs:**
+```bash
+cd backend
+make gen-docs
+```
+
+**Swagger Comment Pattern:**
+```go
+// HandlerName godoc
+//
+//  @Summary      Brief description
+//  @Description  Detailed description
+//  @Tags         resource-name
+//  @Accept       json
+//  @Produce      json
+//  @Param        restaurantID  path  int  true  "Restaurant ID"
+//  @Success      200  {object}  ResponseType
+//  @Failure      400  {object}  error
+//  @Security     ApiKeyAuth
+//  @Router       /restaurants/{restaurantID}/resource [get]
+func (app *application) handlerName(w http.ResponseWriter, r *http.Request) {
+    // Implementation
+}
+```
+
+## Backend Development Guidelines
+
+### Adding New Endpoints
+
+See detailed templates in `context/backend/base-endpoint-spec-template.md`
+
+**Quick Pattern:**
+
+1. **Define interface** in `internal/store/storage.go`:
+```go
+type Storage struct {
+    Resources interface {
+        GetByID(context.Context, int64) (*Resource, error)
+        // ...
+    }
+}
+```
+
+2. **Implement repository** in `internal/store/resource.go`:
+```go
+func (s *ResourceStore) GetByID(ctx context.Context, id int64) (*Resource, error) {
+    ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+    defer cancel()
+
+    query := `SELECT id, field FROM table WHERE id = $1`
+    // ... parameterized query
+}
+```
+
+3. **Create handler** in `cmd/api/resources.go`:
+```go
+func (app *application) getResourceHandler(w http.ResponseWriter, r *http.Request) {
+    // 1. Parse URL params
+    // 2. Get user from context
+    // 3. Verify restaurant ownership → return 404 if not owner
+    // 4. Call store method
+    // 5. Return JSON response
+}
+```
+
+4. **Register route** in `cmd/api/api.go`:
+```go
+r.Route("/restaurants/{restaurantID}", func(r chi.Router) {
+    r.Use(app.AuthTokenMiddleware)
+    r.Get("/resources/{id}", app.getResourceHandler)
+})
+```
+
+5. **Add Swagger comments** and run `make gen-docs`
+
+### Security Requirements
+
+- **Always** use parameterized queries (`$1, $2`) - never string concatenation
+- **Always** verify restaurant ownership before operations
+- **Always** return `404` (not `401`) to non-owners to prevent info disclosure
+- **Always** validate input with struct tags: `validate:"required,email,max=255"`
+- **Always** use context timeouts for DB operations
+- Use `app.checkRestaurantOwnership()` middleware for owner-only routes
+
+### Error Handling
+
+```go
+// 400 - Invalid input
+app.badRequestResponse(w, r, err)
+
+// 401 - Not authenticated
+app.unauthorizedErrorResponse(w, r, err)
+
+// 404 - Resource not found OR unauthorized (for ownership checks)
+app.notFoundResponse(w, r, err)
+
+// 500 - Server error
+app.internalServerError(w, r, err)
+```
+
+**Pattern for ownership verification:**
+```go
+restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
+if err != nil {
+    switch {
+    case errors.Is(err, store.ErrNotFound):
+        app.notFoundResponse(w, r, err)
+    default:
+        app.internalServerError(w, r, err)
+    }
+    return
+}
+
+// Return 404 (not 401) to prevent information disclosure
+if restaurant.UserID != user.ID {
+    app.notFoundResponse(w, r, errors.New("restaurant not found"))
+    return
+}
+```
+
+## Frontend Development Guidelines
+
+### Route Structure
+
+- **Public routes:** `app/login`, `app/signup`, `app/confirm`
+- **Protected routes:** Everything under `app/(resa)/`
+- **Layout boundary:** `app/(resa)/layout.tsx` enforces auth check
+
+### State Management
+
+**Authentication:**
+```tsx
+import { useAuth } from "@/lib/auth"
+
+const { user, isAuthenticated, login, logout } = useAuth()
+```
+
+**Restaurant Context:**
+```tsx
+import { useRestaurant } from "@/lib/restaurant-context"
+
+const { selectedRestaurant, setSelectedRestaurant } = useRestaurant()
+```
+
+### API Calls
+
+**Pattern:**
+```tsx
+import { fetchWithAuth } from "@/lib/auth"
+import { getApiBase } from "@/lib/api"
+
+const response = await fetchWithAuth(`${getApiBase()}/restaurants/${id}`, {
+  method: "GET",
+  headers: { "Content-Type": "application/json" },
+})
+
+const data = await response.json()
+```
+
+`fetchWithAuth()` automatically:
+- Adds Authorization header
+- Refreshes token on 401
+- Throws on auth failure
+
+### Component Patterns
+
+- Use ShadCN components from `components/ui/`
+- App-specific components in `components/resa/`
+- Follow existing patterns in sidebar components for sheets, dialogs, forms
+- Use React Hook Form + Zod for form validation
+
+## Environment Variables
+
+### Backend (`backend/.env`)
+
+```env
+# Server
+ADDR=:8080
+EXTERNAL_URL=http://localhost:8080
+FRONTEND_URL=http://localhost:3000
+CORS_ALLOWED_ORIGIN=http://localhost:3000
+
+# Database
+DB_ADDR=postgres://admin:adminpassword@localhost:5432/resa?sslmode=disable
+DB_MAX_OPEN_CONNS=30
+DB_MAX_IDLE_CONNS=30
+DB_MAX_IDLE_TIME=15m
+
+# Redis (optional)
+REDIS_ENABLED=true
+REDIS_ADDR=localhost:6379
+REDIS_PW=
+REDIS_DB=0
+
+# Authentication
+AUTH_TOKEN_SECRET=your-secret-key
+AUTH_BASIC_USER=admin
+AUTH_BASIC_PASS=admin
+
+# Email
+SENDGRID_API_KEY=your-api-key
+FROM_EMAIL=noreply@example.com
+
+# Rate Limiting
+RATE_LIMITER_ENABLED=true
+RATELIMITER_REQUESTS_COUNT=20
+```
+
+### Frontend (`frontend/.env.local`)
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8080/v1
+```
+
+## Docker Services
+
+**Start services:**
+```bash
+cd backend
+docker compose up -d
+```
+
+**Services:**
+- PostgreSQL: `localhost:5432` (user: `admin`, pass: `adminpassword`, db: `resa`)
+- Redis: `localhost:6379`
+- Redis Commander UI: `localhost:8081`
+
+**Stop services:**
+```bash
+cd backend
+docker compose down
+```
+
+## Common Workflows
+
+### Adding a New Feature Endpoint
+
+1. Read `context/backend/base-endpoint-spec-template.md` for detailed pattern
+2. Add method to interface in `storage.go`
+3. Implement in appropriate `internal/store/{resource}.go`
+4. Create handler in `cmd/api/{resource}.go` with Swagger comments
+5. Register route in `cmd/api/api.go`
+6. Run `make gen-docs` to update Swagger
+7. Test with cURL or Swagger UI
+
+### Frontend: Adding a New Protected Page
+
+1. Create page in `app/(resa)/your-page/page.tsx`
+2. Automatically protected by `(resa)/layout.tsx`
+3. Use `useAuth()` for user data, `fetchWithAuth()` for API calls
+4. Add navigation link in `components/resa/sidebar-left/`
+
+### Debugging
+
+**Backend:**
+- Logs via zap (structured logging)
+- Health check: `http://localhost:8080/v1/health` (requires basic auth)
+- Metrics: `http://localhost:8080/v1/debug/vars` (requires basic auth)
+
+**Frontend:**
+- Check browser console for auth issues
+- Verify token in localStorage (`auth_token` key)
+- Check Network tab for API request/response
 
 ## Important Notes
 
-- **Monorepo Structure:** Backend and frontend are separate subdirectories with their own dependencies
-- **Redis is Optional:** Backend works without Redis; caching is a performance optimization
-- **Air for Hot Reload:** Backend uses Air (`.air.toml`) for development. Pre-build command regenerates Swagger docs.
-- **Transaction Helpers:** Use `withTx()` helper in `internal/store/storage.go:88-100` for multi-step database operations
-- **Rate Limiting:** Configurable via `RATE_LIMITER_ENABLED` and `RATELIMITER_REQUESTS_COUNT` env vars
-- **CORS:** Frontend URL must be configured in backend (`FRONTEND_URL` env var) for proper CORS handling
+- Backend uses **raw SQL** with parameterized queries - no ORM
+- All restaurant operations require ownership verification
+- Return `404` for unauthorized access to prevent info leakage
+- Redis is optional - app works without it
+- Frontend uses Next.js App Router (not Pages Router)
+- Route groups like `(resa)` don't affect URLs - only for organization
+- JWT tokens auto-refresh at 80% of lifetime
+- Magic link authentication - no passwords stored
+- Swagger UI requires basic auth (default: admin/admin)

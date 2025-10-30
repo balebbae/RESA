@@ -379,3 +379,80 @@ func (app *application) deleteRoleHandler(w http.ResponseWriter, r *http.Request
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// GetRoleEmployees godoc
+//
+//	@Summary		Get employees for a role
+//	@Description	Fetches all employees assigned to a specific role
+//	@Tags			role
+//	@Accept			json
+//	@Produce		json
+//	@Param			restaurant_id	path		int	true	"Restaurant ID"
+//	@Param			id				path		int	true	"Role ID"
+//	@Success		200				{array}		store.Employee
+//	@Failure		401				{object}	error
+//	@Failure		404				{object}	error
+//	@Failure		500				{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/restaurants/{restaurant_id}/roles/{id}/employees [get]
+func (app *application) getRoleEmployeesHandler(w http.ResponseWriter, r *http.Request) {
+	restaurantID, err := strconv.ParseInt(chi.URLParam(r, "restaurantID"), 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	roleID, err := strconv.ParseInt(chi.URLParam(r, "roleID"), 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// Get user from context
+	user := getUserFromContext(r)
+
+	// Verify restaurant ownership
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.notFoundResponse(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	if restaurant.UserID != user.ID {
+		app.unauthorizedErrorResponse(w, r, errors.New("not restaurant owner"))
+		return
+	}
+
+	// Verify role exists and belongs to restaurant
+	role, err := app.store.Roles.GetByID(r.Context(), roleID)
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.notFoundResponse(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	if role.RestaurantID != restaurantID {
+		app.notFoundResponse(w, r, errors.New("role not found in this restaurant"))
+		return
+	}
+
+	// Fetch employees for role
+	employees, err := app.store.Roles.GetEmployees(r.Context(), roleID, restaurantID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.jsonResponse(w, http.StatusOK, employees); err != nil {
+		app.internalServerError(w, r, err)
+	}
+}

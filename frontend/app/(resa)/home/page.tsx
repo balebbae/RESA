@@ -1,13 +1,19 @@
+"use client";
+
+import { useRestaurant } from "@/lib/restaurant-context";
+import { useEmployees } from "@/components/resa/sidebar-right/employees/hooks/use-employees";
+import { WeeklyCalendar } from "@/components/resa/schedule/weekly-calendar";
+
 export default function Page() {
+  const { selectedRestaurantId } = useRestaurant();
+  const { employees } = useEmployees(selectedRestaurantId);
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
-      <div className="text-center py-12">
-        <h1 className="text-2xl font-bold">Welcome to RESA</h1>
-        <p className="text-muted-foreground mt-2">
-          Select a workplace from the left sidebar to get started
-        </p>
-      </div>
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <WeeklyCalendar
+        restaurantId={selectedRestaurantId}
+        employees={employees}
+      />
     </div>
-  )
+  );
 }

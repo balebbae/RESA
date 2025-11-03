@@ -91,40 +91,46 @@ export function RoleDeleteDialog({
           <AlertDialogTitle>
             {hasAssignedEmployees ? "Cannot Delete Role" : "Are you sure?"}
           </AlertDialogTitle>
-          <AlertDialogDescription>
-            {isLoadingEmployees ? (
+          {isLoadingEmployees ? (
+            <AlertDialogDescription>
               <span className="text-muted-foreground">Checking for assigned employees...</span>
-            ) : error ? (
+            </AlertDialogDescription>
+          ) : error ? (
+            <AlertDialogDescription>
               <span className="text-red-600">{error}</span>
-            ) : hasAssignedEmployees ? (
-              <div className="space-y-2">
-                <div>
-                  The <span className="font-semibold">{roleName}</span> role cannot be deleted because{" "}
-                  <span className="font-semibold">{assignedEmployees.length}</span>{" "}
-                  {assignedEmployees.length === 1 ? "employee is" : "employees are"} currently assigned to it.
-                </div>
-                <div className="mt-3">
-                  <div className="text-sm font-medium mb-1">Assigned employees:</div>
-                  <ul className="text-sm space-y-1 max-h-32 overflow-y-auto">
-                    {assignedEmployees.map((employee) => (
-                      <li key={employee.id} className="text-muted-foreground">
-                        • {employee.full_name} ({employee.email})
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="mt-3 text-sm">
-                  Please reassign or remove these employees from this role before deleting it.
-                </div>
+            </AlertDialogDescription>
+          ) : hasAssignedEmployees ? (
+            <div className="text-muted-foreground text-sm space-y-2">
+              <div>
+                The <span className="font-semibold">{roleName}</span> role cannot be deleted because{" "}
+                <span className="font-semibold">{assignedEmployees.length}</span>{" "}
+                {assignedEmployees.length === 1 ? "employee is" : "employees are"} currently assigned to it.
               </div>
-            ) : roleName ? (
-              <>
-                This will permanently delete the <span className="font-semibold">{roleName}</span> role from this workplace. This action cannot be undone.
-              </>
-            ) : (
-              "This will permanently delete this role from this workplace. This action cannot be undone."
-            )}
-          </AlertDialogDescription>
+              <div className="mt-3">
+                <div className="text-sm font-medium mb-1">Assigned employees:</div>
+                <ul className="text-sm space-y-1 max-h-32 overflow-y-auto">
+                  {assignedEmployees.map((employee) => (
+                    <li key={employee.id} className="text-muted-foreground">
+                      • {employee.full_name} ({employee.email})
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mt-3 text-sm">
+                Please reassign or remove these employees from this role before deleting it.
+              </div>
+            </div>
+          ) : (
+            <AlertDialogDescription>
+              {roleName ? (
+                <>
+                  This will permanently delete the <span className="font-semibold">{roleName}</span> role from this workplace. This action cannot be undone.
+                </>
+              ) : (
+                "This will permanently delete this role from this workplace. This action cannot be undone."
+              )}
+            </AlertDialogDescription>
+          )}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>

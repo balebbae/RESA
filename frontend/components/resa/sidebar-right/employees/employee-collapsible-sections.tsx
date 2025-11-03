@@ -1,8 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect, forwardRef, useImperativeHandle, useRef } from "react"
-import { ChevronRight, User } from "lucide-react"
+import { useState, useEffect, forwardRef, useImperativeHandle, useRef, useMemo } from "react"
+import { ChevronRight, Pencil } from "lucide-react"
+import { useDraggable } from "@dnd-kit/core"
+import { CSS } from "@dnd-kit/utilities"
 import {
   Collapsible,
   CollapsibleContent,
@@ -13,14 +15,16 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/resa/sidebar-core/sidebar"
+import { Button } from "@/components/ui/button"
 import { useEmployees } from "./hooks/use-employees"
 import { EmployeeDetailSheet } from "./employee-detail-sheet"
 import { RoleCollapsibleSection, type RoleCollapsibleSectionRef } from "../roles/role-collapsible-section"
 import type { Employee } from "@/components/resa/sidebar-right/types/employee"
+import { generateEmployeeColors } from "@/components/resa/schedule/utils/employee-colors"
+import type { EmployeeDragData } from "@/components/resa/schedule/types/schedule"
 
 interface EmployeeCollapsibleSectionsProps {
   restaurantId: number | null
@@ -28,6 +32,77 @@ interface EmployeeCollapsibleSectionsProps {
 
 export interface EmployeeCollapsibleSectionsRef {
   refetch: () => void
+}
+
+/**
+ * Individual draggable employee item
+ */
+interface DraggableEmployeeItemProps {
+  employee: Employee;
+  color: string;
+  onEdit: () => void;
+}
+
+function DraggableEmployeeItem({ employee, color, onEdit }: DraggableEmployeeItemProps) {
+  const dragData: EmployeeDragData = {
+    type: 'employee',
+    employeeId: employee.id,
+    employeeName: employee.full_name,
+    employeeColor: color,
+  };
+
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `employee-${employee.id}`,
+    data: dragData,
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit();
+  };
+
+  return (
+    <SidebarMenuItem key={employee.id}>
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="flex items-center w-full gap-2 px-2 py-2 rounded-md hover:bg-sidebar-accent group relative"
+      >
+        {/* Draggable area - applies listeners here */}
+        <div
+          {...listeners}
+          {...attributes}
+          className="flex items-center gap-2 flex-1 min-w-0 cursor-grab active:cursor-grabbing"
+        >
+          <div
+            className="w-3 h-3 rounded-full flex-shrink-0"
+            style={{ backgroundColor: color }}
+          />
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="text-sm truncate">{employee.full_name}</span>
+            <span className="text-xs text-muted-foreground truncate">
+              {employee.email}
+            </span>
+          </div>
+        </div>
+
+        {/* Edit button - separate from drag area */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={handleEditClick}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </div>
+    </SidebarMenuItem>
+  );
 }
 
 /**
@@ -44,6 +119,11 @@ export const EmployeeCollapsibleSections = forwardRef<
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const rolesSectionRef = useRef<RoleCollapsibleSectionRef>(null)
+
+  // Generate employee colors
+  const employeeColorMap = useMemo(() => {
+    return generateEmployeeColors(employees.map(emp => emp.id));
+  }, [employees])
 
   // Expose refetch method to parent component (refetches both employees and roles)
   useImperativeHandle(ref, () => ({
@@ -120,20 +200,12 @@ export const EmployeeCollapsibleSections = forwardRef<
                   </div>
                 ) : (
                   employees.map((employee) => (
-                    <SidebarMenuItem key={employee.id}>
-                      <SidebarMenuButton
-                        onClick={() => handleEmployeeClick(employee)}
-                        className="h-auto min-h-14 py-2 hover:cursor-pointer"
-                      >
-                        <User className="h-4 w-4" />
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-sm">{employee.full_name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {employee.email}
-                          </span>
-                        </div>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    <DraggableEmployeeItem
+                      key={employee.id}
+                      employee={employee}
+                      color={employeeColorMap.get(employee.id) || 'hsl(0, 0%, 70%)'}
+                      onEdit={() => handleEmployeeClick(employee)}
+                    />
                   ))
                 )}
               </SidebarMenu>

@@ -1,4 +1,4 @@
-import { ScheduledShift } from "@/hooks/use-schedule";
+import type { ScheduledShift } from "@/types/schedule";
 
 /**
  * Parse a time string (HH:MM) to hour number

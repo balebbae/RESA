@@ -3,7 +3,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
-import type { User } from "@/components/resa/sidebar-left/types/user"
+import type { User } from "@/types/user"
 
 interface UserAvatarProps {
   user: User

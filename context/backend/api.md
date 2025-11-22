@@ -779,11 +779,11 @@ Deletes a role. **Owner only.**
 
 ## Shift Templates
 
-Shift templates define recurring shift patterns (e.g., "Cook shift every Monday 9:00-17:00").
+Shift templates define recurring shift patterns (e.g., "Morning shift every Monday 9:00-17:00"). Templates can have multiple roles assigned and an optional name for easy identification.
 
 ### 22. Get All Shift Templates
 
-Retrieves all shift templates for a specific restaurant.
+Retrieves all shift templates for a specific restaurant with their assigned roles.
 
 **Endpoint:** `GET /restaurants/{restaurantID}/shift-templates`
 
@@ -798,26 +798,44 @@ Retrieves all shift templates for a specific restaurant.
   {
     "id": 1,
     "restaurant_id": 5,
-    "role_id": 2,
+    "name": "Morning Shift",
     "day_of_week": 1,
     "start_time": "09:00",
     "end_time": "17:00",
     "created_at": "2025-01-15T10:30:00Z",
-    "updated_at": "2025-01-15T10:30:00Z"
+    "updated_at": "2025-01-15T10:30:00Z",
+    "roles": [
+      {
+        "id": 2,
+        "restaurant_id": 5,
+        "name": "Cook",
+        "created_at": "2025-01-15T10:00:00Z",
+        "updated_at": "2025-01-15T10:00:00Z"
+      },
+      {
+        "id": 3,
+        "restaurant_id": 5,
+        "name": "Server",
+        "created_at": "2025-01-15T10:01:00Z",
+        "updated_at": "2025-01-15T10:01:00Z"
+      }
+    ]
   }
 ]
 ```
 
 **Notes:**
+- `name`: Optional, can be `null` (e.g., "Morning Shift", "Evening Shift")
 - `day_of_week`: 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 - `start_time` and `end_time`: 24-hour format (HH:MM)
+- `roles`: Array of roles assigned to this template
 - Results are ordered by `day_of_week` and `start_time`
 
 ---
 
 ### 23. Create Shift Template
 
-Creates a new shift template. **Owner only.**
+Creates a new shift template with multiple roles. **Owner only.**
 
 **Endpoint:** `POST /restaurants/{restaurantID}/shift-templates`
 
@@ -829,7 +847,8 @@ Creates a new shift template. **Owner only.**
 **Request Body:**
 ```json
 {
-  "role_id": 2,
+  "name": "Morning Shift",
+  "role_ids": [2, 3],
   "day_of_week": 1,
   "start_time": "09:00",
   "end_time": "17:00"
@@ -837,7 +856,8 @@ Creates a new shift template. **Owner only.**
 ```
 
 **Validation Rules:**
-- `role_id`: Required, must be > 0 and belong to this restaurant
+- `name`: Optional, max 255 characters (e.g., "Morning Shift", "Evening Shift")
+- `role_ids`: Required, array with minimum 1 role, all must be > 0 and belong to this restaurant
 - `day_of_week`: Required, integer 0-6 (0=Sunday, 6=Saturday)
 - `start_time`: Required, 24-hour format HH:MM
 - `end_time`: Required, 24-hour format HH:MM, must be after `start_time`
@@ -847,25 +867,45 @@ Creates a new shift template. **Owner only.**
 {
   "id": 1,
   "restaurant_id": 5,
-  "role_id": 2,
+  "name": "Morning Shift",
   "day_of_week": 1,
   "start_time": "09:00",
   "end_time": "17:00",
   "created_at": "2025-01-17T14:30:00Z",
-  "updated_at": "2025-01-17T14:30:00Z"
+  "updated_at": "2025-01-17T14:30:00Z",
+  "roles": [
+    {
+      "id": 2,
+      "restaurant_id": 5,
+      "name": "Cook",
+      "created_at": "2025-01-15T10:00:00Z",
+      "updated_at": "2025-01-15T10:00:00Z"
+    },
+    {
+      "id": 3,
+      "restaurant_id": 5,
+      "name": "Server",
+      "created_at": "2025-01-15T10:01:00Z",
+      "updated_at": "2025-01-15T10:01:00Z"
+    }
+  ]
 }
 ```
 
 **Error Responses:**
 - `404 Not Found`: Restaurant doesn't exist or user doesn't own it
-- `400 Bad Request`: Validation failed or role doesn't belong to this restaurant
+- `400 Bad Request`: Validation failed, one or more roles don't exist or don't belong to this restaurant
 - `401 Unauthorized`: User is not the restaurant owner
+
+**Notes:**
+- Requires at least 1 role in `role_ids` array
+- All role assignments are created atomically using a transaction
 
 ---
 
 ### 24. Get Shift Template by ID
 
-Retrieves a specific shift template.
+Retrieves a specific shift template with its assigned roles.
 
 **Endpoint:** `GET /restaurants/{restaurantID}/shift-templates/{templateID}`
 
@@ -880,12 +920,28 @@ Retrieves a specific shift template.
 {
   "id": 1,
   "restaurant_id": 5,
-  "role_id": 2,
+  "name": "Morning Shift",
   "day_of_week": 1,
   "start_time": "09:00",
   "end_time": "17:00",
   "created_at": "2025-01-15T10:30:00Z",
-  "updated_at": "2025-01-15T10:30:00Z"
+  "updated_at": "2025-01-15T10:30:00Z",
+  "roles": [
+    {
+      "id": 2,
+      "restaurant_id": 5,
+      "name": "Cook",
+      "created_at": "2025-01-15T10:00:00Z",
+      "updated_at": "2025-01-15T10:00:00Z"
+    },
+    {
+      "id": 3,
+      "restaurant_id": 5,
+      "name": "Server",
+      "created_at": "2025-01-15T10:01:00Z",
+      "updated_at": "2025-01-15T10:01:00Z"
+    }
+  ]
 }
 ```
 
@@ -896,7 +952,7 @@ Retrieves a specific shift template.
 
 ### 25. Update Shift Template
 
-Updates a shift template. **Owner only.**
+Updates a shift template, including name and roles. **Owner only.**
 
 **Endpoint:** `PATCH /restaurants/{restaurantID}/shift-templates/{templateID}`
 
@@ -909,7 +965,8 @@ Updates a shift template. **Owner only.**
 **Request Body:** (All fields optional)
 ```json
 {
-  "role_id": 3,
+  "name": "Evening Shift",
+  "role_ids": [3, 4],
   "day_of_week": 2,
   "start_time": "10:00",
   "end_time": "18:00"
@@ -917,7 +974,8 @@ Updates a shift template. **Owner only.**
 ```
 
 **Validation Rules:**
-- `role_id`: Optional, must be > 0 and belong to this restaurant
+- `name`: Optional, max 255 characters (can be `null` to remove name)
+- `role_ids`: Optional, if provided must have minimum 1 role, all must be > 0 and belong to this restaurant
 - `day_of_week`: Optional, integer 0-6
 - `start_time`: Optional, 24-hour format HH:MM
 - `end_time`: Optional, 24-hour format HH:MM
@@ -928,19 +986,39 @@ Updates a shift template. **Owner only.**
 {
   "id": 1,
   "restaurant_id": 5,
-  "role_id": 3,
+  "name": "Evening Shift",
   "day_of_week": 2,
   "start_time": "10:00",
   "end_time": "18:00",
   "created_at": "2025-01-15T10:30:00Z",
-  "updated_at": "2025-01-17T16:45:00Z"
+  "updated_at": "2025-01-17T16:45:00Z",
+  "roles": [
+    {
+      "id": 3,
+      "restaurant_id": 5,
+      "name": "Server",
+      "created_at": "2025-01-15T10:01:00Z",
+      "updated_at": "2025-01-15T10:01:00Z"
+    },
+    {
+      "id": 4,
+      "restaurant_id": 5,
+      "name": "Bartender",
+      "created_at": "2025-01-15T10:02:00Z",
+      "updated_at": "2025-01-15T10:02:00Z"
+    }
+  ]
 }
 ```
 
 **Error Responses:**
 - `404 Not Found`: Template or restaurant doesn't exist
-- `400 Bad Request`: Validation failed or role doesn't belong to this restaurant
+- `400 Bad Request`: Validation failed, one or more roles don't exist or don't belong to this restaurant
 - `401 Unauthorized`: User is not the restaurant owner
+
+**Notes:**
+- If `role_ids` is provided, all existing roles are removed and replaced with the new ones
+- Requires at least 1 role if `role_ids` is specified
 
 ---
 
@@ -1556,17 +1634,18 @@ Removes an employee assignment from a shift. **Owner only.**
 }
 ```
 
-### ShiftTemplate
+### ShiftTemplate (Response)
 ```typescript
 {
   id: number;
   restaurant_id: number;
-  role_id: number;
+  name: string | null; // Optional name like "Morning Shift"
   day_of_week: number; // 0=Sunday, 1=Monday, ..., 6=Saturday
   start_time: string; // "HH:MM" in 24-hour format
   end_time: string; // "HH:MM" in 24-hour format
   created_at: string; // ISO 8601 timestamp
   updated_at: string; // ISO 8601 timestamp
+  roles: Role[]; // Array of assigned roles
 }
 ```
 
@@ -1877,6 +1956,6 @@ RATELIMITER_REQUESTS_COUNT=100
 
 ---
 
-**Last Updated:** January 2025
+**Last Updated:** November 2025 (Shift Templates updated to support multi-role assignments and optional names)
 **API Version:** v1
 **Swagger Documentation:** Available at `/v1/swagger/` (Basic Auth required)

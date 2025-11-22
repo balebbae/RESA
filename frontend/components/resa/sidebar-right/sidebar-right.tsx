@@ -13,11 +13,14 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/resa/sidebar-core/sidebar"
-import { DatePicker } from "./calendar/date-picker"
-import { EmployeeCollapsibleSections, type EmployeeCollapsibleSectionsRef } from "./employees/employee-collapsible-sections"
-import { EmployeeFormDialog } from "./employees/employee-form-dialog"
-import { RoleFormDialog } from "./roles/role-form-dialog"
-import { useRestaurant } from "@/lib/restaurant-context"
+import { DatePicker } from "@/components/calendar/calendar-mini"
+import { EmployeeCollapsibleSection, type EmployeeCollapsibleSectionRef } from "@/components/employees/employee-collapsible-section"
+import { RoleCollapsibleSection, type RoleCollapsibleSectionRef } from "@/components/roles/role-collapsible-section"
+import { ShiftTemplateCollapsibleSection, type ShiftTemplateCollapsibleSectionRef } from "@/components/schedules/shift-template-collapsible-section"
+import { EmployeeFormDialog } from "@/components/employees/employee-form-dialog"
+import { RoleFormDialog } from "@/components/roles/role-form-dialog"
+import { ShiftTemplateFormDialog } from "@/components/schedules/shift-template-form-dialog"
+import { useRestaurant } from "@/contexts/restaurant-context"
 
 /**
  * Right sidebar component - Matches original collapsible pattern
@@ -31,7 +34,10 @@ export function SidebarRight({
   const { selectedRestaurantId } = useRestaurant()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isCreateRoleDialogOpen, setIsCreateRoleDialogOpen] = useState(false)
-  const employeeSectionsRef = useRef<EmployeeCollapsibleSectionsRef>(null)
+  const [isCreateShiftTemplateDialogOpen, setIsCreateShiftTemplateDialogOpen] = useState(false)
+  const employeeSectionRef = useRef<EmployeeCollapsibleSectionRef>(null)
+  const rolesSectionRef = useRef<RoleCollapsibleSectionRef>(null)
+  const shiftTemplatesSectionRef = useRef<ShiftTemplateCollapsibleSectionRef>(null)
 
   const handleCreateEmployee = () => {
     if (!selectedRestaurantId) {
@@ -56,27 +62,51 @@ export function SidebarRight({
   const handleCreateSuccess = () => {
     setIsCreateDialogOpen(false)
     // Refresh the employee list after successful creation
-    employeeSectionsRef.current?.refetch()
+    employeeSectionRef.current?.refetch()
   }
 
   const handleCreateRoleSuccess = () => {
     setIsCreateRoleDialogOpen(false)
     // Refresh the role list after successful creation
-    employeeSectionsRef.current?.refetch()
+    rolesSectionRef.current?.refetch()
+  }
+
+  const handleCreateShiftTemplate = () => {
+    if (!selectedRestaurantId) {
+      toast.error("Please select a workplace first", {
+        description: "You need to select a workplace before creating a shift template."
+      })
+      return
+    }
+    setIsCreateShiftTemplateDialogOpen(true)
+  }
+
+  const handleCreateShiftTemplateSuccess = () => {
+    setIsCreateShiftTemplateDialogOpen(false)
+    // Refresh the shift template list after successful creation
+    shiftTemplatesSectionRef.current?.refetch()
   }
 
   return (
     <>
       <Sidebar
         collapsible="none"
-        className="sticky top-0 hidden h-svh border-l lg:flex"
+        className="hidden h-full border-l lg:flex"
         {...props}
       >
         <SidebarContent>
           <DatePicker />
           <SidebarSeparator className="mx-0" />
-          <EmployeeCollapsibleSections
-            ref={employeeSectionsRef}
+          <EmployeeCollapsibleSection
+            ref={employeeSectionRef}
+            restaurantId={selectedRestaurantId}
+          />
+          <RoleCollapsibleSection
+            ref={rolesSectionRef}
+            restaurantId={selectedRestaurantId}
+          />
+          <ShiftTemplateCollapsibleSection
+            ref={shiftTemplatesSectionRef}
             restaurantId={selectedRestaurantId}
           />
         </SidebarContent>
@@ -92,6 +122,11 @@ export function SidebarRight({
               <SidebarMenuButton onClick={handleCreateEmployee} className="hover:cursor-pointer">
                 <Plus />
                 <span>Create Employee</span>
+              </SidebarMenuButton>
+              <SidebarSeparator className="mx-0" />
+              <SidebarMenuButton onClick={handleCreateShiftTemplate} className="hover:cursor-pointer">
+                <Plus />
+                <span>Create Shift Template</span>
               </SidebarMenuButton>
               <SidebarSeparator className="mx-0" />
             </SidebarMenuItem>
@@ -114,6 +149,14 @@ export function SidebarRight({
         isOpen={isCreateRoleDialogOpen}
         onOpenChange={setIsCreateRoleDialogOpen}
         onSuccess={handleCreateRoleSuccess}
+      />
+
+      {/* Create Shift Template Dialog */}
+      <ShiftTemplateFormDialog
+        restaurantId={selectedRestaurantId}
+        isOpen={isCreateShiftTemplateDialogOpen}
+        onOpenChange={setIsCreateShiftTemplateDialogOpen}
+        onSuccess={handleCreateShiftTemplateSuccess}
       />
     </>
   )

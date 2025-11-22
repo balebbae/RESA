@@ -55,11 +55,14 @@ type Storage struct {
 		GetEmployees(context.Context, int64, int64) ([]*Employee, error)
 	}
 	ShiftTemplates interface {
-		Create(context.Context, *ShiftTemplate) error
+		Create(context.Context, *ShiftTemplate, []int64) error
 		GetByID(context.Context, int64) (*ShiftTemplate, error)
 		ListByRestaurant(context.Context, int64) ([]*ShiftTemplate, error)
 		Update(context.Context, *ShiftTemplate) error
 		Delete(context.Context, int64) error
+		AssignRoles(context.Context, int64, []int64) error
+		RemoveRole(context.Context, int64, int64) error
+		GetRoles(context.Context, int64, int64) ([]*Role, error)
 	}
 	Schedules interface {
 		Create(context.Context, *Schedule) error

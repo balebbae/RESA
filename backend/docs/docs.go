@@ -2152,7 +2152,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Fetches all shift templates for a restaurant",
+                "description": "Fetches all shift templates for a restaurant with their assigned roles",
                 "consumes": [
                     "application/json"
                 ],
@@ -2178,7 +2178,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/store.ShiftTemplate"
+                                "$ref": "#/definitions/main.ShiftTemplateResponse"
                             }
                         }
                     },
@@ -2202,7 +2202,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Creates a shift template for a restaurant",
+                "description": "Creates a shift template for a restaurant with multiple roles",
                 "consumes": [
                     "application/json"
                 ],
@@ -2222,7 +2222,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Shift template payload",
+                        "description": "Shift template payload with role IDs",
                         "name": "payload",
                         "in": "body",
                         "required": true,
@@ -2235,7 +2235,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/store.ShiftTemplate"
+                            "$ref": "#/definitions/main.ShiftTemplateResponse"
                         }
                     },
                     "400": {
@@ -2264,7 +2264,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Fetches a shift template by ID",
+                "description": "Fetches a shift template by ID with its assigned roles",
                 "consumes": [
                     "application/json"
                 ],
@@ -2295,7 +2295,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/store.ShiftTemplate"
+                            "$ref": "#/definitions/main.ShiftTemplateResponse"
                         }
                     },
                     "401": {
@@ -2372,7 +2372,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Updates a shift template by ID",
+                "description": "Updates a shift template by ID, including name and roles",
                 "consumes": [
                     "application/json"
                 ],
@@ -2399,7 +2399,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Shift template payload",
+                        "description": "Shift template payload with optional name and role IDs",
                         "name": "payload",
                         "in": "body",
                         "required": true,
@@ -2412,7 +2412,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/store.ShiftTemplate"
+                            "$ref": "#/definitions/main.ShiftTemplateResponse"
                         }
                     },
                     "400": {
@@ -2563,7 +2563,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "end_time",
-                "role_id",
+                "role_ids",
                 "start_time"
             ],
             "properties": {
@@ -2575,8 +2575,15 @@ const docTemplate = `{
                 "end_time": {
                     "type": "string"
                 },
-                "role_id": {
-                    "type": "integer"
+                "name": {
+                    "type": "string"
+                },
+                "role_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "start_time": {
                     "type": "string"
@@ -2667,6 +2674,44 @@ const docTemplate = `{
                 }
             }
         },
+        "main.ShiftTemplateResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "day_of_week": {
+                    "description": "0=Sun ... 6=Sat",
+                    "type": "integer"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "optional name like \"Morning Shift\"",
+                    "type": "string"
+                },
+                "restaurant_id": {
+                    "type": "integer"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/store.Role"
+                    }
+                },
+                "start_time": {
+                    "description": "stored as TIME in db, use string to avoid timezone confusion in JSON",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "main.UpdateEmployeePayload": {
             "type": "object",
             "properties": {
@@ -2730,8 +2775,15 @@ const docTemplate = `{
                 "end_time": {
                     "type": "string"
                 },
-                "role_id": {
-                    "type": "integer"
+                "name": {
+                    "type": "string"
+                },
+                "role_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "start_time": {
                     "type": "string"
@@ -2968,37 +3020,6 @@ const docTemplate = `{
                 },
                 "start_time": {
                     "description": "\"15:04\"",
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "store.ShiftTemplate": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "day_of_week": {
-                    "description": "0=Sun ... 6=Sat",
-                    "type": "integer"
-                },
-                "end_time": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "restaurant_id": {
-                    "type": "integer"
-                },
-                "role_id": {
-                    "type": "integer"
-                },
-                "start_time": {
-                    "description": "stored as TIME in db, use string to avoid timezone confusion in JSON",
                     "type": "string"
                 },
                 "updated_at": {

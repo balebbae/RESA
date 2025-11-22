@@ -2,7 +2,7 @@ import * as React from "react"
 import { Plus } from "lucide-react"
 
 import { Employees } from "@/components/resa/employees"
-import { DatePicker } from "@/components/resa/date-picker"
+import { DatePicker } from "@/components/calendar/date-picker"
 import { NavUser } from "@/components/ui/nav-user"
 import {
   Sidebar,

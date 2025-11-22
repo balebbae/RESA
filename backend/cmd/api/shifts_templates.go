@@ -13,29 +13,36 @@ import (
 // type shiftTemplateKey string
 // const shiftTemplateCtx shiftTemplateKey = "shiftTemplate"
 
+type ShiftTemplateResponse struct {
+	*store.ShiftTemplate
+	Roles []*store.Role `json:"roles"`
+}
+
 type CreateShiftTemplatePayload struct {
-	RoleID       int64  `json:"role_id" validate:"required,gt=0"`
-	DayOfWeek    int    `json:"day_of_week" validate:"gte=0,lte=6"`
-	StartTime    string `json:"start_time" validate:"required"`
-	EndTime      string `json:"end_time" validate:"required"`
+	Name         *string `json:"name,omitempty"`
+	RoleIDs      []int64 `json:"role_ids" validate:"required,min=1,dive,gt=0"`
+	DayOfWeek    int     `json:"day_of_week" validate:"gte=0,lte=6"`
+	StartTime    string  `json:"start_time" validate:"required"`
+	EndTime      string  `json:"end_time" validate:"required"`
 }
 
 type UpdateShiftTemplatePayload struct {
-	RoleID       *int64  `json:"role_id,omitempty" validate:"omitempty,gt=0"`
-	DayOfWeek    *int    `json:"day_of_week,omitempty" validate:"omitempty,min=0,max=6"`
-	StartTime    *string `json:"start_time,omitempty" validate:"omitempty"`
-	EndTime      *string `json:"end_time,omitempty" validate:"omitempty"`
+	Name         *string  `json:"name,omitempty"`
+	RoleIDs      *[]int64 `json:"role_ids,omitempty" validate:"omitempty,min=1,dive,gt=0"`
+	DayOfWeek    *int     `json:"day_of_week,omitempty" validate:"omitempty,min=0,max=6"`
+	StartTime    *string  `json:"start_time,omitempty" validate:"omitempty"`
+	EndTime      *string  `json:"end_time,omitempty" validate:"omitempty"`
 }
 
 // GetShiftTemplates godoc
 //
 //	@Summary		Lists restaurant's shift templates
-//	@Description	Fetches all shift templates for a restaurant
+//	@Description	Fetches all shift templates for a restaurant with their assigned roles
 //	@Tags			shift-template
 //	@Accept			json
 //	@Produce		json
 //	@Param			restaurant_id	path		int	true	"Restaurant ID"
-//	@Success		200				{array}		store.ShiftTemplate
+//	@Success		200				{array}		ShiftTemplateResponse
 //	@Failure		401				{object}	error
 //	@Failure		404				{object}	error
 //	@Failure		500				{object}	error
@@ -72,7 +79,22 @@ func (app *application) getShiftTemplatesHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	err = app.jsonResponse(w, http.StatusOK, templates)
+	// Fetch roles for each template
+	responses := make([]*ShiftTemplateResponse, len(templates))
+	for i, template := range templates {
+		roles, err := app.store.ShiftTemplates.GetRoles(r.Context(), template.ID, restaurantID)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		responses[i] = &ShiftTemplateResponse{
+			ShiftTemplate: template,
+			Roles:         roles,
+		}
+	}
+
+	err = app.jsonResponse(w, http.StatusOK, responses)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -82,13 +104,13 @@ func (app *application) getShiftTemplatesHandler(w http.ResponseWriter, r *http.
 // CreateShiftTemplate godoc
 //
 //	@Summary		Creates a shift template
-//	@Description	Creates a shift template for a restaurant
+//	@Description	Creates a shift template for a restaurant with multiple roles
 //	@Tags			shift-template
 //	@Accept			json
 //	@Produce		json
 //	@Param			restaurant_id	path		int							true	"Restaurant ID"
-//	@Param			payload			body		CreateShiftTemplatePayload	true	"Shift template payload"
-//	@Success		201				{object}	store.ShiftTemplate
+//	@Param			payload			body		CreateShiftTemplatePayload	true	"Shift template payload with role IDs"
+//	@Success		201				{object}	ShiftTemplateResponse
 //	@Failure		400				{object}	error
 //	@Failure		401				{object}	error
 //	@Failure		404				{object}	error
@@ -131,20 +153,22 @@ func (app *application) createShiftTemplateHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// Check if role exists and belongs to this restaurant
-	role, err := app.store.Roles.GetByID(r.Context(), payload.RoleID)
-	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			app.badRequestResponse(w, r, errors.New("role not found"))
+	// Validate all roles exist and belong to this restaurant
+	for _, roleID := range payload.RoleIDs {
+		role, err := app.store.Roles.GetByID(r.Context(), roleID)
+		if err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				app.badRequestResponse(w, r, errors.New("one or more roles not found"))
+				return
+			}
+			app.internalServerError(w, r, err)
 			return
 		}
-		app.internalServerError(w, r, err)
-		return
-	}
 
-	if role.RestaurantID != restaurantID {
-		app.badRequestResponse(w, r, errors.New("role does not belong to this restaurant"))
-		return
+		if role.RestaurantID != restaurantID {
+			app.badRequestResponse(w, r, errors.New("one or more roles do not belong to this restaurant"))
+			return
+		}
 	}
 
 	// Validate time formats
@@ -166,18 +190,30 @@ func (app *application) createShiftTemplateHandler(w http.ResponseWriter, r *htt
 
 	template := &store.ShiftTemplate{
 		RestaurantID: restaurantID,
-		RoleID:       payload.RoleID,
+		Name:         payload.Name,
 		DayOfWeek:    payload.DayOfWeek,
 		StartTime:    payload.StartTime,
 		EndTime:      payload.EndTime,
 	}
 
-	if err := app.store.ShiftTemplates.Create(r.Context(), template); err != nil {
+	if err := app.store.ShiftTemplates.Create(r.Context(), template, payload.RoleIDs); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
 
-	err = app.jsonResponse(w, http.StatusCreated, template)
+	// Fetch roles for the created template
+	roles, err := app.store.ShiftTemplates.GetRoles(r.Context(), template.ID, restaurantID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	response := &ShiftTemplateResponse{
+		ShiftTemplate: template,
+		Roles:         roles,
+	}
+
+	err = app.jsonResponse(w, http.StatusCreated, response)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -187,13 +223,13 @@ func (app *application) createShiftTemplateHandler(w http.ResponseWriter, r *htt
 // GetShiftTemplate godoc
 //
 //	@Summary		Fetches a shift template
-//	@Description	Fetches a shift template by ID
+//	@Description	Fetches a shift template by ID with its assigned roles
 //	@Tags			shift-template
 //	@Accept			json
 //	@Produce		json
 //	@Param			restaurant_id	path		int	true	"Restaurant ID"
 //	@Param			id				path		int	true	"Shift Template ID"
-//	@Success		200				{object}	store.ShiftTemplate
+//	@Success		200				{object}	ShiftTemplateResponse
 //	@Failure		401				{object}	error
 //	@Failure		404				{object}	error
 //	@Failure		500				{object}	error
@@ -247,7 +283,19 @@ func (app *application) getShiftTemplateHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	err = app.jsonResponse(w, http.StatusOK, template)
+	// Fetch roles for this template
+	roles, err := app.store.ShiftTemplates.GetRoles(r.Context(), templateID, restaurantID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	response := &ShiftTemplateResponse{
+		ShiftTemplate: template,
+		Roles:         roles,
+	}
+
+	err = app.jsonResponse(w, http.StatusOK, response)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -257,14 +305,14 @@ func (app *application) getShiftTemplateHandler(w http.ResponseWriter, r *http.R
 // UpdateShiftTemplate godoc
 //
 //	@Summary		Updates a shift template
-//	@Description	Updates a shift template by ID
+//	@Description	Updates a shift template by ID, including name and roles
 //	@Tags			shift-template
 //	@Accept			json
 //	@Produce		json
 //	@Param			restaurant_id	path		int							true	"Restaurant ID"
 //	@Param			id				path		int							true	"Shift Template ID"
-//	@Param			payload			body		UpdateShiftTemplatePayload	true	"Shift template payload"
-//	@Success		200				{object}	store.ShiftTemplate
+//	@Param			payload			body		UpdateShiftTemplatePayload	true	"Shift template payload with optional name and role IDs"
+//	@Success		200				{object}	ShiftTemplateResponse
 //	@Failure		400				{object}	error
 //	@Failure		401				{object}	error
 //	@Failure		404				{object}	error
@@ -332,24 +380,29 @@ func (app *application) updateShiftTemplateHandler(w http.ResponseWriter, r *htt
 	}
 
 	// Update fields if provided
-	if payload.RoleID != nil {
-		// Check if role exists and belongs to this restaurant
-		role, err := app.store.Roles.GetByID(r.Context(), *payload.RoleID)
-		if err != nil {
-			if errors.Is(err, store.ErrNotFound) {
-				app.badRequestResponse(w, r, errors.New("role not found"))
+	if payload.Name != nil {
+		template.Name = payload.Name
+	}
+
+	// Handle role updates if provided
+	if payload.RoleIDs != nil {
+		// Validate all roles exist and belong to this restaurant
+		for _, roleID := range *payload.RoleIDs {
+			role, err := app.store.Roles.GetByID(r.Context(), roleID)
+			if err != nil {
+				if errors.Is(err, store.ErrNotFound) {
+					app.badRequestResponse(w, r, errors.New("one or more roles not found"))
+					return
+				}
+				app.internalServerError(w, r, err)
 				return
 			}
-			app.internalServerError(w, r, err)
-			return
-		}
 
-		if role.RestaurantID != restaurantID {
-			app.badRequestResponse(w, r, errors.New("role does not belong to this restaurant"))
-			return
+			if role.RestaurantID != restaurantID {
+				app.badRequestResponse(w, r, errors.New("one or more roles do not belong to this restaurant"))
+				return
+			}
 		}
-
-		template.RoleID = *payload.RoleID
 	}
 
 	if payload.DayOfWeek != nil {
@@ -394,7 +447,46 @@ func (app *application) updateShiftTemplateHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	err = app.jsonResponse(w, http.StatusOK, template)
+	// Handle role reassignment if provided
+	if payload.RoleIDs != nil {
+		// Get current roles to remove them
+		currentRoles, err := app.store.ShiftTemplates.GetRoles(r.Context(), templateID, restaurantID)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		// Remove all current roles
+		for _, role := range currentRoles {
+			if err := app.store.ShiftTemplates.RemoveRole(r.Context(), templateID, role.ID); err != nil {
+				// Ignore not found errors (role might have been deleted)
+				if !errors.Is(err, store.ErrNotFound) {
+					app.internalServerError(w, r, err)
+					return
+				}
+			}
+		}
+
+		// Assign new roles
+		if err := app.store.ShiftTemplates.AssignRoles(r.Context(), templateID, *payload.RoleIDs); err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+	}
+
+	// Fetch current roles for response
+	roles, err := app.store.ShiftTemplates.GetRoles(r.Context(), templateID, restaurantID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	response := &ShiftTemplateResponse{
+		ShiftTemplate: template,
+		Roles:         roles,
+	}
+
+	err = app.jsonResponse(w, http.StatusOK, response)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return

@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 RESA (Restaurant Employee Scheduling Application) is a full-stack web application for restaurant owners to manage employee shift scheduling. The backend is production-ready Go/PostgreSQL, while the frontend (Next.js/React) is under active development.
 
 **Tech Stack:**
+
 - **Backend:** Go 1.23.1, Chi router, PostgreSQL (raw SQL), Redis (optional caching), JWT auth, SendGrid emails
 - **Frontend:** Next.js 15.5.5 (App Router), React 19, TypeScript, Tailwind CSS 4, ShadCN UI
 
@@ -29,6 +30,7 @@ make logs
 ```
 
 The `make dev` command:
+
 - Starts PostgreSQL and Redis via Docker Compose in `backend/` directory
 - Runs backend with Air (hot reload) on `localhost:8080`
 - Runs frontend with Turbopack on `localhost:3000`
@@ -103,6 +105,7 @@ backend/
 1. **Repository Pattern:** All database operations go through interfaces in `storage.go`. No direct DB access from handlers.
 
 2. **Clean Architecture:**
+
    - Handlers parse requests and handle HTTP concerns
    - Store methods handle database queries
    - Clear separation between layers
@@ -149,16 +152,19 @@ frontend/
 1. **Route Groups:** `(resa)` is a Next.js route group - groups routes without affecting URL structure
 
 2. **Authentication:**
+
    - JWT tokens stored in localStorage
    - `AuthProvider` context wraps the app
    - `useAuth()` hook provides login/logout/user state
    - `fetchWithAuth()` handles automatic token refresh on 401
 
 3. **Protected Routes:**
+
    - `app/(resa)/layout.tsx` checks auth and redirects to `/login` if needed
    - All pages under `(resa)/` are automatically protected
 
 4. **Restaurant Context:**
+
    - `RestaurantProvider` manages currently selected restaurant
    - Wraps protected routes in `(resa)/layout.tsx`
 
@@ -173,6 +179,7 @@ frontend/
 **Schema:** Migrations in `backend/cmd/migrate/migrations/`
 
 **Core Entities:**
+
 - `users` - Application users (owners and employees)
 - `restaurants` - Restaurant locations owned by users
 - `employees` - Employee records per restaurant
@@ -182,6 +189,7 @@ frontend/
 - `scheduled_shifts` - Individual shifts within schedules
 
 **Migration Pattern:**
+
 - Sequential numbered files: `000001_name.up.sql` and `000001_name.down.sql`
 - Always write both up and down migrations
 - Use `make migrate-create <name>` to generate new migration pair
@@ -198,6 +206,7 @@ RESA uses **passwordless authentication** (magic links):
 6. Auto-refresh at 80% of token lifetime
 
 **For Development:**
+
 - Backend: JWT secret in `AUTH_TOKEN_SECRET` env var
 - Frontend: Tokens managed by `lib/auth.tsx`
 - API requires `Authorization: Bearer <token>` header for protected routes
@@ -207,12 +216,14 @@ RESA uses **passwordless authentication** (magic links):
 Swagger UI available at `http://localhost:8080/v1/swagger/` (basic auth: `admin:admin`)
 
 **Regenerating Docs:**
+
 ```bash
 cd backend
 make gen-docs
 ```
 
 **Swagger Comment Pattern:**
+
 ```go
 // HandlerName godoc
 //
@@ -240,6 +251,7 @@ See detailed templates in `context/backend/base-endpoint-spec-template.md`
 **Quick Pattern:**
 
 1. **Define interface** in `internal/store/storage.go`:
+
 ```go
 type Storage struct {
     Resources interface {
@@ -250,6 +262,7 @@ type Storage struct {
 ```
 
 2. **Implement repository** in `internal/store/resource.go`:
+
 ```go
 func (s *ResourceStore) GetByID(ctx context.Context, id int64) (*Resource, error) {
     ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
@@ -261,6 +274,7 @@ func (s *ResourceStore) GetByID(ctx context.Context, id int64) (*Resource, error
 ```
 
 3. **Create handler** in `cmd/api/resources.go`:
+
 ```go
 func (app *application) getResourceHandler(w http.ResponseWriter, r *http.Request) {
     // 1. Parse URL params
@@ -272,6 +286,7 @@ func (app *application) getResourceHandler(w http.ResponseWriter, r *http.Reques
 ```
 
 4. **Register route** in `cmd/api/api.go`:
+
 ```go
 r.Route("/restaurants/{restaurantID}", func(r chi.Router) {
     r.Use(app.AuthTokenMiddleware)
@@ -307,6 +322,7 @@ app.internalServerError(w, r, err)
 ```
 
 **Pattern for ownership verification:**
+
 ```go
 restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
 if err != nil {
@@ -337,35 +353,39 @@ if restaurant.UserID != user.ID {
 ### State Management
 
 **Authentication:**
-```tsx
-import { useAuth } from "@/lib/auth"
 
-const { user, isAuthenticated, login, logout } = useAuth()
+```tsx
+import { useAuth } from "@/lib/auth";
+
+const { user, isAuthenticated, login, logout } = useAuth();
 ```
 
 **Restaurant Context:**
-```tsx
-import { useRestaurant } from "@/lib/restaurant-context"
 
-const { selectedRestaurant, setSelectedRestaurant } = useRestaurant()
+```tsx
+import { useRestaurant } from "@/lib/restaurant-context";
+
+const { selectedRestaurant, setSelectedRestaurant } = useRestaurant();
 ```
 
 ### API Calls
 
 **Pattern:**
+
 ```tsx
-import { fetchWithAuth } from "@/lib/auth"
-import { getApiBase } from "@/lib/api"
+import { fetchWithAuth } from "@/lib/auth";
+import { getApiBase } from "@/lib/api";
 
 const response = await fetchWithAuth(`${getApiBase()}/restaurants/${id}`, {
   method: "GET",
   headers: { "Content-Type": "application/json" },
-})
+});
 
-const data = await response.json()
+const data = await response.json();
 ```
 
 `fetchWithAuth()` automatically:
+
 - Adds Authorization header
 - Refreshes token on 401
 - Throws on auth failure
@@ -423,17 +443,20 @@ NEXT_PUBLIC_API_URL=http://localhost:8080/v1
 ## Docker Services
 
 **Start services:**
+
 ```bash
 cd backend
 docker compose up -d
 ```
 
 **Services:**
+
 - PostgreSQL: `localhost:5432` (user: `admin`, pass: `adminpassword`, db: `resa`)
 - Redis: `localhost:6379`
 - Redis Commander UI: `localhost:8081`
 
 **Stop services:**
+
 ```bash
 cd backend
 docker compose down
@@ -461,11 +484,13 @@ docker compose down
 ### Debugging
 
 **Backend:**
+
 - Logs via zap (structured logging)
 - Health check: `http://localhost:8080/v1/health` (requires basic auth)
 - Metrics: `http://localhost:8080/v1/debug/vars` (requires basic auth)
 
 **Frontend:**
+
 - Check browser console for auth issues
 - Verify token in localStorage (`auth_token` key)
 - Check Network tab for API request/response

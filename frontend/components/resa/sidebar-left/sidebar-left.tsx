@@ -8,8 +8,9 @@ import {
   SidebarRail,
 } from "@/components/resa/sidebar-core/sidebar"
 import { UserMenu } from "@/components/resa/sidebar-left/user/user-menu"
-import { WorkspaceList } from "@/components/resa/sidebar-left/workspaces/workspace-list"
-import { useWorkplaces } from "@/components/resa/sidebar-left/hooks/use-workplaces"
+import { WorkspaceList } from "@/components/workspaces/workspace-list"
+import { RoleLegend } from "@/components/roles/role-legend"
+import { useWorkplaces } from "@/hooks/use-workplaces"
 
 // TODO: Replace with actual user data from auth context
 const TEMP_USER_DATA = {
@@ -39,6 +40,7 @@ export function SidebarLeft({
           workplaces={workplaces}
           onWorkplaceChange={refetch}
         />
+        <RoleLegend />
       </SidebarContent>
       <SidebarRail />
     </Sidebar>

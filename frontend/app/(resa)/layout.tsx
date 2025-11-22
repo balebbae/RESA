@@ -20,18 +20,19 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth"
-import { RestaurantProvider } from "@/lib/restaurant-context"
+import { RestaurantProvider } from "@/contexts/restaurant-context"
 import {
   useWeekNavigation,
   formatWeekRange,
   WeekNavigationProvider
-} from "@/components/resa/schedule/contexts/week-navigation-context"
+} from "@/contexts/week-navigation-context"
+import { ShiftTemplateProvider } from "@/contexts/shift-template-context"
 import { DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core"
 import {
   ScheduleDragDropProvider,
   useScheduleDragDrop,
-} from "@/components/resa/schedule/contexts/schedule-drag-drop-context"
-import type { EmployeeDragData, TimeSlotDropData } from "@/components/resa/schedule/types/schedule"
+} from "@/contexts/schedule-drag-drop-context"
+import type { EmployeeDragData, TimeSlotDropData } from "@/types/schedule"
 
 /**
  * Protected layout for authenticated routes
@@ -70,22 +71,24 @@ export default function ResaLayout({
   // User is authenticated, render the protected content
   return (
     <RestaurantProvider>
-      <ScheduleDragDropProvider>
-        <SidebarProvider>
-          <DndContextWrapper>
-            <SidebarLeft />
-            <SidebarInset>
-              <WeekNavigationProvider>
-                <ResaHeader />
-                <div className="flex-1 overflow-hidden">
-                  {children}
-                </div>
-              </WeekNavigationProvider>
-            </SidebarInset>
-            <SidebarRight />
-          </DndContextWrapper>
-        </SidebarProvider>
-      </ScheduleDragDropProvider>
+      <ShiftTemplateProvider>
+        <ScheduleDragDropProvider>
+          <SidebarProvider className="!h-svh !min-h-0">
+            <DndContextWrapper>
+              <SidebarLeft />
+              <SidebarInset>
+                <WeekNavigationProvider>
+                  <ResaHeader />
+                  <div className="flex flex-col flex-1 min-h-0">
+                    {children}
+                  </div>
+                </WeekNavigationProvider>
+              </SidebarInset>
+              <SidebarRight />
+            </DndContextWrapper>
+          </SidebarProvider>
+        </ScheduleDragDropProvider>
+      </ShiftTemplateProvider>
     </RestaurantProvider>
   )
 }
@@ -137,10 +140,10 @@ function DndContextWrapper({ children }: { children: React.ReactNode }) {
       {children}
 
       {/* Drag overlay for visual feedback */}
-      <DragOverlay>
+      <DragOverlay dropAnimation={null}>
         {activeDragData ? (
           <div
-            className="px-3 py-2 rounded-lg shadow-lg border-2 cursor-grabbing"
+            className="px-3 py-2 rounded-lg shadow-lg border-2 cursor-grabbing z-[9999]"
             style={{
               backgroundColor: activeDragData.employeeColor,
               borderColor: activeDragData.employeeColor,

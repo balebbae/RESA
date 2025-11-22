@@ -64,13 +64,18 @@ definitions:
         type: integer
       end_time:
         type: string
-      role_id:
-        type: integer
+      name:
+        type: string
+      role_ids:
+        items:
+          type: integer
+        minItems: 1
+        type: array
       start_time:
         type: string
     required:
     - end_time
-    - role_id
+    - role_ids
     - start_time
     type: object
   main.CreateUserTokenPayload:
@@ -132,6 +137,33 @@ definitions:
     required:
     - email
     type: object
+  main.ShiftTemplateResponse:
+    properties:
+      created_at:
+        type: string
+      day_of_week:
+        description: 0=Sun ... 6=Sat
+        type: integer
+      end_time:
+        type: string
+      id:
+        type: integer
+      name:
+        description: optional name like "Morning Shift"
+        type: string
+      restaurant_id:
+        type: integer
+      roles:
+        items:
+          $ref: '#/definitions/store.Role'
+        type: array
+      start_time:
+        description: stored as TIME in db, use string to avoid timezone confusion
+          in JSON
+        type: string
+      updated_at:
+        type: string
+    type: object
   main.UpdateEmployeePayload:
     properties:
       email:
@@ -176,8 +208,13 @@ definitions:
         type: integer
       end_time:
         type: string
-      role_id:
-        type: integer
+      name:
+        type: string
+      role_ids:
+        items:
+          type: integer
+        minItems: 1
+        type: array
       start_time:
         type: string
     type: object
@@ -334,28 +371,6 @@ definitions:
         type: integer
       start_time:
         description: '"15:04"'
-        type: string
-      updated_at:
-        type: string
-    type: object
-  store.ShiftTemplate:
-    properties:
-      created_at:
-        type: string
-      day_of_week:
-        description: 0=Sun ... 6=Sat
-        type: integer
-      end_time:
-        type: string
-      id:
-        type: integer
-      restaurant_id:
-        type: integer
-      role_id:
-        type: integer
-      start_time:
-        description: stored as TIME in db, use string to avoid timezone confusion
-          in JSON
         type: string
       updated_at:
         type: string
@@ -1471,7 +1486,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Fetches all shift templates for a restaurant
+      description: Fetches all shift templates for a restaurant with their assigned
+        roles
       parameters:
       - description: Restaurant ID
         in: path
@@ -1485,7 +1501,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/store.ShiftTemplate'
+              $ref: '#/definitions/main.ShiftTemplateResponse'
             type: array
         "401":
           description: Unauthorized
@@ -1504,14 +1520,14 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a shift template for a restaurant
+      description: Creates a shift template for a restaurant with multiple roles
       parameters:
       - description: Restaurant ID
         in: path
         name: restaurant_id
         required: true
         type: integer
-      - description: Shift template payload
+      - description: Shift template payload with role IDs
         in: body
         name: payload
         required: true
@@ -1523,7 +1539,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/store.ShiftTemplate'
+            $ref: '#/definitions/main.ShiftTemplateResponse'
         "400":
           description: Bad Request
           schema: {}
@@ -1581,7 +1597,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Fetches a shift template by ID
+      description: Fetches a shift template by ID with its assigned roles
       parameters:
       - description: Restaurant ID
         in: path
@@ -1599,7 +1615,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/store.ShiftTemplate'
+            $ref: '#/definitions/main.ShiftTemplateResponse'
         "401":
           description: Unauthorized
           schema: {}
@@ -1617,7 +1633,7 @@ paths:
     patch:
       consumes:
       - application/json
-      description: Updates a shift template by ID
+      description: Updates a shift template by ID, including name and roles
       parameters:
       - description: Restaurant ID
         in: path
@@ -1629,7 +1645,7 @@ paths:
         name: id
         required: true
         type: integer
-      - description: Shift template payload
+      - description: Shift template payload with optional name and role IDs
         in: body
         name: payload
         required: true
@@ -1641,7 +1657,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/store.ShiftTemplate'
+            $ref: '#/definitions/main.ShiftTemplateResponse'
         "400":
           description: Bad Request
           schema: {}

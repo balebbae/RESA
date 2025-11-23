@@ -1,9 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import type { ScheduledShift, TimeSlotDropData } from "@/types/schedule";
 import type { ShiftTemplate } from "@/types/shift-template";
-import type { Role } from "@/types/role";
 import { ShiftCard } from "@/components/calendar/shift-card";
-import { addOpacityToHsl, getRoleColor } from "@/lib/styles/role-colors";
 import { parseTimeToHour } from "@/lib/calendar/date-utils";
 
 interface TimeSlotCellProps {
@@ -12,8 +10,6 @@ interface TimeSlotCellProps {
   shifts: ScheduledShift[]; // All shifts for this specific day/hour
   onShiftClick?: (shift: ScheduledShift) => void;
   shiftTemplates: ShiftTemplate[];
-  roles: Role[];
-  roleColorMap: Map<number, string>;
 }
 
 export function TimeSlotCell({
@@ -22,8 +18,6 @@ export function TimeSlotCell({
   shifts,
   onShiftClick,
   shiftTemplates,
-  roles,
-  roleColorMap
 }: TimeSlotCellProps) {
   // Make this cell droppable
   const dropData: TimeSlotDropData = {
@@ -76,10 +70,8 @@ export function TimeSlotCell({
       {templatesInSlot.length > 0 && (
         <div className="absolute inset-0 pointer-events-none z-[1] flex">
           {templatesInSlot.map((template, index) => {
-            // Use first role's color if available, otherwise use a default
-            const firstRoleId = template.roles?.[0]?.id;
-            const roleColor = firstRoleId ? getRoleColor(firstRoleId, roleColorMap) : 'hsl(0, 0%, 50%)';
-            const backgroundColor = addOpacityToHsl(roleColor, 0.3);
+            // Use a neutral color for shift template backgrounds
+            const backgroundColor = 'hsl(0, 0%, 85%)'; // Light gray
             const isNotLast = index < templatesInSlot.length - 1;
 
             return (

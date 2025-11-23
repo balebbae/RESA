@@ -41,7 +41,7 @@ export const ShiftTemplateCollapsibleSection = forwardRef<
   restaurantId,
 }, ref) {
   // Use context instead of hook to avoid duplicate API calls
-  const { shiftTemplates, refetch } = useShiftTemplateContext()
+  const { shiftTemplates, roles, refetch } = useShiftTemplateContext()
 
   // Expose refetch method to parent component
   useImperativeHandle(ref, () => ({
@@ -94,7 +94,6 @@ export const ShiftTemplateCollapsibleSection = forwardRef<
                   </div>
                 ) : (
                   shiftTemplates.map((template) => {
-                    const roleNames = template.roles?.map(r => r.name).join(", ") || "No roles"
                     const displayName = template.name || `Template #${template.id}`
 
                     return (
@@ -107,9 +106,6 @@ export const ShiftTemplateCollapsibleSection = forwardRef<
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {DAYS_OF_WEEK[template.day_of_week]} • {formatTimeToHHMM(template.start_time)} - {formatTimeToHHMM(template.end_time)}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {roleNames}
                             </span>
                           </div>
                         </div>

@@ -17,7 +17,7 @@ interface WeeklyCalendarProps {
 function WeeklyCalendarContent({ employees }: WeeklyCalendarProps) {
   const weekNav = useWeekNavigation();
   const { registerShiftCreationHandler, unregisterShiftCreationHandler } = useScheduleDragDrop();
-  const { shiftTemplates, roles, roleColorMap } = useShiftTemplateContext();
+  const { shiftTemplates } = useShiftTemplateContext();
 
   if (!weekNav) {
     throw new Error("WeeklyCalendarContent must be used within WeekNavigationProvider");
@@ -90,8 +90,6 @@ function WeeklyCalendarContent({ employees }: WeeklyCalendarProps) {
         shifts={shifts}
         onShiftClick={handleShiftClick}
         shiftTemplates={shiftTemplates}
-        roles={roles}
-        roleColorMap={roleColorMap}
       />
     </div>
   );

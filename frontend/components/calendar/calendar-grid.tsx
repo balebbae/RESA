@@ -1,6 +1,5 @@
 import type { ScheduledShift } from "@/types/schedule";
 import type { ShiftTemplate } from "@/types/shift-template";
-import type { Role } from "@/types/role";
 import { DayHeader } from "./day-header";
 import { TimeColumn } from "./time-column";
 import { TimeSlotCell } from "./time-slot-cell";
@@ -11,8 +10,6 @@ interface CalendarGridProps {
   shifts: ScheduledShift[];
   onShiftClick?: (shift: ScheduledShift) => void;
   shiftTemplates: ShiftTemplate[];
-  roles: Role[];
-  roleColorMap: Map<number, string>;
 }
 
 export function CalendarGrid({
@@ -20,8 +17,6 @@ export function CalendarGrid({
   shifts,
   onShiftClick,
   shiftTemplates,
-  roles,
-  roleColorMap
 }: CalendarGridProps) {
   const weekDates = getWeekDates(weekStartDate);
   const hours = getAllHours();
@@ -63,8 +58,6 @@ export function CalendarGrid({
                     shifts={shifts}
                     onShiftClick={onShiftClick}
                     shiftTemplates={shiftTemplates}
-                    roles={roles}
-                    roleColorMap={roleColorMap}
                   />
                 ))}
               </div>

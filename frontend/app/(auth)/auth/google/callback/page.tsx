@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth"
 import { getApiBase } from "@/lib/api"
@@ -9,14 +9,15 @@ import { validateOAuthState, clearOAuthState } from "@/lib/oauth"
 export default function GoogleCallbackPage() {
   const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(true)
-  const [hasProcessed, setHasProcessed] = useState(false)
+  const hasProcessedRef = useRef(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login } = useAuth()
 
   useEffect(() => {
-    // Prevent duplicate processing in React Strict Mode
-    if (hasProcessed) return
+    // Prevent duplicate processing in React Strict Mode using ref (synchronous check)
+    if (hasProcessedRef.current) return
+    hasProcessedRef.current = true
 
     async function handleCallback() {
       try {
@@ -66,9 +67,6 @@ export default function GoogleCallbackPage() {
         // Clean up OAuth state
         clearOAuthState()
 
-        // Mark as processed to prevent React Strict Mode double-execution
-        setHasProcessed(true)
-
         // Redirect to intended destination or default to /home
         const redirectTo = storedState.redirectTo || "/home"
         router.push(redirectTo)
@@ -85,7 +83,7 @@ export default function GoogleCallbackPage() {
     }
 
     handleCallback()
-  }, [searchParams, login, router, hasProcessed])
+  }, [searchParams, login, router])
 
   if (error) {
     return (

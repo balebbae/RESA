@@ -506,3 +506,5 @@ docker compose down
 - JWT tokens auto-refresh at 80% of lifetime
 - Magic link authentication - no passwords stored
 - Swagger UI requires basic auth (default: admin/admin)
+
+DO NOT RUN ANY commands to run dev test such as npm run dev, make dev, air, docker compose up.

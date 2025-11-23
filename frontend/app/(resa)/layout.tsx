@@ -1,7 +1,7 @@
 "use client"
 
-import { SidebarLeft } from "@/components/resa/sidebar-left/sidebar-left"
-import { SidebarRight } from "@/components/resa/sidebar-right/sidebar-right"
+import { SidebarLeft } from "@/components/layout/sidebar-left"
+import { SidebarRight } from "@/components/layout/sidebar-right"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -13,7 +13,7 @@ import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 

@@ -1,4 +1,4 @@
-import { getAllHours, formatHourDisplay } from "@/components/resa/schedule/utils/shift-utils";
+import { getAllHours, formatHourDisplay } from "@/lib/calendar/shift-utils";
 
 export function TimeColumn() {
   const hours = getAllHours();

@@ -1,4 +1,4 @@
-import { getDayName, formatDateDisplay } from "@/components/resa/schedule/utils/shift-utils";
+import { getDayName, formatDateDisplay } from "@/lib/calendar/shift-utils";
 
 interface DayHeaderProps {
   date: string; // YYYY-MM-DD format

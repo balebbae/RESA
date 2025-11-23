@@ -4,7 +4,7 @@ import { createContext, useContext, useMemo } from "react"
 import { useRestaurant } from "@/contexts/restaurant-context"
 import { useShiftTemplates } from "@/hooks/use-shift-templates"
 import { useRoles } from "@/hooks/use-roles"
-import { generateRoleColors } from "@/components/resa/schedule/utils/role-colors"
+import { generateRoleColors } from "@/lib/styles/role-colors"
 import type { ShiftTemplate } from "@/types/shift-template"
 import type { Role } from "@/types/role"
 

@@ -28,7 +28,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 
 export function NavUser({
   user,

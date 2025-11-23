@@ -731,7 +731,7 @@ components/resa/schedule/utils/
   └── time-utils.ts
 ```
 
-### Option A: Organize in lib/ subdirectories
+### Organize in lib/ subdirectories
 
 ```
 lib/
@@ -743,19 +743,7 @@ lib/
       └── role-colors.ts
 ```
 
-### Option B: Create dedicated utils/ directory
-
-```
-utils/
-  ├── calendar/
-  │   ├── date-utils.ts (from time-utils.ts)
-  │   └── shift-utils.ts
-  └── colors/
-      ├── employee-colors.ts
-      └── role-colors.ts
-```
-
-### Recommended: Option A (lib/)
+### Recommended: (lib/)
 
 | Source                                              | Destination                     |
 | --------------------------------------------------- | ------------------------------- |
@@ -1034,21 +1022,6 @@ Before removing each directory, verify it's empty:
 ls -la components/resa/sidebar-left/types
 
 # Should show only . and ..
-```
-
-### Git Considerations
-
-If using Git, these deletions will be tracked:
-
-```bash
-# Stage all deletions
-git add -A
-
-# Review what will be deleted
-git status
-
-# Commit the cleanup
-git commit -m "chore: remove empty directories after component migration"
 ```
 
 ### Final Directory Structure Verification

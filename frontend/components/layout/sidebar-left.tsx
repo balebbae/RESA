@@ -6,8 +6,8 @@ import {
   SidebarContent,
   SidebarHeader,
   SidebarRail,
-} from "@/components/resa/sidebar-core/sidebar"
-import { UserMenu } from "@/components/resa/sidebar-left/user/user-menu"
+} from "@/components/ui/sidebar"
+import { UserMenu } from "@/components/layout/user-menu"
 import { WorkspaceList } from "@/components/workspaces/workspace-list"
 import { RoleLegend } from "@/components/roles/role-legend"
 import { useWorkplaces } from "@/hooks/use-workplaces"

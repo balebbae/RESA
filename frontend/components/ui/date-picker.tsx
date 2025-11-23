@@ -2,7 +2,7 @@ import { Calendar } from "@/components/ui/calendar"
 import {
   SidebarGroup,
   SidebarGroupContent,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 
 export function DatePicker() {
   return (

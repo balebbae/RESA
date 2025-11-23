@@ -3,8 +3,8 @@ import type { ScheduledShift, TimeSlotDropData } from "@/types/schedule";
 import type { ShiftTemplate } from "@/types/shift-template";
 import type { Role } from "@/types/role";
 import { ShiftCard } from "@/components/calendar/shift-card";
-import { addOpacityToHsl, getRoleColor } from "@/components/resa/schedule/utils/role-colors";
-import { parseTimeToHour } from "@/components/resa/schedule/utils/time-utils";
+import { addOpacityToHsl, getRoleColor } from "@/lib/styles/role-colors";
+import { parseTimeToHour } from "@/lib/calendar/date-utils";
 
 interface TimeSlotCellProps {
   date: string; // YYYY-MM-DD format

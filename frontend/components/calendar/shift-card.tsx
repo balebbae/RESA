@@ -1,5 +1,5 @@
 import type { ScheduledShift } from "@/types/schedule";
-import { calculateShiftHeight, calculateTopOffset } from "@/components/resa/schedule/utils/shift-utils";
+import { calculateShiftHeight, calculateTopOffset } from "@/lib/calendar/shift-utils";
 
 interface ShiftCardProps {
   shift: ScheduledShift;

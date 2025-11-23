@@ -6,7 +6,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 import { EmployeeListItem } from "./employee-list-item"
 import { EmployeeEmptyState } from "./employee-empty-state"
 import { EmployeeFormDialog } from "./employee-form-dialog"

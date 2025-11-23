@@ -12,7 +12,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 import { DatePicker } from "@/components/calendar/calendar-mini"
 import { EmployeeCollapsibleSection, type EmployeeCollapsibleSectionRef } from "@/components/employees/employee-collapsible-section"
 import { RoleCollapsibleSection, type RoleCollapsibleSectionRef } from "@/components/roles/role-collapsible-section"

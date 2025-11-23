@@ -7,9 +7,9 @@ import {
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuItem,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 import { useShiftTemplateContext } from "@/contexts/shift-template-context"
-import { getRoleColor } from "@/components/resa/schedule/utils/role-colors"
+import { getRoleColor } from "@/lib/styles/role-colors"
 
 /**
  * Role legend component - shows color key for shift template roles

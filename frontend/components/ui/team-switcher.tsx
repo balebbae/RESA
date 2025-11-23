@@ -16,7 +16,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 
 export function TeamSwitcher({
   teams,

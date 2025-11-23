@@ -16,7 +16,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 import { useRoles } from "@/hooks/use-roles"
 import { RoleDetailSheet } from "./role-detail-sheet"
 import type { Role } from "@/types/role"

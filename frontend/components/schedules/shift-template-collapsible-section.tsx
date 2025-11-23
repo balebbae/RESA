@@ -15,9 +15,9 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarSeparator,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 import { useShiftTemplateContext } from "@/contexts/shift-template-context"
-import { formatTimeToHHMM } from "@/components/resa/schedule/utils/time-utils"
+import { formatTimeToHHMM } from "@/lib/calendar/date-utils"
 import type { ShiftTemplate } from "@/types/shift-template"
 
 interface ShiftTemplateCollapsibleSectionProps {

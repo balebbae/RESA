@@ -5,7 +5,7 @@ import {
   SidebarMenuButton,
   SidebarMenuAction,
   SidebarMenuItem,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 import { WorkspaceIcon } from "./workspace-icon"
 import { useRestaurant } from "@/contexts/restaurant-context"
 import type { Workspace } from "@/types/workspace"

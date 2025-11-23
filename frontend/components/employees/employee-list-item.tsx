@@ -5,7 +5,7 @@ import {
   SidebarMenuButton,
   SidebarMenuAction,
   SidebarMenuItem,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 import type { Employee } from "@/types/employee"
 
 interface EmployeeListItemProps {

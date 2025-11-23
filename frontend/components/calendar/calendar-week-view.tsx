@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { CalendarGrid } from "@/components/calendar/calendar-grid";
 import type { ScheduledShift, EmployeeDragData, TimeSlotDropData } from "@/types/schedule";
 import type { Employee } from "@/types/employee";
-import { generateEmployeeColors } from "@/components/resa/schedule/utils/employee-colors";
+import { generateEmployeeColors } from "@/lib/styles/employee-colors";
 import { useWeekNavigation } from "@/contexts/week-navigation-context";
 import { useScheduleDragDrop } from "@/contexts/schedule-drag-drop-context";
 import { useShiftTemplateContext } from "@/contexts/shift-template-context";

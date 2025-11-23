@@ -6,7 +6,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 import { WorkspaceListItem } from "./workspace-list-item"
 import { WorkspaceEmptyState } from "./workspace-empty-state"
 import { WorkspaceFormDialog } from "./workspace-form-dialog"

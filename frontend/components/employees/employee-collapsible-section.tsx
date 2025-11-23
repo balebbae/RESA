@@ -17,12 +17,12 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarSeparator,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { useEmployees } from "@/hooks/use-employees"
 import { EmployeeDetailSheet } from "./employee-detail-sheet"
 import type { Employee } from "@/types/employee"
-import { generateEmployeeColors } from "@/components/resa/schedule/utils/employee-colors"
+import { generateEmployeeColors } from "@/lib/styles/employee-colors"
 import type { EmployeeDragData } from "@/types/schedule"
 
 interface EmployeeCollapsibleSectionProps {

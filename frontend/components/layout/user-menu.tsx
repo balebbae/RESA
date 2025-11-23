@@ -14,9 +14,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/resa/sidebar-core/sidebar"
-import { UserAvatar } from "./user-avatar"
-import { UserDropdownItems } from "./user-dropdown-items"
+} from "@/components/ui/sidebar"
+import { UserAvatar } from "@/components/layout/user-avatar"
+import { UserDropdownItems } from "@/components/layout/user-dropdown-items"
 import type { UserMenuProps } from "@/types/user"
 
 /**

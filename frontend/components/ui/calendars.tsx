@@ -14,7 +14,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-} from "@/components/resa/sidebar-core/sidebar"
+} from "@/components/ui/sidebar"
 
 export function Calendars({
   calendars,

@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatDateDisplay } from "@/components/resa/schedule/utils/shift-utils";
+import { formatDateDisplay } from "@/lib/calendar/shift-utils";
 
 interface CalendarHeaderProps {
   weekStartDate: string; // YYYY-MM-DD format (Sunday)

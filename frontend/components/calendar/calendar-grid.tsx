@@ -4,7 +4,7 @@ import type { Role } from "@/types/role";
 import { DayHeader } from "./day-header";
 import { TimeColumn } from "./time-column";
 import { TimeSlotCell } from "./time-slot-cell";
-import { getAllHours, getWeekDates } from "@/components/resa/schedule/utils/shift-utils";
+import { getAllHours, getWeekDates } from "@/lib/calendar/shift-utils";
 
 interface CalendarGridProps {
   weekStartDate: string; // YYYY-MM-DD format (Sunday)

@@ -1,23 +1,25 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
+  SidebarFooter,
   SidebarRail,
-} from "@/components/ui/sidebar"
-import { UserMenu } from "@/components/layout/user-menu"
-import { WorkspaceList } from "@/components/workspaces/workspace-list"
-import { RoleLegend } from "@/components/roles/role-legend"
-import { useWorkplaces } from "@/hooks/use-workplaces"
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { UserMenu } from "@/components/layout/user-menu";
+import { WorkspaceList } from "@/components/workspaces/workspace-list";
+import { RoleLegend } from "@/components/roles/role-legend";
+import { useWorkplaces } from "@/hooks/use-workplaces";
 
 // TODO: Replace with actual user data from auth context
 const TEMP_USER_DATA = {
   name: "shadcn",
   email: "m@example.com",
   avatar: "/avatars/shadcn.jpg",
-}
+};
 
 /**
  * Left sidebar component - Simplified and refactored
@@ -28,7 +30,7 @@ const TEMP_USER_DATA = {
 export function SidebarLeft({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const { workplaces, refetch } = useWorkplaces()
+  const { workplaces, refetch } = useWorkplaces();
 
   return (
     <Sidebar className="border-r-0" {...props}>
@@ -36,13 +38,18 @@ export function SidebarLeft({
         <UserMenu user={TEMP_USER_DATA} />
       </SidebarHeader>
       <SidebarContent>
-        <WorkspaceList
-          workplaces={workplaces}
-          onWorkplaceChange={refetch}
-        />
+        <WorkspaceList workplaces={workplaces} onWorkplaceChange={refetch} />
         <RoleLegend />
       </SidebarContent>
+      <SidebarFooter className="p-4">
+        <Button
+          className="w-full text-sm py-4 cursor-pointer"
+          style={{ backgroundColor: "#3B5483" }}
+        >
+          Publish Schedule
+        </Button>
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

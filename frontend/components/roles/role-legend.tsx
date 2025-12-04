@@ -9,7 +9,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useShiftTemplateContext } from "@/contexts/shift-template-context"
-import { getRoleColor } from "@/lib/styles/role-colors"
 
 /**
  * Role legend component - shows color key for shift template roles
@@ -17,7 +16,7 @@ import { getRoleColor } from "@/lib/styles/role-colors"
  * correspond to which roles on the calendar
  */
 export function RoleLegend() {
-  const { roles, roleColorMap } = useShiftTemplateContext()
+  const { roles } = useShiftTemplateContext()
 
   // Don't show legend if no roles
   if (roles.length === 0) {
@@ -30,14 +29,12 @@ export function RoleLegend() {
       <SidebarGroupContent>
         <SidebarMenu>
           {roles.map((role) => {
-            const roleColor = getRoleColor(role.id, roleColorMap)
-
             return (
               <SidebarMenuItem key={role.id}>
                 <div className="flex items-center gap-2 px-2 py-1.5">
                   <div
                     className="w-4 h-4 rounded border border-gray-300 flex-shrink-0"
-                    style={{ backgroundColor: roleColor }}
+                    style={{ backgroundColor: role.color }}
                   />
                   <span className="text-sm truncate">{role.name}</span>
                 </div>

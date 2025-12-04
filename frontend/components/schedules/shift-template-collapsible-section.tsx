@@ -94,7 +94,7 @@ export const ShiftTemplateCollapsibleSection = forwardRef<
                   </div>
                 ) : (
                   shiftTemplates.map((template) => {
-                    const displayName = template.name || `Template #${template.id}`
+                    const displayName = template.name
 
                     return (
                       <SidebarMenuItem key={template.id}>

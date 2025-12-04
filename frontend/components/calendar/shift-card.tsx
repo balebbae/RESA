@@ -27,13 +27,9 @@ export function ShiftCard({ shift, onClick, layoutProps }: ShiftCardProps) {
   const displayName = shift.employee_name || "Unassigned";
   const displayRole = shift.role_name || "Role";
 
-  // Use employee color or default gray for unassigned
-  const backgroundColor = shift.employee_color || 'hsl(0, 0%, 85%)';
-
-  // Create a darker version for the border and hover
-  const borderColor = shift.employee_color
-    ? shift.employee_color.replace('hsl(', 'hsla(').replace(')', ', 0.8)').replace(/(\d+)%\)/, (_, p1) => `${Math.max(0, parseInt(p1) - 15)}%)`)
-    : 'hsl(0, 0%, 70%)';
+  // Use consistent blue background color matching shift templates
+  const backgroundColor = "#A5B5D3";
+  const borderColor = "#8A9AB8"; // Slightly darker blue for border
 
   return (
     <div

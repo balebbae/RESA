@@ -27,12 +27,7 @@ import {
   WeekNavigationProvider
 } from "@/contexts/week-navigation-context"
 import { ShiftTemplateProvider } from "@/contexts/shift-template-context"
-import { DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core"
-import {
-  ScheduleDragDropProvider,
-  useScheduleDragDrop,
-} from "@/contexts/schedule-drag-drop-context"
-import type { EmployeeDragData, TimeSlotDropData } from "@/types/schedule"
+import { ToastProvider } from "@/components/providers/toast-provider"
 
 /**
  * Protected layout for authenticated routes
@@ -72,92 +67,22 @@ export default function ResaLayout({
   return (
     <RestaurantProvider>
       <ShiftTemplateProvider>
-        <ScheduleDragDropProvider>
-          <SidebarProvider className="!h-svh !min-h-0">
-            <DndContextWrapper>
-              <SidebarLeft />
-              <SidebarInset>
-                <WeekNavigationProvider>
-                  <ResaHeader />
-                  <div className="flex flex-col flex-1 min-h-0">
-                    {children}
-                  </div>
-                </WeekNavigationProvider>
-              </SidebarInset>
-              <SidebarRight />
-            </DndContextWrapper>
-          </SidebarProvider>
-        </ScheduleDragDropProvider>
+        <ToastProvider />
+        <SidebarProvider className="!h-svh !min-h-0">
+          <SidebarLeft />
+          <SidebarInset>
+            <WeekNavigationProvider>
+              <ResaHeader />
+              <div className="flex flex-col flex-1 min-h-0">
+                {children}
+              </div>
+            </WeekNavigationProvider>
+          </SidebarInset>
+          <SidebarRight />
+        </SidebarProvider>
       </ShiftTemplateProvider>
     </RestaurantProvider>
   )
-}
-
-/**
- * Wrapper component that provides DndContext for drag-and-drop functionality
- * This must be inside ScheduleDragDropProvider to access the context
- */
-function DndContextWrapper({ children }: { children: React.ReactNode }) {
-  const { activeDragData, setActiveDragData, getShiftCreationHandler } = useScheduleDragDrop();
-
-  const handleDragStart = (event: DragStartEvent) => {
-    const dragData = event.active.data.current as EmployeeDragData;
-    if (dragData?.type === 'employee') {
-      setActiveDragData(dragData);
-    }
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveDragData(null);
-
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const dragData = active.data.current as EmployeeDragData;
-    const dropData = over.data.current as TimeSlotDropData;
-
-    // Verify we're dragging an employee to a time slot
-    if (dragData?.type === 'employee' && dropData?.type === 'timeslot') {
-      // Call the shift creation handler registered by the calendar
-      const handler = getShiftCreationHandler();
-      if (handler) {
-        handler(dragData, dropData);
-      }
-    }
-  };
-
-  const handleDragCancel = () => {
-    setActiveDragData(null);
-  };
-
-  return (
-    <DndContext
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
-    >
-      {children}
-
-      {/* Drag overlay for visual feedback */}
-      <DragOverlay dropAnimation={null}>
-        {activeDragData ? (
-          <div
-            className="px-3 py-2 rounded-lg shadow-lg border-2 cursor-grabbing z-[9999]"
-            style={{
-              backgroundColor: activeDragData.employeeColor,
-              borderColor: activeDragData.employeeColor,
-              opacity: 0.9,
-            }}
-          >
-            <div className="text-sm font-semibold text-gray-900">
-              {activeDragData.employeeName}
-            </div>
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
-  );
 }
 
 /**

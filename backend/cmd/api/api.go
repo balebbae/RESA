@@ -202,6 +202,7 @@ func (app *application) mount() http.Handler {
 						r.Get("/",    app.getShiftTemplateHandler)
 						r.Patch("/",  app.checkRestaurantOwnership(app.updateShiftTemplateHandler))
 						r.Delete("/", app.checkRestaurantOwnership(app.deleteShiftTemplateHandler))
+						r.Get("/roles", app.getShiftTemplateRolesHandler)
 					})
 				})
 
@@ -217,6 +218,9 @@ func (app *application) mount() http.Handler {
 
 						// publish (email out)
 						r.Post("/publish", app.checkRestaurantOwnership(app.publishScheduleHandler))
+
+						// auto-populate shifts from templates
+						r.Post("/auto-populate", app.checkRestaurantOwnership(app.autoPopulateScheduleHandler))
 
 						// scheduled shifts inside a schedule
 						r.Route("/shifts", func(r chi.Router) {

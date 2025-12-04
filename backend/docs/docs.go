@@ -502,6 +502,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/restaurants/{restaurantID}/schedules/{scheduleID}/auto-populate": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Creates scheduled shifts for all shift templates that don't have shifts yet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scheduled-shifts"
+                ],
+                "summary": "Auto-populate schedule with template-based shifts",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Restaurant ID",
+                        "name": "restaurantID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Schedule ID",
+                        "name": "scheduleID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            }
+        },
         "/restaurants/{restaurantID}/schedules/{scheduleID}/shifts": {
             "get": {
                 "security": [
@@ -2434,6 +2491,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/restaurants/{restaurant_id}/shift-templates/{id}/roles": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Retrieves all roles associated with a shift template",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "shift-template"
+                ],
+                "summary": "Get roles for a shift template",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Restaurant ID",
+                        "name": "restaurant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Shift Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/store.Role"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            }
+        },
         "/users/activate/{token}": {
             "put": {
                 "security": [
@@ -2536,6 +2652,9 @@ const docTemplate = `{
                 "name"
             ],
             "properties": {
+                "color": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string",
                     "maxLength": 50
@@ -2563,6 +2682,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "end_time",
+                "name",
                 "start_time"
             ],
             "properties": {
@@ -2575,7 +2695,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "role_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "start_time": {
                     "type": "string"
@@ -2699,6 +2827,9 @@ const docTemplate = `{
         "main.UpdateRolePayload": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string",
                     "maxLength": 50
@@ -2730,7 +2861,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "role_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "start_time": {
                     "type": "string"
@@ -2888,6 +3027,9 @@ const docTemplate = `{
         "store.Role": {
             "type": "object",
             "properties": {
+                "color": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -2942,6 +3084,10 @@ const docTemplate = `{
                 "employee_id": {
                     "type": "integer"
                 },
+                "employee_name": {
+                    "description": "Joined fields (not stored in scheduled_shifts table)",
+                    "type": "string"
+                },
                 "end_time": {
                     "description": "\"15:04\"",
                     "type": "string"
@@ -2954,6 +3100,9 @@ const docTemplate = `{
                 },
                 "role_id": {
                     "type": "integer"
+                },
+                "role_name": {
+                    "type": "string"
                 },
                 "schedule_id": {
                     "type": "integer"
@@ -2991,11 +3140,18 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "name": {
-                    "description": "optional name like \"Morning Shift\"",
+                    "description": "required name like \"Morning Shift\"",
                     "type": "string"
                 },
                 "restaurant_id": {
                     "type": "integer"
+                },
+                "role_ids": {
+                    "description": "Joined field (populated when fetching with roles)",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "start_time": {
                     "description": "stored as TIME in db, use string to avoid timezone confusion in JSON",

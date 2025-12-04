@@ -14,9 +14,9 @@ const shiftTemplateSchema = z
   .object({
     name: z
       .string()
+      .min(1, "Name is required")
       .max(255, "Name must be 255 characters or less")
-      .optional()
-      .or(z.literal("")),
+      .transform(val => val.trim()),
     day_of_week: z
       .number()
       .int()
@@ -29,6 +29,28 @@ const shiftTemplateSchema = z
       .string()
       .regex(timeRegex, "End time must be in HH:MM format (e.g., 17:00)"),
   })
+  .refine(
+    (data) => {
+      // Ensure start_time is in 15-minute increments
+      const [, startMin] = data.start_time.split(":").map(Number);
+      return startMin % 15 === 0;
+    },
+    {
+      message: "Start time must be in 15-minute increments (00, 15, 30, or 45)",
+      path: ["start_time"],
+    }
+  )
+  .refine(
+    (data) => {
+      // Ensure end_time is in 15-minute increments
+      const [, endMin] = data.end_time.split(":").map(Number);
+      return endMin % 15 === 0;
+    },
+    {
+      message: "End time must be in 15-minute increments (00, 15, 30, or 45)",
+      path: ["end_time"],
+    }
+  )
   .refine(
     (data) => {
       // Ensure end_time is after start_time
@@ -45,7 +67,7 @@ const shiftTemplateSchema = z
   );
 
 export interface ShiftTemplateFormData {
-  name?: string;
+  name: string;
   day_of_week: number;
   start_time: string;
   end_time: string;
@@ -84,7 +106,7 @@ export function useShiftTemplateForm({
   } = useForm<ShiftTemplateFormData>({
     resolver: zodResolver(shiftTemplateSchema),
     defaultValues: {
-      name: "",
+      name: "New Shift Template",
       day_of_week: 0,
       start_time: "09:00",
       end_time: "17:00",
@@ -104,7 +126,7 @@ export function useShiftTemplateForm({
       }
 
       const payload = {
-        name: data.name || undefined, // Send undefined if empty string to omit from JSON
+        name: data.name,
         day_of_week: data.day_of_week,
         start_time: data.start_time,
         end_time: data.end_time,

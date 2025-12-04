@@ -1,17 +1,15 @@
 "use client"
 
-import { createContext, useContext, useMemo } from "react"
+import { createContext, useContext } from "react"
 import { useRestaurant } from "@/contexts/restaurant-context"
 import { useShiftTemplates } from "@/hooks/use-shift-templates"
 import { useRoles } from "@/hooks/use-roles"
-import { generateRoleColors } from "@/lib/styles/role-colors"
 import type { ShiftTemplate } from "@/types/shift-template"
 import type { Role } from "@/types/role"
 
 interface ShiftTemplateContextValue {
   shiftTemplates: ShiftTemplate[]
   roles: Role[]
-  roleColorMap: Map<number, string>
   isLoading: boolean
   error: string | null
   refetch: () => Promise<void>
@@ -41,11 +39,6 @@ export function ShiftTemplateProvider({ children }: { children: React.ReactNode 
     refetch: refetchRoles
   } = useRoles(selectedRestaurantId)
 
-  // Generate color map for roles
-  const roleColorMap = useMemo(() => {
-    return generateRoleColors(roles.map(role => role.id))
-  }, [roles])
-
   // Combined refetch function
   const refetch = async () => {
     await Promise.all([refetchTemplates(), refetchRoles()])
@@ -54,7 +47,6 @@ export function ShiftTemplateProvider({ children }: { children: React.ReactNode 
   const value: ShiftTemplateContextValue = {
     shiftTemplates,
     roles,
-    roleColorMap,
     isLoading: templatesLoading || rolesLoading,
     error: templatesError || rolesError,
     refetch,

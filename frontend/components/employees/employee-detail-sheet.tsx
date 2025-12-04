@@ -33,6 +33,7 @@ interface EmployeeDetailSheetProps {
   onOpenChange: (open: boolean) => void
   restaurantId: number | null
   onSuccess?: () => void
+  onRoleCreated?: () => void | Promise<void>
 }
 
 /**
@@ -45,6 +46,7 @@ export function EmployeeDetailSheet({
   onOpenChange,
   restaurantId,
   onSuccess,
+  onRoleCreated,
 }: EmployeeDetailSheetProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -208,8 +210,11 @@ export function EmployeeDetailSheet({
   useEffect(() => {
     if (isEditing) {
       setSelectedRoles([...employeeRoles])
+    } else {
+      // Reset selected roles when exiting edit mode
+      setSelectedRoles([])
     }
-  }, [isEditing, employeeRoles])
+  }, [isEditing])
 
   if (!employee) return null
 
@@ -260,16 +265,26 @@ export function EmployeeDetailSheet({
     // Refetch roles to get the latest list from backend
     await fetchRoles()
 
+    // Extract role from either direct or wrapped response
+    const role = (newRole && typeof newRole === 'object' && 'data' in newRole)
+      ? (newRole as any).data
+      : newRole
+
     // Automatically select the newly created role
-    if (newRole && typeof newRole === 'object' && 'id' in newRole) {
-      const role = newRole as Role
+    if (role && typeof role === 'object' && 'id' in role) {
+      const roleObj = role as Role
       setSelectedRoles(prev => {
         // Only add if not already selected
-        if (prev.some(r => r.id === role.id)) {
+        if (prev.some(r => r.id === roleObj.id)) {
           return prev
         }
-        return [...prev, role]
+        return [...prev, roleObj]
       })
+    }
+
+    // Trigger parent callback to refresh sidebar role list
+    if (onRoleCreated) {
+      await onRoleCreated()
     }
 
     setShowRoleDialog(false)
@@ -406,11 +421,6 @@ export function EmployeeDetailSheet({
                       <SelectValue placeholder={rolesLoading ? "Loading roles..." : "Select a role"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableRoles.length === 0 && !rolesLoading && (
-                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                          No roles available
-                        </div>
-                      )}
                       {availableRoles.map((role) => (
                         <SelectItem
                           key={role.id}
@@ -420,12 +430,10 @@ export function EmployeeDetailSheet({
                           {role.name}
                         </SelectItem>
                       ))}
-                      {availableRoles.length > 0 && (
-                        <SelectItem value="create-new" className="text-primary font-medium">
-                          <Plus className="h-4 w-4 inline mr-2" />
-                          Create new role
-                        </SelectItem>
-                      )}
+                      <SelectItem value="create-new" className="text-primary font-medium">
+                        <Plus className="h-4 w-4 inline mr-2" />
+                        Create new role
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   {rolesError && (

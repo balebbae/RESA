@@ -24,6 +24,7 @@ interface RoleFormDialogProps {
   restaurantId: number | null
   roleId?: number
   roleName?: string
+  roleColor?: string
   isOpen?: boolean
   onOpenChange?: (open: boolean) => void
   onSuccess?: (role: unknown) => void
@@ -133,6 +134,19 @@ export function RoleFormDialog({
                 />
                 {errors.name && (
                   <p className="text-sm text-red-600">{errors.name.message}</p>
+                )}
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="color">Role Color</FieldLabel>
+                <Input
+                  id="color"
+                  type="color"
+                  {...register("color")}
+                  className="h-10 cursor-pointer"
+                />
+                {errors.color && (
+                  <p className="text-sm text-red-600">{errors.color.message}</p>
                 )}
               </Field>
             </FieldGroup>

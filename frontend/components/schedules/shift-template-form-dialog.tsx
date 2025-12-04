@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,7 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { X } from "lucide-react";
 import { useShiftTemplateForm } from "@/hooks/use-shift-template-form";
+import { getApiBase } from "@/lib/api";
+import { fetchWithAuth } from "@/lib/auth";
+import type { Role } from "@/types/role";
 
 interface ShiftTemplateFormDialogProps {
   mode?: "create" | "edit";
@@ -38,6 +43,22 @@ const DAYS_OF_WEEK = [
   { value: 5, label: "Friday" },
   { value: 6, label: "Saturday" },
 ];
+
+const MINUTES = ["00", "15", "30", "45"];
+
+// Generate hours array (0-23) with display labels
+const HOURS = Array.from({ length: 24 }, (_, i) => {
+  let displayLabel;
+  if (i === 0) displayLabel = "12 AM";
+  else if (i === 12) displayLabel = "12 PM";
+  else if (i < 12) displayLabel = `${i} AM`;
+  else displayLabel = `${i - 12} PM`;
+
+  return {
+    value: String(i).padStart(2, "0"),
+    label: displayLabel,
+  };
+});
 
 /**
  * Shift template form dialog for creating and editing shift templates
@@ -94,7 +115,34 @@ export function ShiftTemplateFormDialog({
   const dialogDescription = isEditMode
     ? "Update shift template information."
     : "Add a new shift template to this workplace.";
-  const submitButtonText = isSubmitting
+
+  const selectedDayOfWeek = watch("day_of_week");
+  const currentStartTime = watch("start_time");
+  const currentEndTime = watch("end_time");
+
+  // State for separate hour and minute selections
+  const [startHour, setStartHour] = useState("09");
+  const [startMinute, setStartMinute] = useState("00");
+  const [endHour, setEndHour] = useState("17");
+  const [endMinute, setEndMinute] = useState("00");
+
+  // State for multi-day selection
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [daySelectValue, setDaySelectValue] = useState<string>("");
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+
+  // State for role selection
+  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
+  const [roleSelectValue, setRoleSelectValue] = useState<string>("");
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [rolesError, setRolesError] = useState<string | null>(null);
+
+  // Submit button text (defined after state to access isCreating and selectedDays)
+  const submitButtonText = isCreating
+    ? `Creating ${selectedDays.length} template${selectedDays.length > 1 ? "s" : ""}...`
+    : isSubmitting
     ? isEditMode
       ? "Updating..."
       : "Adding..."
@@ -102,7 +150,197 @@ export function ShiftTemplateFormDialog({
     ? "Update Shift Template"
     : "Add Shift Template";
 
-  const selectedDayOfWeek = watch("day_of_week");
+  // Sync form values to local state when they change
+  useEffect(() => {
+    if (currentStartTime) {
+      const [hour, minute] = currentStartTime.split(":");
+      setStartHour(hour);
+      setStartMinute(minute);
+    }
+  }, [currentStartTime]);
+
+  useEffect(() => {
+    if (currentEndTime) {
+      const [hour, minute] = currentEndTime.split(":");
+      setEndHour(hour);
+      setEndMinute(minute);
+    }
+  }, [currentEndTime]);
+
+  // Update form value when hour/minute changes
+  const handleStartHourChange = (hour: string) => {
+    setStartHour(hour);
+    setValue("start_time", `${hour}:${startMinute}`);
+  };
+
+  const handleStartMinuteChange = (minute: string) => {
+    setStartMinute(minute);
+    setValue("start_time", `${startHour}:${minute}`);
+  };
+
+  const handleEndHourChange = (hour: string) => {
+    setEndHour(hour);
+    setValue("end_time", `${hour}:${endMinute}`);
+  };
+
+  const handleEndMinuteChange = (minute: string) => {
+    setEndMinute(minute);
+    setValue("end_time", `${endHour}:${minute}`);
+  };
+
+  // Handlers for multi-day selection
+  const handleDaySelect = (value: string) => {
+    const dayValue = parseInt(value);
+    if (!selectedDays.includes(dayValue)) {
+      setSelectedDays([...selectedDays, dayValue].sort());
+      setDaySelectValue(""); // Reset dropdown after adding day
+    }
+  };
+
+  const handleDayRemove = (dayValue: number) => {
+    setSelectedDays(selectedDays.filter((d) => d !== dayValue));
+  };
+
+  // Fetch available roles for the restaurant
+  const fetchRoles = useCallback(async () => {
+    if (!restaurantId) return;
+
+    try {
+      setRolesLoading(true);
+      setRolesError(null);
+
+      const rolesRes = await fetchWithAuth(
+        `${getApiBase()}/restaurants/${restaurantId}/roles`
+      );
+      if (!rolesRes.ok) {
+        throw new Error(`Failed to fetch roles (${rolesRes.status})`);
+      }
+      const rolesResponse = await rolesRes.json();
+      const roles = Array.isArray(rolesResponse)
+        ? rolesResponse
+        : rolesResponse.data || [];
+      setAvailableRoles(roles);
+    } catch (err) {
+      console.error("Error fetching roles:", err);
+      setRolesError(
+        err instanceof Error ? err.message : "Failed to load roles"
+      );
+      setAvailableRoles([]);
+    } finally {
+      setRolesLoading(false);
+    }
+  }, [restaurantId]);
+
+  // Fetch roles when dialog opens
+  useEffect(() => {
+    if (dialogOpen && restaurantId) {
+      fetchRoles();
+    }
+  }, [dialogOpen, restaurantId, fetchRoles]);
+
+  // Handlers for role selection
+  const handleRoleSelect = (value: string) => {
+    const role = availableRoles.find((r) => r.id === parseInt(value));
+    if (role && !selectedRoles.find((r) => r.id === role.id)) {
+      setSelectedRoles([...selectedRoles, role]);
+      setRoleSelectValue(""); // Reset dropdown after adding role
+    }
+  };
+
+  const handleRoleRemove = (roleId: number) => {
+    setSelectedRoles(selectedRoles.filter((r) => r.id !== roleId));
+  };
+
+  // Custom submit handler for multi-day creation
+  const handleMultiDaySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validate that at least one day is selected
+    if (selectedDays.length === 0) {
+      setSubmissionError("Please select at least one day");
+      return;
+    }
+
+    setIsCreating(true);
+    setSubmissionError(null);
+
+    try {
+      if (!restaurantId) {
+        throw new Error("Restaurant ID is required");
+      }
+
+      const createdTemplates = [];
+      const failedDays: { day: string; error: string }[] = [];
+
+      // Create template for each selected day sequentially
+      for (const dayValue of selectedDays) {
+        const dayName = DAYS_OF_WEEK.find((d) => d.value === dayValue)?.label || "Unknown";
+
+        try {
+          const payload = {
+            name: watch("name") || undefined,
+            day_of_week: dayValue,
+            start_time: `${startHour}:${startMinute}`,
+            end_time: `${endHour}:${endMinute}`,
+            role_ids: selectedRoles.length > 0 ? selectedRoles.map((r) => r.id) : undefined,
+          };
+
+          const res = await fetchWithAuth(
+            `${getApiBase()}/restaurants/${restaurantId}/shift-templates`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            }
+          );
+
+          if (!res.ok) {
+            const errorText = await res.text();
+            console.error(`Failed to create template for ${dayName}:`, errorText);
+            throw new Error(errorText.slice(0, 300));
+          }
+
+          const template = await res.json();
+          createdTemplates.push(template);
+        } catch (dayError) {
+          const errorMsg = dayError instanceof Error ? dayError.message : "Unknown error";
+          console.error(`Error creating template for ${dayName}:`, dayError);
+          failedDays.push({
+            day: dayName,
+            error: errorMsg,
+          });
+        }
+      }
+
+      // Handle results
+      if (failedDays.length > 0) {
+        // Build detailed error message
+        const errorDetails = failedDays.map((f) => `${f.day}: ${f.error}`).join("\n");
+        const errorMsg = `Failed to create templates:\n${errorDetails}`;
+
+        if (createdTemplates.length > 0) {
+          setSubmissionError(
+            `${errorMsg}\n\nSuccessfully created ${createdTemplates.length} template(s).`
+          );
+        } else {
+          setSubmissionError(errorMsg);
+        }
+      } else {
+        // All succeeded - close dialog and notify parent
+        setDialogOpen(false);
+        setSelectedDays([]);
+        if (onSuccess) {
+          onSuccess(createdTemplates);
+        }
+      }
+    } catch (err) {
+      setSubmissionError(
+        err instanceof Error ? err.message : "Failed to create shift templates"
+      );
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -111,52 +349,78 @@ export function ShiftTemplateFormDialog({
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {(error || isLoading) && (
-            <p className="text-sm text-red-600">
-              {error || "Loading shift template details..."}
-            </p>
+        <form onSubmit={handleMultiDaySubmit} className="space-y-4">
+          {(submissionError || error || isLoading) && (
+            <div className="text-sm text-red-600 whitespace-pre-line">
+              {submissionError || error || "Loading shift template details..."}
+            </div>
           )}
 
           <FieldGroup>
-            {/* Name Field (Optional) */}
+            {/* Name Field */}
             <Field>
-              <FieldLabel htmlFor="name">Name (Optional)</FieldLabel>
+              <FieldLabel htmlFor="name">Name</FieldLabel>
               <Input
                 id="name"
                 type="text"
                 placeholder="e.g., Morning Shift, Closing Shift"
                 {...register("name")}
+                required
+                autoFocus
               />
               {errors.name && (
                 <p className="text-sm text-red-600">{errors.name.message}</p>
               )}
             </Field>
 
-            {/* Day of Week Selection */}
+            {/* Days of Week Selection (Multi-select) */}
             <Field>
-              <FieldLabel htmlFor="day_of_week">Day of Week</FieldLabel>
+              <FieldLabel htmlFor="days">Days of Week</FieldLabel>
               <Select
-                value={
-                  selectedDayOfWeek !== undefined
-                    ? selectedDayOfWeek.toString()
-                    : "0"
-                }
-                onValueChange={(value) =>
-                  setValue("day_of_week", parseInt(value))
-                }
+                value={daySelectValue}
+                onValueChange={(value) => {
+                  setDaySelectValue(value);
+                  handleDaySelect(value);
+                }}
               >
-                <SelectTrigger id="day_of_week" className="w-full">
-                  <SelectValue placeholder="Select a day" />
+                <SelectTrigger id="days" className="w-full">
+                  <SelectValue placeholder="Select days" />
                 </SelectTrigger>
                 <SelectContent>
                   {DAYS_OF_WEEK.map((day) => (
-                    <SelectItem key={day.value} value={day.value.toString()}>
+                    <SelectItem
+                      key={day.value}
+                      value={day.value.toString()}
+                      disabled={selectedDays.includes(day.value)}
+                    >
                       {day.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* Display selected days as badges */}
+              {selectedDays.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedDays.map((dayValue) => {
+                    const day = DAYS_OF_WEEK.find((d) => d.value === dayValue);
+                    return (
+                      <Badge key={dayValue} variant="secondary" className="gap-1">
+                        {day?.label}
+                        <button
+                          type="button"
+                          onClick={() => handleDayRemove(dayValue)}
+                          className="ml-1 rounded-full hover:bg-muted"
+                          aria-label={`Remove ${day?.label}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+
               {errors.day_of_week && (
                 <p className="text-sm text-red-600">
                   {errors.day_of_week.message}
@@ -164,10 +428,90 @@ export function ShiftTemplateFormDialog({
               )}
             </Field>
 
+            {/* Roles Selection (Multi-select) */}
+            <Field>
+              <FieldLabel htmlFor="roles">Roles (Optional)</FieldLabel>
+              <Select
+                value={roleSelectValue}
+                onValueChange={(value) => {
+                  setRoleSelectValue(value);
+                  handleRoleSelect(value);
+                }}
+                disabled={rolesLoading}
+              >
+                <SelectTrigger id="roles" className="w-full">
+                  <SelectValue
+                    placeholder={
+                      rolesLoading ? "Loading roles..." : "Select roles"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableRoles.map((role) => (
+                    <SelectItem
+                      key={role.id}
+                      value={role.id.toString()}
+                      disabled={selectedRoles.some((r) => r.id === role.id)}
+                    >
+                      {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {rolesError && (
+                <p className="text-sm text-red-600">{rolesError}</p>
+              )}
+
+              {/* Display selected roles as badges */}
+              {selectedRoles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedRoles.map((role) => (
+                    <Badge key={role.id} variant="secondary" className="gap-1">
+                      {role.name}
+                      <button
+                        type="button"
+                        onClick={() => handleRoleRemove(role.id)}
+                        className="ml-1 rounded-full hover:bg-muted"
+                        aria-label={`Remove ${role.name}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </Field>
+
             {/* Start Time */}
             <Field>
-              <FieldLabel htmlFor="start_time">Start Time</FieldLabel>
-              <Input id="start_time" type="time" {...register("start_time")} />
+              <FieldLabel>Start Time</FieldLabel>
+              <div className="flex gap-2">
+                <Select value={startHour} onValueChange={handleStartHourChange}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[180px]">
+                    {HOURS.map((hour) => (
+                      <SelectItem key={hour.value} value={hour.value}>
+                        {hour.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={startMinute} onValueChange={handleStartMinuteChange}>
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MINUTES.map((minute) => (
+                      <SelectItem key={minute} value={minute}>
+                        {minute}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               {errors.start_time && (
                 <p className="text-sm text-red-600">
                   {errors.start_time.message}
@@ -177,8 +521,33 @@ export function ShiftTemplateFormDialog({
 
             {/* End Time */}
             <Field>
-              <FieldLabel htmlFor="end_time">End Time</FieldLabel>
-              <Input id="end_time" type="time" {...register("end_time")} />
+              <FieldLabel>End Time</FieldLabel>
+              <div className="flex gap-2">
+                <Select value={endHour} onValueChange={handleEndHourChange}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[180px]">
+                    {HOURS.map((hour) => (
+                      <SelectItem key={hour.value} value={hour.value}>
+                        {hour.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={endMinute} onValueChange={handleEndMinuteChange}>
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MINUTES.map((minute) => (
+                      <SelectItem key={minute} value={minute}>
+                        {minute}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               {errors.end_time && (
                 <p className="text-sm text-red-600">
                   {errors.end_time.message}
@@ -188,7 +557,7 @@ export function ShiftTemplateFormDialog({
           </FieldGroup>
 
           <div className="flex justify-end gap-3">
-            <Button type="submit" disabled={isSubmitting || isLoading}>
+            <Button type="submit" disabled={isSubmitting || isLoading || isCreating}>
               {submitButtonText}
             </Button>
           </div>

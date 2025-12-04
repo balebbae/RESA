@@ -13,10 +13,12 @@ import (
 // const roleCtx roleKey = "role"
 type CreateRolePayload struct {
 	Name    string  `json:"name" validate:"required,max=50"`
+	Color   string  `json:"color" validate:"omitempty,len=7"`
 }
 
 type UpdateRolePayload struct {
 	Name    *string  `json:"name" validate:"omitempty,max=50"`
+	Color   *string  `json:"color" validate:"omitempty,len=7"`
 }
 
 // GetRoles godoc
@@ -123,9 +125,16 @@ func (app *application) createRoleHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Default color if not provided
+	color := payload.Color
+	if color == "" {
+		color = "#6B7280"
+	}
+
 	role := &store.Role{
 		RestaurantID: restaurantID,
 		Name:         payload.Name,
+		Color:        color,
 	}
 
 	if err := app.store.Roles.Create(r.Context(), role); err != nil {
@@ -289,6 +298,10 @@ func (app *application) updateRoleHandler(w http.ResponseWriter, r *http.Request
 	// Update fields if provided
 	if payload.Name != nil {
 		role.Name = *payload.Name
+	}
+
+	if payload.Color != nil {
+		role.Color = *payload.Color
 	}
 
 	// Save updates

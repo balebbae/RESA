@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/balebbae/RESA/internal/store"
@@ -14,17 +15,19 @@ import (
 // const shiftTemplateCtx shiftTemplateKey = "shiftTemplate"
 
 type CreateShiftTemplatePayload struct {
-	Name         *string `json:"name,omitempty"`
+	Name         string  `json:"name" validate:"required,min=1,max=255"`
 	DayOfWeek    int     `json:"day_of_week" validate:"gte=0,lte=6"`
 	StartTime    string  `json:"start_time" validate:"required"`
 	EndTime      string  `json:"end_time" validate:"required"`
+	RoleIDs      []int64 `json:"role_ids,omitempty"`
 }
 
 type UpdateShiftTemplatePayload struct {
-	Name         *string  `json:"name,omitempty"`
+	Name         *string  `json:"name,omitempty" validate:"omitempty,min=1,max=255"`
 	DayOfWeek    *int     `json:"day_of_week,omitempty" validate:"omitempty,min=0,max=6"`
 	StartTime    *string  `json:"start_time,omitempty" validate:"omitempty"`
 	EndTime      *string  `json:"end_time,omitempty" validate:"omitempty"`
+	RoleIDs      []int64  `json:"role_ids,omitempty"`
 }
 
 // GetShiftTemplates godoc
@@ -66,7 +69,7 @@ func (app *application) getShiftTemplatesHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	templates, err := app.store.ShiftTemplates.ListByRestaurant(r.Context(), restaurantID)
+	templates, err := app.store.ShiftTemplates.ListByRestaurantWithRoles(r.Context(), restaurantID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -161,6 +164,16 @@ func (app *application) createShiftTemplateHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
+	// Assign roles if provided
+	if len(payload.RoleIDs) > 0 {
+		if err := app.store.ShiftTemplates.AssignRoles(r.Context(), template.ID, payload.RoleIDs); err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+		// Populate Roles field for response
+		template.Roles = payload.RoleIDs
+	}
+
 	err = app.jsonResponse(w, http.StatusCreated, template)
 	if err != nil {
 		app.internalServerError(w, r, err)
@@ -230,6 +243,14 @@ func (app *application) getShiftTemplateHandler(w http.ResponseWriter, r *http.R
 		app.notFoundResponse(w, r, errors.New("shift template not found"))
 		return
 	}
+
+	// Fetch and populate roles
+	roleIDs, err := app.store.ShiftTemplates.GetRoles(r.Context(), templateID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+	template.Roles = roleIDs
 
 	err = app.jsonResponse(w, http.StatusOK, template)
 	if err != nil {
@@ -317,7 +338,12 @@ func (app *application) updateShiftTemplateHandler(w http.ResponseWriter, r *htt
 
 	// Update fields if provided
 	if payload.Name != nil {
-		template.Name = payload.Name
+		trimmedName := strings.TrimSpace(*payload.Name)
+		if trimmedName == "" {
+			app.badRequestResponse(w, r, errors.New("name cannot be empty or whitespace only"))
+			return
+		}
+		template.Name = trimmedName
 	}
 
 	if payload.DayOfWeek != nil {
@@ -360,6 +386,23 @@ func (app *application) updateShiftTemplateHandler(w http.ResponseWriter, r *htt
 	if err := app.store.ShiftTemplates.Update(r.Context(), template); err != nil {
 		app.internalServerError(w, r, err)
 		return
+	}
+
+	// Update roles if provided (note: nil check allows sending empty array to clear roles)
+	if payload.RoleIDs != nil {
+		if err := app.store.ShiftTemplates.AssignRoles(r.Context(), templateID, payload.RoleIDs); err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+		template.Roles = payload.RoleIDs
+	} else {
+		// Fetch current roles if not updating them
+		roleIDs, err := app.store.ShiftTemplates.GetRoles(r.Context(), templateID)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+		template.Roles = roleIDs
 	}
 
 	err = app.jsonResponse(w, http.StatusOK, template)
@@ -443,4 +486,81 @@ func (app *application) deleteShiftTemplateHandler(w http.ResponseWriter, r *htt
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// GetShiftTemplateRoles godoc
+//
+//	@Summary		Get roles for a shift template
+//	@Description	Retrieves all roles associated with a shift template
+//	@Tags			shift-template
+//	@Accept			json
+//	@Produce		json
+//	@Param			restaurant_id	path		int	true	"Restaurant ID"
+//	@Param			id				path		int	true	"Shift Template ID"
+//	@Success		200				{array}		store.Role
+//	@Failure		401				{object}	error
+//	@Failure		404				{object}	error
+//	@Failure		500				{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/restaurants/{restaurant_id}/shift-templates/{id}/roles [get]
+func (app *application) getShiftTemplateRolesHandler(w http.ResponseWriter, r *http.Request) {
+	restaurantID, err := strconv.ParseInt(chi.URLParam(r, "restaurantID"), 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	templateID, err := strconv.ParseInt(chi.URLParam(r, "templateID"), 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// Check if restaurant exists and user has access to it
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			app.notFoundResponse(w, r, err)
+			return
+		}
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	// Check if user owns this restaurant
+	user := getUserFromContext(r)
+	if restaurant.UserID != user.ID {
+		app.notFoundResponse(w, r, errors.New("restaurant not found"))
+		return
+	}
+
+	// Get the shift template to verify it belongs to this restaurant
+	template, err := app.store.ShiftTemplates.GetByID(r.Context(), templateID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			app.notFoundResponse(w, r, err)
+			return
+		}
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	// Verify template belongs to this restaurant
+	if template.RestaurantID != restaurantID {
+		app.notFoundResponse(w, r, errors.New("shift template not found"))
+		return
+	}
+
+	// Get detailed roles
+	roles, err := app.store.ShiftTemplates.GetRolesDetailed(r.Context(), templateID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	err = app.jsonResponse(w, http.StatusOK, roles)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
 }

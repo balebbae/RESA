@@ -3,8 +3,6 @@
 import * as React from "react"
 import { useState, useEffect, forwardRef, useImperativeHandle, useMemo } from "react"
 import { ChevronRight, Pencil } from "lucide-react"
-import { useDraggable } from "@dnd-kit/core"
-import { CSS } from "@dnd-kit/utilities"
 import {
   Collapsible,
   CollapsibleContent,
@@ -23,10 +21,10 @@ import { useEmployees } from "@/hooks/use-employees"
 import { EmployeeDetailSheet } from "./employee-detail-sheet"
 import type { Employee } from "@/types/employee"
 import { generateEmployeeColors } from "@/lib/styles/employee-colors"
-import type { EmployeeDragData } from "@/types/schedule"
 
 interface EmployeeCollapsibleSectionProps {
   restaurantId: number | null
+  onRoleCreated?: () => void | Promise<void>
 }
 
 export interface EmployeeCollapsibleSectionRef {
@@ -34,32 +32,15 @@ export interface EmployeeCollapsibleSectionRef {
 }
 
 /**
- * Individual draggable employee item
+ * Individual employee item
  */
-interface DraggableEmployeeItemProps {
+interface EmployeeItemProps {
   employee: Employee;
   color: string;
   onEdit: () => void;
 }
 
-function DraggableEmployeeItem({ employee, color, onEdit }: DraggableEmployeeItemProps) {
-  const dragData: EmployeeDragData = {
-    type: 'employee',
-    employeeId: employee.id,
-    employeeName: employee.full_name,
-    employeeColor: color,
-  };
-
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `employee-${employee.id}`,
-    data: dragData,
-  });
-
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.5 : 1,
-  };
-
+function EmployeeItem({ employee, color, onEdit }: EmployeeItemProps) {
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onEdit();
@@ -67,17 +48,8 @@ function DraggableEmployeeItem({ employee, color, onEdit }: DraggableEmployeeIte
 
   return (
     <SidebarMenuItem key={employee.id}>
-      <div
-        ref={setNodeRef}
-        style={style}
-        className="flex items-center w-full gap-2 px-2 py-2 rounded-md hover:bg-sidebar-accent group relative"
-      >
-        {/* Draggable area - applies listeners here */}
-        <div
-          {...listeners}
-          {...attributes}
-          className="flex items-center gap-2 flex-1 min-w-0 cursor-grab active:cursor-grabbing"
-        >
+      <div className="flex items-center w-full gap-2 px-2 py-2 rounded-md hover:bg-sidebar-accent group relative">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           <div
             className="w-3 h-3 rounded-full flex-shrink-0"
             style={{ backgroundColor: color }}
@@ -90,7 +62,7 @@ function DraggableEmployeeItem({ employee, color, onEdit }: DraggableEmployeeIte
           </div>
         </div>
 
-        {/* Edit button - separate from drag area */}
+        {/* Edit button */}
         <Button
           variant="ghost"
           size="icon"
@@ -106,13 +78,14 @@ function DraggableEmployeeItem({ employee, color, onEdit }: DraggableEmployeeIte
 
 /**
  * Collapsible section for employees
- * Displays employees in a collapsible sidebar section with drag and drop functionality
+ * Displays employees in a collapsible sidebar section
  */
 export const EmployeeCollapsibleSection = forwardRef<
   EmployeeCollapsibleSectionRef,
   EmployeeCollapsibleSectionProps
 >(function EmployeeCollapsibleSection({
   restaurantId,
+  onRoleCreated,
 }, ref) {
   const { employees, refetch } = useEmployees(restaurantId)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
@@ -195,7 +168,7 @@ export const EmployeeCollapsibleSection = forwardRef<
                   </div>
                 ) : (
                   employees.map((employee) => (
-                    <DraggableEmployeeItem
+                    <EmployeeItem
                       key={employee.id}
                       employee={employee}
                       color={employeeColorMap.get(employee.id) || 'hsl(0, 0%, 70%)'}
@@ -217,6 +190,7 @@ export const EmployeeCollapsibleSection = forwardRef<
         onOpenChange={setIsSheetOpen}
         restaurantId={restaurantId}
         onSuccess={handleEmployeeUpdate}
+        onRoleCreated={onRoleCreated}
       />
     </>
   )

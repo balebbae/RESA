@@ -11,6 +11,7 @@ type Role struct {
     ID           int64     `db:"id" json:"id"`
     RestaurantID int64     `db:"restaurant_id" json:"restaurant_id"`
     Name         string    `db:"name" json:"name"`
+    Color        string    `db:"color" json:"color"`
     CreatedAt    time.Time `db:"created_at" json:"created_at"`
     UpdatedAt    time.Time `db:"updated_at" json:"updated_at"`
 }
@@ -24,8 +25,8 @@ func (s *RoleStore) Create(ctx context.Context, role *Role) error {
 	defer cancel()
 
 	query := `
-		INSERT INTO roles (restaurant_id, name, created_at, updated_at)
-		VALUES ($1, $2, NOW(), NOW())
+		INSERT INTO roles (restaurant_id, name, color, created_at, updated_at)
+		VALUES ($1, $2, $3, NOW(), NOW())
 		RETURNING id, created_at, updated_at`
 
 	err := s.db.QueryRowContext(
@@ -33,6 +34,7 @@ func (s *RoleStore) Create(ctx context.Context, role *Role) error {
 		query,
 		role.RestaurantID,
 		role.Name,
+		role.Color,
 	).Scan(&role.ID, &role.CreatedAt, &role.UpdatedAt)
 
 	if err != nil {
@@ -47,7 +49,7 @@ func (s *RoleStore) GetByID(ctx context.Context, id int64) (*Role, error) {
 	defer cancel()
 
 	query := `
-		SELECT id, restaurant_id, name, created_at, updated_at
+		SELECT id, restaurant_id, name, color, created_at, updated_at
 		FROM roles
 		WHERE id = $1`
 
@@ -56,6 +58,7 @@ func (s *RoleStore) GetByID(ctx context.Context, id int64) (*Role, error) {
 		&role.ID,
 		&role.RestaurantID,
 		&role.Name,
+		&role.Color,
 		&role.CreatedAt,
 		&role.UpdatedAt,
 	)
@@ -75,7 +78,7 @@ func (s *RoleStore) ListByRestaurant(ctx context.Context, restaurantID int64) ([
 	defer cancel()
 
 	query := `
-		SELECT id, restaurant_id, name, created_at, updated_at
+		SELECT id, restaurant_id, name, color, created_at, updated_at
 		FROM roles
 		WHERE restaurant_id = $1
 		ORDER BY name`
@@ -94,6 +97,7 @@ func (s *RoleStore) ListByRestaurant(ctx context.Context, restaurantID int64) ([
 			&role.ID,
 			&role.RestaurantID,
 			&role.Name,
+			&role.Color,
 			&role.CreatedAt,
 			&role.UpdatedAt,
 		)
@@ -116,14 +120,15 @@ func (s *RoleStore) Update(ctx context.Context, role *Role) error {
 
 	query := `
 		UPDATE roles
-		SET name = $1, updated_at = NOW()
-		WHERE id = $2
+		SET name = $1, color = $2, updated_at = NOW()
+		WHERE id = $3
 		RETURNING updated_at`
 
 	err := s.db.QueryRowContext(
 		ctx,
 		query,
 		role.Name,
+		role.Color,
 		role.ID,
 	).Scan(&role.UpdatedAt)
 

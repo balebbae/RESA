@@ -1,11 +1,19 @@
 import type { ScheduledShift } from "@/types/schedule";
 
 /**
- * Parse a time string (HH:MM) to hour number
- * @param timeString - Time in "HH:MM" format (e.g., "09:00", "17:30")
+ * Parse a time string (HH:MM or ISO timestamp) to hour number
+ * @param timeString - Time in "HH:MM" format (e.g., "09:00", "17:30") or ISO timestamp (e.g., "0000-01-01T09:30:00Z")
  * @returns Hour as decimal number (e.g., 9, 17.5)
  */
 export function parseTime(timeString: string): number {
+  // Handle ISO timestamp format (e.g., "0000-01-01T09:30:00Z")
+  if (timeString.includes('T')) {
+    const timePart = timeString.split('T')[1]; // Get "09:30:00Z"
+    const [hours, minutes] = timePart.split(':').map(Number);
+    return hours + minutes / 60;
+  }
+
+  // Handle HH:MM or HH:MM:SS format
   const [hours, minutes] = timeString.split(":").map(Number);
   return hours + minutes / 60;
 }
@@ -43,13 +51,13 @@ export function calculateGridRow(startTime: string): number {
  * Calculate the height in pixels for a shift
  * @param startTime - Start time in "HH:MM" format
  * @param endTime - End time in "HH:MM" format
- * @param pixelsPerHour - Height of one hour in pixels (default: 40)
+ * @param pixelsPerHour - Height of one hour in pixels (default: 60)
  * @returns Height in pixels
  */
 export function calculateShiftHeight(
   startTime: string,
   endTime: string,
-  pixelsPerHour: number = 40
+  pixelsPerHour: number = 60
 ): number {
   const duration = calculateShiftDuration(startTime, endTime);
   return duration * pixelsPerHour;
@@ -59,12 +67,12 @@ export function calculateShiftHeight(
  * Calculate the top offset in pixels for a shift within its hour slot
  * Used when a shift starts at a fractional hour (e.g., 9:30 AM)
  * @param startTime - Start time in "HH:MM" format
- * @param pixelsPerHour - Height of one hour in pixels (default: 40)
+ * @param pixelsPerHour - Height of one hour in pixels (default: 60)
  * @returns Top offset in pixels
  */
 export function calculateTopOffset(
   startTime: string,
-  pixelsPerHour: number = 40
+  pixelsPerHour: number = 60
 ): number {
   const time = parseTime(startTime);
   const fractionalPart = time - Math.floor(time); // Get the minutes as a fraction

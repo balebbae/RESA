@@ -27,16 +27,18 @@ export interface ScheduledShift {
   employee_color?: string; // Employee's unique pastel color
 }
 
-// Drag and drop data types
-export interface EmployeeDragData {
-  type: 'employee';
-  employeeId: number;
-  employeeName: string;
-  employeeColor: string;
+// API payload types
+export interface CreateSchedulePayload {
+  start_date: string; // YYYY-MM-DD format
+  end_date: string;   // YYYY-MM-DD format
 }
 
-export interface TimeSlotDropData {
-  type: 'timeslot';
-  date: string; // YYYY-MM-DD
-  hour: number; // 0-23
+export interface CreateScheduledShiftPayload {
+  shift_template_id?: number | null;
+  role_id: number;
+  employee_id?: number | null;
+  shift_date: string; // ISO 8601: YYYY-MM-DDTHH:MM:SSZ
+  start_time: string; // HH:MM format
+  end_time: string;   // HH:MM format
+  notes?: string;
 }

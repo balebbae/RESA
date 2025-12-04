@@ -8,7 +8,7 @@ export function TimeColumn() {
       {hours.map((hour) => (
         <div
           key={hour}
-          className="h-[40px] flex items-start justify-end pr-2 pt-1 text-xs text-muted-foreground border-b border-border"
+          className="h-[60px] flex items-start justify-end pr-2 pt-1 text-xs text-muted-foreground border-b border-border"
         >
           {formatHourDisplay(hour)}
         </div>

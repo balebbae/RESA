@@ -38,6 +38,8 @@ definitions:
     type: object
   main.CreateRolePayload:
     properties:
+      color:
+        type: string
       name:
         maxLength: 50
         type: string
@@ -65,11 +67,18 @@ definitions:
       end_time:
         type: string
       name:
+        maxLength: 255
+        minLength: 1
         type: string
+      role_ids:
+        items:
+          type: integer
+        type: array
       start_time:
         type: string
     required:
     - end_time
+    - name
     - start_time
     type: object
   main.CreateUserTokenPayload:
@@ -154,6 +163,8 @@ definitions:
     type: object
   main.UpdateRolePayload:
     properties:
+      color:
+        type: string
       name:
         maxLength: 50
         type: string
@@ -176,7 +187,13 @@ definitions:
       end_time:
         type: string
       name:
+        maxLength: 255
+        minLength: 1
         type: string
+      role_ids:
+        items:
+          type: integer
+        type: array
       start_time:
         type: string
     type: object
@@ -279,6 +296,8 @@ definitions:
     type: object
   store.Role:
     properties:
+      color:
+        type: string
       created_at:
         type: string
       id:
@@ -315,6 +334,9 @@ definitions:
         type: string
       employee_id:
         type: integer
+      employee_name:
+        description: Joined fields (not stored in scheduled_shifts table)
+        type: string
       end_time:
         description: '"15:04"'
         type: string
@@ -324,6 +346,8 @@ definitions:
         type: string
       role_id:
         type: integer
+      role_name:
+        type: string
       schedule_id:
         type: integer
       shift_date:
@@ -349,10 +373,15 @@ definitions:
       id:
         type: integer
       name:
-        description: optional name like "Morning Shift"
+        description: required name like "Morning Shift"
         type: string
       restaurant_id:
         type: integer
+      role_ids:
+        description: Joined field (populated when fetching with roles)
+        items:
+          type: integer
+        type: array
       start_time:
         description: stored as TIME in db, use string to avoid timezone confusion
           in JSON
@@ -1659,6 +1688,84 @@ paths:
       summary: Updates a shift template
       tags:
       - shift-template
+  /restaurants/{restaurant_id}/shift-templates/{id}/roles:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all roles associated with a shift template
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Shift Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Role'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get roles for a shift template
+      tags:
+      - shift-template
+  /restaurants/{restaurantID}/schedules/{scheduleID}/auto-populate:
+    post:
+      consumes:
+      - application/json
+      description: Creates scheduled shifts for all shift templates that don't have
+        shifts yet
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: scheduleID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Auto-populate schedule with template-based shifts
+      tags:
+      - scheduled-shifts
   /restaurants/{restaurantID}/schedules/{scheduleID}/shifts:
     get:
       consumes:

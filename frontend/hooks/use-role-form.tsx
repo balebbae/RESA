@@ -10,6 +10,7 @@ import type { RoleFormData } from "@/types/role"
 
 const roleSchema = z.object({
   name: z.string().min(1, "Role name is required").max(50, "Role name must be less than 50 characters"),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Color must be a valid hex color (e.g., #FF5733)"),
 })
 
 export interface UseRoleFormOptions {
@@ -46,6 +47,7 @@ export function useRoleForm({
     resolver: zodResolver(roleSchema),
     defaultValues: {
       name: "",
+      color: "#6B7280",
     },
   })
 
@@ -67,6 +69,7 @@ export function useRoleForm({
 
           reset({
             name: role.name || "",
+            color: role.color || "#6B7280",
           })
         } catch (err) {
           console.error("Error fetching role:", err)
@@ -94,6 +97,7 @@ export function useRoleForm({
 
       const payload = {
         name: data.name,
+        color: data.color,
       }
 
       const isEdit = mode === "edit"
@@ -119,7 +123,10 @@ export function useRoleForm({
         throw new Error(`${message} (${res.status})`)
       }
 
-      const role = await res.json()
+      const response = await res.json()
+
+      // Normalize response to handle both direct and wrapped formats
+      const role = response.data || response
 
       reset()
 

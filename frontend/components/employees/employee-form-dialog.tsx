@@ -41,6 +41,7 @@ interface EmployeeFormDialogProps {
   isOpen?: boolean
   onOpenChange?: (open: boolean) => void
   onSuccess?: (employee: unknown) => void
+  onRoleCreated?: () => void | Promise<void>
 }
 
 /**
@@ -55,6 +56,7 @@ export function EmployeeFormDialog({
   isOpen: externalOpen,
   onOpenChange,
   onSuccess,
+  onRoleCreated,
 }: EmployeeFormDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -468,16 +470,26 @@ export function EmployeeFormDialog({
     // Refetch roles to get the latest list from backend
     await fetchRoles()
 
+    // Extract role from either direct or wrapped response
+    const role = (newRole && typeof newRole === 'object' && 'data' in newRole)
+      ? (newRole as any).data
+      : newRole
+
     // Automatically select the newly created role
-    if (newRole && typeof newRole === 'object' && 'id' in newRole) {
-      const role = newRole as Role
+    if (role && typeof role === 'object' && 'id' in role) {
+      const roleObj = role as Role
       setSelectedRoles(prev => {
         // Only add if not already selected
-        if (prev.some(r => r.id === role.id)) {
+        if (prev.some(r => r.id === roleObj.id)) {
           return prev
         }
-        return [...prev, role]
+        return [...prev, roleObj]
       })
+    }
+
+    // Trigger parent callback to refresh sidebar role list
+    if (onRoleCreated) {
+      await onRoleCreated()
     }
 
     setShowRoleDialog(false)
@@ -565,11 +577,6 @@ export function EmployeeFormDialog({
                     <SelectValue placeholder={rolesLoading ? "Loading roles..." : "Select a role"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableRoles.length === 0 && !rolesLoading && (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                        No roles available
-                      </div>
-                    )}
                     {availableRoles.map((role) => (
                       <SelectItem
                         key={role.id}
@@ -579,12 +586,10 @@ export function EmployeeFormDialog({
                         {role.name}
                       </SelectItem>
                     ))}
-                    {availableRoles.length > 0 && (
-                      <SelectItem value="create-new" className="text-primary font-medium">
-                        <Plus className="h-4 w-4 inline mr-2" />
-                        Create new role
-                      </SelectItem>
-                    )}
+                    <SelectItem value="create-new" className="text-primary font-medium">
+                      <Plus className="h-4 w-4 inline mr-2" />
+                      Create new role
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 {rolesError && (

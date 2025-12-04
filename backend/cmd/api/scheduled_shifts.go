@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -10,6 +11,26 @@ import (
 
 	"github.com/balebbae/RESA/internal/store"
 )
+
+// parseFlexibleDate attempts to parse dates in multiple formats:
+// 1. ISO 8601 with timestamp: "2025-11-30T00:00:00Z"
+// 2. Date-only: "2025-11-30"
+// Returns the parsed time truncated to date (00:00:00 UTC)
+func parseFlexibleDate(dateStr string) (time.Time, error) {
+	// Try ISO 8601 first (accounts for DB JSON serialization)
+	t, err := time.Parse(time.RFC3339, dateStr)
+	if err == nil {
+		return t.Truncate(24 * time.Hour), nil
+	}
+
+	// Fall back to date-only format
+	t, err = time.Parse("2006-01-02", dateStr)
+	if err == nil {
+		return t, nil
+	}
+
+	return time.Time{}, fmt.Errorf("invalid date format: %s", dateStr)
+}
 
 // Define envelope type for JSON responses
 // type envelope map[string]any
@@ -132,7 +153,19 @@ func (app *application) createScheduledShiftHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	app.jsonResponse(w, http.StatusCreated, shift)
+	// Fetch the created shift with joined employee/role data
+	createdShift, err := app.store.ScheduledShifts.GetByID(r.Context(), shift.ID)
+	if err != nil {
+		// Log the error for debugging
+		app.logger.Error("Failed to fetch created shift with joined data", "error", err, "shift_id", shift.ID)
+
+		// Fallback: return the shift without joined data
+		// The frontend will still work, just without employee/role names initially
+		app.jsonResponse(w, http.StatusCreated, shift)
+		return
+	}
+
+	app.jsonResponse(w, http.StatusCreated, createdShift)
 }
 
 // getScheduledShiftHandler godoc
@@ -401,5 +434,169 @@ func (app *application) unassignEmployeeFromShiftHandler(w http.ResponseWriter, 
 	}
 
 	app.jsonResponse(w, http.StatusOK, shift)
+}
+
+// autoPopulateScheduleHandler godoc
+//
+//	@Summary		Auto-populate schedule with template-based shifts
+//	@Description	Creates scheduled shifts for all shift templates that don't have shifts yet
+//	@Tags			scheduled-shifts
+//	@Accept			json
+//	@Produce		json
+//	@Param			restaurantID	path		int	true	"Restaurant ID"
+//	@Param			scheduleID		path		int	true	"Schedule ID"
+//	@Success		200				{object}	map[string]interface{}
+//	@Failure		400				{object}	error
+//	@Failure		404				{object}	error
+//	@Failure		500				{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/restaurants/{restaurantID}/schedules/{scheduleID}/auto-populate [post]
+func (app *application) autoPopulateScheduleHandler(w http.ResponseWriter, r *http.Request) {
+	restaurantID, err := strconv.ParseInt(chi.URLParam(r, "restaurantID"), 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, errors.New("invalid restaurant ID"))
+		return
+	}
+
+	scheduleID, err := strconv.ParseInt(chi.URLParam(r, "scheduleID"), 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, errors.New("invalid schedule ID"))
+		return
+	}
+
+	// Get schedule to verify ownership and get date range
+	schedule, err := app.store.Schedules.GetByID(r.Context(), scheduleID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			app.notFoundResponse(w, r, err)
+			return
+		}
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	// Verify schedule belongs to the correct restaurant
+	if schedule.RestaurantID != restaurantID {
+		app.notFoundResponse(w, r, errors.New("schedule not found"))
+		return
+	}
+
+	// Verify restaurant ownership
+	restaurant, err := app.store.Restaurants.GetByID(r.Context(), restaurantID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			app.notFoundResponse(w, r, err)
+			return
+		}
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	user := getUserFromContext(r)
+	if restaurant.UserID != user.ID {
+		app.notFoundResponse(w, r, errors.New("restaurant not found"))
+		return
+	}
+
+	// Get all shift templates with roles for this restaurant
+	templates, err := app.store.ShiftTemplates.ListByRestaurantWithRoles(r.Context(), restaurantID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	// Get existing shifts to avoid duplicates
+	existingShifts, err := app.store.ScheduledShifts.ListBySchedule(r.Context(), scheduleID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	// Build map of existing shifts: "date-templateId-roleId" -> true
+	existingMap := make(map[string]bool)
+	for _, shift := range existingShifts {
+		if shift.ShiftTemplateID != nil {
+			// Format: "2006-01-02-templateID-roleID"
+			key := shift.ShiftDate.Format("2006-01-02") + "-" +
+				   strconv.FormatInt(*shift.ShiftTemplateID, 10) + "-" +
+				   strconv.FormatInt(shift.RoleID, 10)
+			existingMap[key] = true
+		}
+	}
+
+	// Parse schedule date range (handles both YYYY-MM-DD and ISO 8601 formats)
+	startDate, err := parseFlexibleDate(schedule.StartDate)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	endDate, err := parseFlexibleDate(schedule.EndDate)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	var shiftsToCreate []*store.ScheduledShift
+
+	// For each day in the schedule
+	for date := startDate; !date.After(endDate); date = date.AddDate(0, 0, 1) {
+		dayOfWeek := int(date.Weekday()) // 0=Sunday, 6=Saturday
+
+		// Find templates for this day
+		for _, template := range templates {
+			if template.DayOfWeek != dayOfWeek {
+				continue
+			}
+
+			// Skip if template has no roles
+			if len(template.Roles) == 0 {
+				continue
+			}
+
+			// Create shift for each role
+			for _, roleID := range template.Roles {
+				key := date.Format("2006-01-02") + "-" +
+					   strconv.FormatInt(template.ID, 10) + "-" +
+					   strconv.FormatInt(roleID, 10)
+
+				// Skip if already exists
+				if existingMap[key] {
+					continue
+				}
+
+				// Create scheduled shift with employee_id = null
+				shift := &store.ScheduledShift{
+					ScheduleID:      scheduleID,
+					ShiftTemplateID: &template.ID,
+					RoleID:          roleID,
+					EmployeeID:      nil, // Unassigned
+					ShiftDate:       date,
+					StartTime:       template.StartTime,
+					EndTime:         template.EndTime,
+					Notes:           "",
+				}
+
+				shiftsToCreate = append(shiftsToCreate, shift)
+			}
+		}
+	}
+
+	// Batch create shifts
+	var createdIDs []int64
+	if len(shiftsToCreate) > 0 {
+		createdIDs, err = app.store.ScheduledShifts.BatchCreate(r.Context(), shiftsToCreate)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+	}
+
+	response := map[string]interface{}{
+		"created_count": len(createdIDs),
+		"created_ids":   createdIDs,
+	}
+
+	app.jsonResponse(w, http.StatusOK, response)
 }
 

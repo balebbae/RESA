@@ -71,6 +71,11 @@ export function SidebarRight({
     rolesSectionRef.current?.refetch()
   }
 
+  const handleRoleCreatedFromEmployeeForm = () => {
+    // Refresh the role list when a role is created from within the employee form
+    rolesSectionRef.current?.refetch()
+  }
+
   const handleCreateShiftTemplate = () => {
     if (!selectedRestaurantId) {
       toast.error("Please select a workplace first", {
@@ -100,6 +105,7 @@ export function SidebarRight({
           <EmployeeCollapsibleSection
             ref={employeeSectionRef}
             restaurantId={selectedRestaurantId}
+            onRoleCreated={handleRoleCreatedFromEmployeeForm}
           />
           <RoleCollapsibleSection
             ref={rolesSectionRef}
@@ -141,6 +147,7 @@ export function SidebarRight({
         isOpen={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
         onSuccess={handleCreateSuccess}
+        onRoleCreated={handleRoleCreatedFromEmployeeForm}
       />
 
       {/* Create Role Dialog */}

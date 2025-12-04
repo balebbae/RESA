@@ -6,12 +6,14 @@ export interface Role {
   id: number
   restaurant_id: number
   name: string
+  color: string
   created_at: string
   updated_at: string
 }
 
 export interface RoleFormData {
   name: string
+  color: string
 }
 
 export interface UseRolesReturn {

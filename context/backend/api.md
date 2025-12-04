@@ -18,10 +18,18 @@
 8. [Scheduled Shifts](#scheduled-shifts)
 9. [Data Models](#data-models)
 10. [Error Responses](#error-responses)
+11. [Google OAuth Authentication](#google-oauth-authentication)
 
 ---
 
 ## Authentication
+
+RESA supports two authentication methods:
+
+1. **Email/Password with Magic Link Activation**: Traditional sign up with email confirmation
+2. **Google OAuth 2.0**: Sign up or log in using a Google account (see [Google OAuth Authentication](#google-oauth-authentication) section)
+
+Both methods result in a JWT token that must be included in the `Authorization: Bearer <token>` header for protected endpoints.
 
 ### 1. Register User (Sign Up)
 
@@ -32,6 +40,7 @@ Creates a new user account and sends a magic link activation email.
 **Authentication:** None (Public)
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -42,12 +51,14 @@ Creates a new user account and sends a magic link activation email.
 ```
 
 **Validation Rules:**
+
 - `email`: Required, valid email format, max 255 characters
 - `first_name`: Required, max 255 characters
 - `last_name`: Required, max 255 characters
 - `password`: Required, min 3 characters, max 72 characters
 
 **Success Response (201 Created):**
+
 ```json
 {
   "id": 1,
@@ -57,15 +68,19 @@ Creates a new user account and sends a magic link activation email.
   "created_at": "2025-01-15T10:30:00Z",
   "updated_at": "2025-01-15T10:30:00Z",
   "is_active": false,
-  "token": "550e8400-e29b-41d4-a716-446655440000"
+  "token": "550e8400-e29b-41d4-a716-446655440000",
+  "google_id": null,
+  "avatar_url": null
 }
 ```
 
 **Notes:**
+
 - User account is created but `is_active` is `false` until email is confirmed
 - `token` is the magic link token sent via email (also returned in response)
 - Email is sent to user with activation link: `{FRONTEND_URL}/confirm/{token}`
 - If email sending fails, the user creation is rolled back (SAGA pattern)
+- `google_id` and `avatar_url` are null for password-based registrations
 
 ---
 
@@ -78,6 +93,7 @@ Authenticates a user with email and password, returns JWT token.
 **Authentication:** None (Public)
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -86,15 +102,18 @@ Authenticates a user with email and password, returns JWT token.
 ```
 
 **Validation Rules:**
+
 - `email`: Required, valid email format, max 255 characters
 - `password`: Required, min 3 characters, max 72 characters
 
 **Success Response (201 Created):**
+
 ```json
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 ```
 
 **JWT Claims:**
+
 - `sub`: User ID
 - `exp`: Expiration timestamp (configured via `AUTH_TOKEN_EXP`)
 - `iat`: Issued at timestamp
@@ -103,6 +122,7 @@ Authenticates a user with email and password, returns JWT token.
 - `aud`: Audience (same as issuer)
 
 **Error Responses:**
+
 - `401 Unauthorized`: Invalid credentials or user not found (same message to prevent user enumeration)
 - `400 Bad Request`: Invalid request format
 
@@ -117,6 +137,7 @@ Generates a new JWT token with extended expiration using an existing valid token
 **Authentication:** Required (Bearer token)
 
 **Request Headers:**
+
 ```
 Authorization: Bearer <existing_jwt_token>
 ```
@@ -124,17 +145,62 @@ Authorization: Bearer <existing_jwt_token>
 **Request Body:** None
 
 **Success Response (200 OK):**
+
 ```json
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 ```
 
 **Error Responses:**
+
 - `401 Unauthorized`: Invalid or expired token
 - `500 Internal Server Error`: Token generation failed
 
 **Notes:**
+
 - Returns a new JWT token with the same user ID but fresh expiration time
 - Original token remains valid until its expiration
+
+---
+
+### 3a. Resend Confirmation Email
+
+Resends the confirmation email to an inactive user who hasn't activated their account.
+
+**Endpoint:** `POST /authentication/resend-confirmation`
+
+**Authentication:** None (Public)
+
+**Request Body:**
+
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Validation Rules:**
+
+- `email`: Required, valid email format, max 255 characters
+
+**Success Response (200 OK):**
+
+```json
+{
+  "message": "Confirmation email sent"
+}
+```
+
+**Error Responses:**
+
+- `400 Bad Request`: Invalid email format or user is already active
+- `404 Not Found`: User not found
+- `500 Internal Server Error`: Email sending failed
+
+**Notes:**
+
+- Only works for inactive users
+- Generates a new activation token and sends it via email
+- Previous activation tokens remain valid until they expire
 
 ---
 
@@ -149,20 +215,24 @@ Activates a user account using the magic link token sent via email.
 **Authentication:** None (Public)
 
 **URL Parameters:**
+
 - `token` (string): The activation token from the email
 
 **Request Body:** None
 
 **Success Response (204 No Content):**
+
 ```
 (Empty body)
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Invalid or expired token
 - `500 Internal Server Error`: Database error
 
 **Notes:**
+
 - Sets `is_active` to `true` for the user
 - Deletes the invitation token after successful activation
 - Token expires based on `MAIL_EXP` environment variable (default: 24 hours)
@@ -182,6 +252,7 @@ Creates a new restaurant owned by the authenticated user.
 **Authentication:** Required
 
 **Request Body:**
+
 ```json
 {
   "name": "The Great Restaurant",
@@ -191,11 +262,13 @@ Creates a new restaurant owned by the authenticated user.
 ```
 
 **Validation Rules:**
+
 - `name`: Required, max 255 characters
 - `address`: Required, max 500 characters
 - `phone`: Optional, max 20 characters
 
 **Success Response (201 Created):**
+
 ```json
 {
   "id": 1,
@@ -210,6 +283,7 @@ Creates a new restaurant owned by the authenticated user.
 ```
 
 **Notes:**
+
 - `employer_id` is automatically set to the authenticated user's ID
 - Restaurant is cached in Redis if caching is enabled
 
@@ -226,6 +300,7 @@ Retrieves all restaurants owned by the authenticated user.
 **Request Body:** None
 
 **Success Response (200 OK):**
+
 ```json
 [
   {
@@ -262,9 +337,11 @@ Retrieves a specific restaurant by ID.
 **Authentication:** Required
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -279,10 +356,12 @@ Retrieves a specific restaurant by ID.
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Restaurant doesn't exist or user doesn't own it
 - `400 Bad Request`: Invalid restaurant ID format
 
 **Notes:**
+
 - Uses Redis cache if enabled (cache hit logged)
 - Only returns restaurants owned by the authenticated user
 
@@ -297,9 +376,11 @@ Updates a restaurant's information. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 
 **Request Body:** (All fields optional)
+
 ```json
 {
   "name": "Updated Restaurant Name",
@@ -309,11 +390,13 @@ Updates a restaurant's information. **Owner only.**
 ```
 
 **Validation Rules:**
+
 - `name`: Optional, max 255 characters
 - `address`: Optional, max 255 characters
 - `phone`: Optional, max 20 characters (can be `null` to remove)
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -328,11 +411,13 @@ Updates a restaurant's information. **Owner only.**
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Restaurant doesn't exist or user doesn't own it
 - `401 Unauthorized`: User is not the restaurant owner
 - `400 Bad Request`: Validation failed
 
 **Notes:**
+
 - Uses optimistic locking via `version` field
 - Cache is updated after successful update
 
@@ -347,18 +432,22 @@ Deletes a restaurant. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 
 **Success Response (204 No Content):**
+
 ```
 (Empty body)
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Restaurant doesn't exist
 - `401 Unauthorized`: User is not the restaurant owner
 
 **Notes:**
+
 - Cascading deletes all related data (employees, roles, schedules, shifts, etc.)
 - Cache is cleared before database deletion
 
@@ -375,9 +464,11 @@ Retrieves all employees for a specific restaurant.
 **Authentication:** Required
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 
 **Success Response (200 OK):**
+
 ```json
 [
   {
@@ -400,6 +491,7 @@ Retrieves all employees for a specific restaurant.
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Restaurant doesn't exist or user doesn't own it
 - `401 Unauthorized`: User doesn't own the restaurant
 
@@ -414,9 +506,11 @@ Creates a new employee for a restaurant. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 
 **Request Body:**
+
 ```json
 {
   "full_name": "Charlie Brown",
@@ -425,10 +519,12 @@ Creates a new employee for a restaurant. **Owner only.**
 ```
 
 **Validation Rules:**
+
 - `full_name`: Required, max 255 characters
 - `email`: Required, valid email format, max 255 characters
 
 **Success Response (201 Created):**
+
 ```json
 {
   "id": 3,
@@ -441,6 +537,7 @@ Creates a new employee for a restaurant. **Owner only.**
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Restaurant doesn't exist or user doesn't own it
 - `401 Unauthorized`: User is not the restaurant owner
 - `400 Bad Request`: Validation failed
@@ -456,10 +553,12 @@ Retrieves a specific employee.
 **Authentication:** Required
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `employeeID` (integer): The employee ID
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -472,6 +571,7 @@ Retrieves a specific employee.
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Employee or restaurant doesn't exist, or employee doesn't belong to this restaurant
 - `401 Unauthorized`: User doesn't own the restaurant
 
@@ -486,10 +586,12 @@ Updates an employee's information. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `employeeID` (integer): The employee ID
 
 **Request Body:** (All fields optional)
+
 ```json
 {
   "full_name": "Alice Johnson-Smith",
@@ -498,10 +600,12 @@ Updates an employee's information. **Owner only.**
 ```
 
 **Validation Rules:**
+
 - `full_name`: Optional, max 255 characters
 - `email`: Optional, valid email format, max 255 characters
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -514,6 +618,7 @@ Updates an employee's information. **Owner only.**
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Employee or restaurant doesn't exist
 - `401 Unauthorized`: User is not the restaurant owner
 - `400 Bad Request`: Validation failed
@@ -529,15 +634,18 @@ Deletes an employee. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `employeeID` (integer): The employee ID
 
 **Success Response (204 No Content):**
+
 ```
 (Empty body)
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Employee or restaurant doesn't exist
 - `401 Unauthorized`: User is not the restaurant owner
 
@@ -552,10 +660,12 @@ Assigns multiple roles to an employee. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `employeeID` (integer): The employee ID
 
 **Request Body:**
+
 ```json
 {
   "role_ids": [1, 2, 5]
@@ -563,19 +673,23 @@ Assigns multiple roles to an employee. **Owner only.**
 ```
 
 **Validation Rules:**
+
 - `role_ids`: Required, array of integers, each must be > 0
 
 **Success Response (204 No Content):**
+
 ```
 (Empty body)
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Employee or restaurant doesn't exist
 - `400 Bad Request`: One or more roles don't exist or don't belong to this restaurant
 - `401 Unauthorized`: User is not the restaurant owner
 
 **Notes:**
+
 - Skips role assignments that already exist (idempotent)
 - All roles must belong to the same restaurant
 - Uses transaction to ensure atomicity
@@ -591,35 +705,39 @@ Removes a specific role from an employee. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `employeeID` (integer): The employee ID
 - `roleID` (integer): The role ID to remove
 
 **Success Response (204 No Content):**
+
 ```
 (Empty body)
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Employee, role, or restaurant doesn't exist, or employee doesn't have this role
 - `401 Unauthorized`: User is not the restaurant owner
 
 ---
 
-## Role Management
+### 16a. Get Employee Roles
 
-### 17. Get All Roles
+Retrieves all roles assigned to a specific employee.
 
-Retrieves all roles for a specific restaurant.
-
-**Endpoint:** `GET /restaurants/{restaurantID}/roles`
+**Endpoint:** `GET /restaurants/{restaurantID}/employees/{employeeID}/roles`
 
 **Authentication:** Required
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
+- `employeeID` (integer): The employee ID
 
 **Success Response (200 OK):**
+
 ```json
 [
   {
@@ -640,6 +758,55 @@ Retrieves all roles for a specific restaurant.
 ```
 
 **Error Responses:**
+
+- `404 Not Found`: Employee or restaurant doesn't exist
+- `401 Unauthorized`: User doesn't own the restaurant
+- `500 Internal Server Error`: Database error
+
+**Notes:**
+
+- Returns an empty array if employee has no roles assigned
+- Only returns roles belonging to the same restaurant
+
+---
+
+## Role Management
+
+### 17. Get All Roles
+
+Retrieves all roles for a specific restaurant.
+
+**Endpoint:** `GET /restaurants/{restaurantID}/roles`
+
+**Authentication:** Required
+
+**URL Parameters:**
+
+- `restaurantID` (integer): The restaurant ID
+
+**Success Response (200 OK):**
+
+```json
+[
+  {
+    "id": 1,
+    "restaurant_id": 5,
+    "name": "Server",
+    "created_at": "2025-01-15T10:30:00Z",
+    "updated_at": "2025-01-15T10:30:00Z"
+  },
+  {
+    "id": 2,
+    "restaurant_id": 5,
+    "name": "Cook",
+    "created_at": "2025-01-15T10:31:00Z",
+    "updated_at": "2025-01-15T10:31:00Z"
+  }
+]
+```
+
+**Error Responses:**
+
 - `404 Not Found`: Restaurant doesn't exist or user doesn't own it
 
 ---
@@ -653,9 +820,11 @@ Creates a new role for a restaurant. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 
 **Request Body:**
+
 ```json
 {
   "name": "Manager"
@@ -663,9 +832,11 @@ Creates a new role for a restaurant. **Owner only.**
 ```
 
 **Validation Rules:**
+
 - `name`: Required, max 50 characters
 
 **Success Response (201 Created):**
+
 ```json
 {
   "id": 3,
@@ -677,6 +848,7 @@ Creates a new role for a restaurant. **Owner only.**
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Restaurant doesn't exist or user doesn't own it
 - `401 Unauthorized`: User is not the restaurant owner
 - `400 Bad Request`: Validation failed
@@ -692,10 +864,12 @@ Retrieves a specific role.
 **Authentication:** Required
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `roleID` (integer): The role ID
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -707,6 +881,7 @@ Retrieves a specific role.
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Role or restaurant doesn't exist, or role doesn't belong to this restaurant
 
 ---
@@ -720,10 +895,12 @@ Updates a role's information. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `roleID` (integer): The role ID
 
 **Request Body:**
+
 ```json
 {
   "name": "Senior Server"
@@ -731,9 +908,11 @@ Updates a role's information. **Owner only.**
 ```
 
 **Validation Rules:**
+
 - `name`: Optional, max 50 characters
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -745,6 +924,7 @@ Updates a role's information. **Owner only.**
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Role or restaurant doesn't exist
 - `401 Unauthorized`: User is not the restaurant owner
 - `400 Bad Request`: Validation failed
@@ -760,20 +940,73 @@ Deletes a role. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `roleID` (integer): The role ID
 
 **Success Response (204 No Content):**
+
 ```
 (Empty body)
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Role or restaurant doesn't exist
 - `401 Unauthorized`: User is not the restaurant owner
 
 **Notes:**
+
 - May fail if role is assigned to employees or used in shift templates
+
+---
+
+### 21a. Get Employees for Role
+
+Retrieves all employees assigned to a specific role.
+
+**Endpoint:** `GET /restaurants/{restaurantID}/roles/{roleID}/employees`
+
+**Authentication:** Required
+
+**URL Parameters:**
+
+- `restaurantID` (integer): The restaurant ID
+- `roleID` (integer): The role ID
+
+**Success Response (200 OK):**
+
+```json
+[
+  {
+    "id": 1,
+    "restaurant_id": 5,
+    "full_name": "Alice Johnson",
+    "email": "alice@example.com",
+    "created_at": "2025-01-15T10:30:00Z",
+    "updated_at": "2025-01-15T10:30:00Z"
+  },
+  {
+    "id": 2,
+    "restaurant_id": 5,
+    "full_name": "Bob Smith",
+    "email": "bob@example.com",
+    "created_at": "2025-01-15T11:00:00Z",
+    "updated_at": "2025-01-15T11:00:00Z"
+  }
+]
+```
+
+**Error Responses:**
+
+- `404 Not Found`: Role or restaurant doesn't exist
+- `401 Unauthorized`: User doesn't own the restaurant
+- `500 Internal Server Error`: Database error
+
+**Notes:**
+
+- Returns an empty array if no employees have this role assigned
+- Only returns employees belonging to the same restaurant
 
 ---
 
@@ -790,9 +1023,11 @@ Retrieves all shift templates for a specific restaurant with their assigned role
 **Authentication:** Required
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 
 **Success Response (200 OK):**
+
 ```json
 [
   {
@@ -825,6 +1060,7 @@ Retrieves all shift templates for a specific restaurant with their assigned role
 ```
 
 **Notes:**
+
 - `name`: Optional, can be `null` (e.g., "Morning Shift", "Evening Shift")
 - `day_of_week`: 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 - `start_time` and `end_time`: 24-hour format (HH:MM)
@@ -842,9 +1078,11 @@ Creates a new shift template with multiple roles. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 
 **Request Body:**
+
 ```json
 {
   "name": "Morning Shift",
@@ -856,6 +1094,7 @@ Creates a new shift template with multiple roles. **Owner only.**
 ```
 
 **Validation Rules:**
+
 - `name`: Optional, max 255 characters (e.g., "Morning Shift", "Evening Shift")
 - `role_ids`: Required, array with minimum 1 role, all must be > 0 and belong to this restaurant
 - `day_of_week`: Required, integer 0-6 (0=Sunday, 6=Saturday)
@@ -863,6 +1102,7 @@ Creates a new shift template with multiple roles. **Owner only.**
 - `end_time`: Required, 24-hour format HH:MM, must be after `start_time`
 
 **Success Response (201 Created):**
+
 ```json
 {
   "id": 1,
@@ -893,11 +1133,13 @@ Creates a new shift template with multiple roles. **Owner only.**
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Restaurant doesn't exist or user doesn't own it
 - `400 Bad Request`: Validation failed, one or more roles don't exist or don't belong to this restaurant
 - `401 Unauthorized`: User is not the restaurant owner
 
 **Notes:**
+
 - Requires at least 1 role in `role_ids` array
 - All role assignments are created atomically using a transaction
 
@@ -912,10 +1154,12 @@ Retrieves a specific shift template with its assigned roles.
 **Authentication:** Required
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `templateID` (integer): The shift template ID
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -946,6 +1190,7 @@ Retrieves a specific shift template with its assigned roles.
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Template or restaurant doesn't exist, or template doesn't belong to this restaurant
 
 ---
@@ -959,10 +1204,12 @@ Updates a shift template, including name and roles. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `templateID` (integer): The shift template ID
 
 **Request Body:** (All fields optional)
+
 ```json
 {
   "name": "Evening Shift",
@@ -974,6 +1221,7 @@ Updates a shift template, including name and roles. **Owner only.**
 ```
 
 **Validation Rules:**
+
 - `name`: Optional, max 255 characters (can be `null` to remove name)
 - `role_ids`: Optional, if provided must have minimum 1 role, all must be > 0 and belong to this restaurant
 - `day_of_week`: Optional, integer 0-6
@@ -982,6 +1230,7 @@ Updates a shift template, including name and roles. **Owner only.**
 - Final `end_time` must be after final `start_time`
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -1012,11 +1261,13 @@ Updates a shift template, including name and roles. **Owner only.**
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Template or restaurant doesn't exist
 - `400 Bad Request`: Validation failed, one or more roles don't exist or don't belong to this restaurant
 - `401 Unauthorized`: User is not the restaurant owner
 
 **Notes:**
+
 - If `role_ids` is provided, all existing roles are removed and replaced with the new ones
 - Requires at least 1 role if `role_ids` is specified
 
@@ -1031,15 +1282,18 @@ Deletes a shift template. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `templateID` (integer): The shift template ID
 
 **Success Response (204 No Content):**
+
 ```
 (Empty body)
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Template or restaurant doesn't exist
 - `401 Unauthorized`: User is not the restaurant owner
 
@@ -1058,9 +1312,11 @@ Retrieves all schedules for a specific restaurant.
 **Authentication:** Required
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 
 **Success Response (200 OK):**
+
 ```json
 [
   {
@@ -1085,6 +1341,7 @@ Retrieves all schedules for a specific restaurant.
 ```
 
 **Notes:**
+
 - Results are ordered by `start_date` descending (newest first)
 - `published_at` is `null` if schedule hasn't been published yet
 - Individual schedules are cached in Redis if enabled
@@ -1100,9 +1357,11 @@ Creates a new schedule. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 
 **Request Body:**
+
 ```json
 {
   "start_date": "2025-01-20",
@@ -1111,10 +1370,12 @@ Creates a new schedule. **Owner only.**
 ```
 
 **Validation Rules:**
+
 - `start_date`: Required, YYYY-MM-DD format
 - `end_date`: Required, YYYY-MM-DD format, must be >= `start_date`
 
 **Success Response (201 Created):**
+
 ```json
 {
   "id": 1,
@@ -1128,11 +1389,13 @@ Creates a new schedule. **Owner only.**
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Restaurant doesn't exist or user doesn't own it
 - `400 Bad Request`: Invalid date format or end_date before start_date
 - `401 Unauthorized`: User is not the restaurant owner
 
 **Notes:**
+
 - Schedule is cached after creation
 
 ---
@@ -1146,10 +1409,12 @@ Retrieves a specific schedule.
 **Authentication:** Required
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `scheduleID` (integer): The schedule ID
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -1163,9 +1428,11 @@ Retrieves a specific schedule.
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Schedule or restaurant doesn't exist, or schedule doesn't belong to this restaurant
 
 **Notes:**
+
 - Uses Redis cache if available (falls back to database)
 
 ---
@@ -1179,10 +1446,12 @@ Updates a schedule's dates. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `scheduleID` (integer): The schedule ID
 
 **Request Body:** (All fields optional)
+
 ```json
 {
   "start_date": "2025-01-21",
@@ -1191,11 +1460,13 @@ Updates a schedule's dates. **Owner only.**
 ```
 
 **Validation Rules:**
+
 - `start_date`: Optional, YYYY-MM-DD format
 - `end_date`: Optional, YYYY-MM-DD format
 - Final `end_date` must be >= final `start_date`
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -1209,11 +1480,13 @@ Updates a schedule's dates. **Owner only.**
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Schedule or restaurant doesn't exist
 - `400 Bad Request`: Invalid date format or end_date before start_date
 - `401 Unauthorized`: User is not the restaurant owner
 
 **Notes:**
+
 - Cache is updated after successful update
 
 ---
@@ -1227,19 +1500,23 @@ Deletes a schedule. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `scheduleID` (integer): The schedule ID
 
 **Success Response (204 No Content):**
+
 ```
 (Empty body)
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Schedule or restaurant doesn't exist
 - `401 Unauthorized`: User is not the restaurant owner
 
 **Notes:**
+
 - Cascades to delete all scheduled shifts within this schedule
 - Cache is cleared after deletion
 
@@ -1254,22 +1531,26 @@ Publishes a schedule, making it available to employees (sends notification email
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `scheduleID` (integer): The schedule ID
 
 **Request Body:** None
 
 **Success Response (204 No Content):**
+
 ```
 (Empty body)
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Schedule or restaurant doesn't exist
 - `400 Bad Request`: Schedule is already published
 - `401 Unauthorized`: User is not the restaurant owner
 
 **Notes:**
+
 - Sets `published_at` to current timestamp
 - Cannot publish a schedule that's already published
 - Cache is updated with the new published timestamp
@@ -1289,10 +1570,12 @@ Retrieves all shifts for a specific schedule.
 **Authentication:** Required
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `scheduleID` (integer): The schedule ID
 
 **Success Response (200 OK):**
+
 ```json
 [
   {
@@ -1312,6 +1595,7 @@ Retrieves all shifts for a specific schedule.
 ```
 
 **Notes:**
+
 - Results are ordered by `shift_date` and `start_time`
 - `employee_id` is `null` if shift is unassigned
 - `shift_template_id` is `null` if shift was created manually (not from template)
@@ -1327,10 +1611,12 @@ Creates a new scheduled shift. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `scheduleID` (integer): The schedule ID
 
 **Request Body:**
+
 ```json
 {
   "shift_template_id": 5,
@@ -1344,6 +1630,7 @@ Creates a new scheduled shift. **Owner only.**
 ```
 
 **Validation Rules:**
+
 - `shift_template_id`: Optional (can be `null`)
 - `role_id`: Required, must be > 0
 - `employee_id`: Optional (can be `null` for unassigned shifts)
@@ -1353,6 +1640,7 @@ Creates a new scheduled shift. **Owner only.**
 - `notes`: Optional string
 
 **Success Response (201 Created):**
+
 ```json
 {
   "id": 1,
@@ -1370,6 +1658,7 @@ Creates a new scheduled shift. **Owner only.**
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Invalid time format, end_time before start_time, or invalid schedule ID
 - `401 Unauthorized`: User is not the restaurant owner
 - `500 Internal Server Error`: Database error
@@ -1385,11 +1674,13 @@ Retrieves a specific scheduled shift.
 **Authentication:** Required
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `scheduleID` (integer): The schedule ID
 - `shiftID` (integer): The shift ID
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -1407,6 +1698,7 @@ Retrieves a specific scheduled shift.
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Shift doesn't exist
 - `400 Bad Request`: Invalid shift ID
 
@@ -1421,11 +1713,13 @@ Updates a scheduled shift. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `scheduleID` (integer): The schedule ID
 - `shiftID` (integer): The shift ID
 
 **Request Body:** (All fields optional)
+
 ```json
 {
   "shift_template_id": 6,
@@ -1439,12 +1733,14 @@ Updates a scheduled shift. **Owner only.**
 ```
 
 **Validation Rules:**
+
 - All fields optional
 - `start_time` and `end_time`: HH:MM format
 - Final `end_time` must be after final `start_time`
 - `shift_date`: ISO 8601 timestamp
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -1462,6 +1758,7 @@ Updates a scheduled shift. **Owner only.**
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Shift doesn't exist
 - `400 Bad Request`: Invalid time format or end_time before start_time
 - `401 Unauthorized`: User is not the restaurant owner
@@ -1477,16 +1774,21 @@ Deletes a scheduled shift. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `scheduleID` (integer): The schedule ID
 - `shiftID` (integer): The shift ID
 
-**Success Response (204 No Content):**
-```
-(Empty body)
+**Success Response (200 OK):**
+
+```json
+{
+  "message": "shift deleted"
+}
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Shift doesn't exist
 - `400 Bad Request`: Invalid shift ID
 - `401 Unauthorized`: User is not the restaurant owner
@@ -1502,11 +1804,13 @@ Assigns an employee to a scheduled shift. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `scheduleID` (integer): The schedule ID
 - `shiftID` (integer): The shift ID
 
 **Request Body:**
+
 ```json
 {
   "employee_id": 7
@@ -1514,9 +1818,11 @@ Assigns an employee to a scheduled shift. **Owner only.**
 ```
 
 **Validation Rules:**
+
 - `employee_id`: Can be `null` to unassign, or a valid employee ID belonging to the restaurant
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -1534,11 +1840,13 @@ Assigns an employee to a scheduled shift. **Owner only.**
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Shift doesn't exist
 - `400 Bad Request`: Invalid employee ID or employee doesn't belong to restaurant
 - `401 Unauthorized`: User is not the restaurant owner
 
 **Notes:**
+
 - Validates that employee belongs to the same restaurant as the shift
 - Returns the updated shift object
 
@@ -1553,6 +1861,7 @@ Removes an employee assignment from a shift. **Owner only.**
 **Authentication:** Required (Must be restaurant owner)
 
 **URL Parameters:**
+
 - `restaurantID` (integer): The restaurant ID
 - `scheduleID` (integer): The schedule ID
 - `shiftID` (integer): The shift ID
@@ -1560,6 +1869,7 @@ Removes an employee assignment from a shift. **Owner only.**
 **Request Body:** None
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": 1,
@@ -1577,6 +1887,7 @@ Removes an employee assignment from a shift. **Owner only.**
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Shift doesn't exist
 - `401 Unauthorized`: User is not the restaurant owner
 
@@ -1585,6 +1896,7 @@ Removes an employee assignment from a shift. **Owner only.**
 ## Data Models
 
 ### User
+
 ```typescript
 {
   id: number;
@@ -1594,10 +1906,13 @@ Removes an employee assignment from a shift. **Owner only.**
   created_at: string; // ISO 8601 timestamp
   updated_at: string; // ISO 8601 timestamp
   is_active: boolean;
+  google_id?: string; // Optional - present if user signed up via Google OAuth
+  avatar_url?: string; // Optional - user's profile picture URL (from Google)
 }
 ```
 
 ### Restaurant
+
 ```typescript
 {
   id: number;
@@ -1612,6 +1927,7 @@ Removes an employee assignment from a shift. **Owner only.**
 ```
 
 ### Employee
+
 ```typescript
 {
   id: number;
@@ -1624,6 +1940,7 @@ Removes an employee assignment from a shift. **Owner only.**
 ```
 
 ### Role
+
 ```typescript
 {
   id: number;
@@ -1635,6 +1952,7 @@ Removes an employee assignment from a shift. **Owner only.**
 ```
 
 ### ShiftTemplate (Response)
+
 ```typescript
 {
   id: number;
@@ -1650,6 +1968,7 @@ Removes an employee assignment from a shift. **Owner only.**
 ```
 
 ### Schedule
+
 ```typescript
 {
   id: number;
@@ -1663,6 +1982,7 @@ Removes an employee assignment from a shift. **Owner only.**
 ```
 
 ### ScheduledShift
+
 ```typescript
 {
   id: number;
@@ -1686,6 +2006,7 @@ Removes an employee assignment from a shift. **Owner only.**
 All error responses follow this general format:
 
 ### 400 Bad Request
+
 ```json
 {
   "error": "validation error message or invalid input description"
@@ -1693,6 +2014,7 @@ All error responses follow this general format:
 ```
 
 ### 401 Unauthorized
+
 ```json
 {
   "error": "unauthorized"
@@ -1700,6 +2022,7 @@ All error responses follow this general format:
 ```
 
 ### 404 Not Found
+
 ```json
 {
   "error": "resource not found"
@@ -1707,6 +2030,7 @@ All error responses follow this general format:
 ```
 
 ### 500 Internal Server Error
+
 ```json
 {
   "error": "internal server error"
@@ -1722,14 +2046,14 @@ All error responses follow this general format:
 ```typescript
 // 1. Register user
 const registerResponse = await fetch(`${API_URL}/authentication/user`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    email: 'newuser@example.com',
-    first_name: 'John',
-    last_name: 'Doe',
-    password: 'securePassword123'
-  })
+    email: "newuser@example.com",
+    first_name: "John",
+    last_name: "Doe",
+    password: "securePassword123",
+  }),
 });
 
 const userData = await registerResponse.json();
@@ -1737,24 +2061,23 @@ const userData = await registerResponse.json();
 // User receives email with link to: /confirm/{token}
 
 // 2. User clicks link, frontend calls activation endpoint
-const activateResponse = await fetch(
-  `${API_URL}/users/activate/${token}`,
-  { method: 'PUT' }
-);
+const activateResponse = await fetch(`${API_URL}/users/activate/${token}`, {
+  method: "PUT",
+});
 
 // 3. Now user can login
 const loginResponse = await fetch(`${API_URL}/authentication/token`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    email: 'newuser@example.com',
-    password: 'securePassword123'
-  })
+    email: "newuser@example.com",
+    password: "securePassword123",
+  }),
 });
 
 const jwtToken = await loginResponse.json();
 // Store token for subsequent requests
-localStorage.setItem('authToken', jwtToken);
+localStorage.setItem("authToken", jwtToken);
 ```
 
 ---
@@ -1762,23 +2085,23 @@ localStorage.setItem('authToken', jwtToken);
 ### Example 2: Creating a Restaurant with Authentication
 
 ```typescript
-const token = localStorage.getItem('authToken');
+const token = localStorage.getItem("authToken");
 
 const response = await fetch(`${API_URL}/restaurants`, {
-  method: 'POST',
+  method: "POST",
   headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
   },
   body: JSON.stringify({
-    name: 'My Restaurant',
-    address: '123 Main St',
-    phone: '+1-555-1234'
-  })
+    name: "My Restaurant",
+    address: "123 Main St",
+    phone: "+1-555-1234",
+  }),
 });
 
 const restaurant = await response.json();
-console.log('Created restaurant:', restaurant);
+console.log("Created restaurant:", restaurant);
 ```
 
 ---
@@ -1786,22 +2109,22 @@ console.log('Created restaurant:', restaurant);
 ### Example 3: Building a Weekly Schedule
 
 ```typescript
-const token = localStorage.getItem('authToken');
+const token = localStorage.getItem("authToken");
 const restaurantId = 5;
 
 // 1. Create a schedule
 const scheduleResponse = await fetch(
   `${API_URL}/restaurants/${restaurantId}/schedules`,
   {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      start_date: '2025-01-20',
-      end_date: '2025-01-26'
-    })
+      start_date: "2025-01-20",
+      end_date: "2025-01-26",
+    }),
   }
 );
 
@@ -1811,19 +2134,19 @@ const schedule = await scheduleResponse.json();
 const shiftResponse = await fetch(
   `${API_URL}/restaurants/${restaurantId}/schedules/${schedule.id}/shifts`,
   {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       role_id: 2,
       employee_id: 7,
-      shift_date: '2025-01-20T00:00:00Z',
-      start_time: '09:00',
-      end_time: '17:00',
-      notes: 'Morning shift'
-    })
+      shift_date: "2025-01-20T00:00:00Z",
+      start_time: "09:00",
+      end_time: "17:00",
+      notes: "Morning shift",
+    }),
   }
 );
 
@@ -1833,8 +2156,8 @@ const shift = await shiftResponse.json();
 await fetch(
   `${API_URL}/restaurants/${restaurantId}/schedules/${schedule.id}/publish`,
   {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` }
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
   }
 );
 ```
@@ -1844,21 +2167,21 @@ await fetch(
 ### Example 4: Refreshing Expired Token
 
 ```typescript
-const token = localStorage.getItem('authToken');
+const token = localStorage.getItem("authToken");
 
 const refreshResponse = await fetch(`${API_URL}/authentication/refresh`, {
-  method: 'POST',
+  method: "POST",
   headers: {
-    'Authorization': `Bearer ${token}`
-  }
+    Authorization: `Bearer ${token}`,
+  },
 });
 
 if (refreshResponse.ok) {
   const newToken = await refreshResponse.json();
-  localStorage.setItem('authToken', newToken);
+  localStorage.setItem("authToken", newToken);
 } else {
   // Token refresh failed, redirect to login
-  window.location.href = '/login';
+  window.location.href = "/login";
 }
 ```
 
@@ -1867,6 +2190,7 @@ if (refreshResponse.ok) {
 ## Rate Limiting
 
 Rate limiting can be enabled via environment variables:
+
 - `RATE_LIMITER_ENABLED`: Set to `true` to enable
 - `RATELIMITER_REQUESTS_COUNT`: Maximum requests per time window
 
@@ -1885,29 +2209,37 @@ Allowed methods: `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS`
 ## Notes for Frontend Developers
 
 1. **Authentication State Management:**
+
    - Store JWT token securely (consider `httpOnly` cookies for production)
    - Implement token refresh logic before expiration
    - Clear token on logout or 401 responses
+   - Support both email/password and Google OAuth authentication flows
+   - Store OAuth state token during Google sign-in for CSRF protection
 
 2. **Error Handling:**
+
    - Always check response status codes
    - Display user-friendly error messages
    - Handle network errors gracefully
 
 3. **Date/Time Formats:**
+
    - Dates: `YYYY-MM-DD` (e.g., "2025-01-20")
    - Times: `HH:MM` 24-hour format (e.g., "09:00", "17:30")
    - Timestamps: ISO 8601 (e.g., "2025-01-20T15:30:00Z")
 
 4. **Ownership Rules:**
+
    - Only restaurant owners can create, update, or delete resources
    - Employees can only view data for restaurants they're associated with
 
 5. **Optional Fields:**
+
    - Fields with `| null` or `?` are optional
    - Send `null` to clear optional fields during updates
 
 6. **Caching:**
+
    - Backend uses Redis caching for restaurants and schedules
    - Frontend can implement optimistic updates for better UX
 
@@ -1938,6 +2270,11 @@ AUTH_TOKEN_ISS=resa-api
 AUTH_BASIC_USER=admin
 AUTH_BASIC_PASS=admin
 
+# Google OAuth (Optional - for Google sign-in)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URL=http://localhost:3000/auth/google/callback
+
 # Email
 SENDGRID_API_KEY=your-sendgrid-api-key
 FROM_EMAIL=noreply@resa.com
@@ -1956,6 +2293,153 @@ RATELIMITER_REQUESTS_COUNT=100
 
 ---
 
-**Last Updated:** November 2025 (Shift Templates updated to support multi-role assignments and optional names)
+## Google OAuth Authentication
+
+RESA supports Google OAuth 2.0 as an alternative authentication method. Users can sign up or log in using their Google account.
+
+### OAuth Flow
+
+1. **Initiate OAuth:** Frontend calls `POST /authentication/google` to get the authorization URL
+2. **User Authorization:** User is redirected to Google to authorize the application
+3. **Callback:** Google redirects back with an authorization code
+4. **Token Exchange:** Frontend calls `POST /authentication/google/callback` with the code
+5. **JWT Issued:** Backend returns a JWT token for authenticated requests
+
+### 40. Initiate Google OAuth
+
+Generates and returns the Google OAuth authorization URL for user login/signup.
+
+**Endpoint:** `POST /authentication/google`
+
+**Authentication:** None (Public)
+
+**Request Body:** None
+
+**Success Response (200 OK):**
+
+```json
+{
+  "auth_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...&response_type=code&scope=...&state=abc123",
+  "state": "abc123"
+}
+```
+
+**Response Fields:**
+
+- `auth_url`: The full Google OAuth authorization URL to redirect the user to
+- `state`: A random state token for CSRF protection (should be verified in callback)
+
+**Error Responses:**
+
+- `500 Internal Server Error`: Failed to generate OAuth URL
+
+**Notes:**
+
+- The `state` token should be stored by the frontend and verified when handling the callback
+- The authorization URL includes scopes for `openid`, `profile`, and `email`
+
+---
+
+### 41. Handle Google OAuth Callback
+
+Exchanges the authorization code for user information and creates/authenticates the user.
+
+**Endpoint:** `POST /authentication/google/callback`
+
+**Authentication:** None (Public)
+
+**Request Body:**
+
+```json
+{
+  "code": "4/0AfgeXvt...",
+  "state": "abc123"
+}
+```
+
+**Validation Rules:**
+
+- `code`: Required, the authorization code from Google
+- `state`: Required, must match the state token from the initiation step
+
+**Success Response (200 OK):**
+
+```json
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+```
+
+**Error Responses:**
+
+- `400 Bad Request`: Invalid code, state mismatch, or missing parameters
+- `401 Unauthorized`: Failed to authenticate with Google
+- `500 Internal Server Error`: Failed to create/update user or generate token
+
+**User Creation Behavior:**
+
+- If user with Google ID exists: Logs them in and returns JWT token
+- If user with matching email exists: Links Google account to existing user
+- If neither exists: Creates new user account with Google profile information
+- New Google users are automatically activated (`is_active: true`)
+
+**User Data Populated:**
+
+- `email`: From Google profile
+- `first_name`: From Google given name
+- `last_name`: From Google family name
+- `google_id`: Google's unique user identifier
+- `avatar_url`: Google profile picture URL
+- `is_active`: Set to `true` automatically
+
+---
+
+### Example: Complete Google OAuth Flow
+
+```typescript
+// 1. Initiate OAuth
+const initResponse = await fetch(`${API_URL}/authentication/google`, {
+  method: "POST",
+});
+
+const { auth_url, state } = await initResponse.json();
+
+// Store state for verification
+sessionStorage.setItem("oauth_state", state);
+
+// Redirect user to Google
+window.location.href = auth_url;
+
+// 2. After Google redirects back to your callback URL with code
+const urlParams = new URLSearchParams(window.location.search);
+const code = urlParams.get("code");
+const returnedState = urlParams.get("state");
+
+// Verify state
+const savedState = sessionStorage.getItem("oauth_state");
+if (returnedState !== savedState) {
+  throw new Error("Invalid state parameter");
+}
+
+// 3. Exchange code for JWT token
+const callbackResponse = await fetch(
+  `${API_URL}/authentication/google/callback`,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, state: returnedState }),
+  }
+);
+
+const jwtToken = await callbackResponse.json();
+
+// Store token for subsequent requests
+localStorage.setItem("authToken", jwtToken);
+
+// Clean up
+sessionStorage.removeItem("oauth_state");
+```
+
+---
+
+**Last Updated:** November 2025 (Added Google OAuth authentication and new endpoint documentation)
 **API Version:** v1
 **Swagger Documentation:** Available at `/v1/swagger/` (Basic Auth required)

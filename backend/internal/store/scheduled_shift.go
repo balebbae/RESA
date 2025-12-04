@@ -23,6 +23,9 @@ type ScheduledShift struct {
 	Notes           string    `json:"notes"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
+	// Joined fields (not stored in scheduled_shifts table)
+	EmployeeName    *string   `json:"employee_name,omitempty"`
+	RoleName        string    `json:"role_name"`
 }
 
 type ScheduledShiftStore struct {
@@ -31,6 +34,41 @@ type ScheduledShiftStore struct {
 
 func NewScheduledShiftStore(db *sql.DB) *ScheduledShiftStore {
 	return &ScheduledShiftStore{db: db}
+}
+
+// normalizeTimeString converts various time formats to HH:MM:SS format
+// Handles: "HH:MM:SS", "HH:MM", "0000-01-01THH:MM:SSZ", time.Time, etc.
+// This is needed because PostgreSQL TIME columns are scanned as RFC3339 timestamps
+// (e.g., "0000-01-01T02:00:00Z") by the pq driver, but PostgreSQL expects "HH:MM:SS" format for inserts
+func normalizeTimeString(timeStr string) string {
+	// If already in HH:MM:SS or HH:MM format, return as-is
+	if len(timeStr) == 8 && timeStr[2] == ':' && timeStr[5] == ':' {
+		return timeStr // HH:MM:SS
+	}
+	if len(timeStr) == 5 && timeStr[2] == ':' {
+		return timeStr + ":00" // HH:MM -> HH:MM:00
+	}
+
+	// Try parsing as RFC3339/ISO8601 timestamp (what PostgreSQL TIME returns)
+	if t, err := time.Parse(time.RFC3339, timeStr); err == nil {
+		return t.Format("15:04:05")
+	}
+
+	// Try other common time formats
+	formats := []string{
+		"2006-01-02T15:04:05Z07:00",
+		"2006-01-02T15:04:05",
+		"15:04:05",
+		"15:04",
+	}
+	for _, format := range formats {
+		if t, err := time.Parse(format, timeStr); err == nil {
+			return t.Format("15:04:05")
+		}
+	}
+
+	// If all parsing fails, return as-is (will likely cause DB error but won't panic)
+	return timeStr
 }
 
 // Create inserts a new scheduled shift
@@ -126,10 +164,15 @@ func (s *ScheduledShiftStore) GetByID(ctx context.Context, id int64) (*Scheduled
 	defer cancel()
 
 	query := `
-		SELECT id, schedule_id, shift_template_id, role_id, employee_id, 
-		       shift_date, start_time, end_time, notes, created_at, updated_at
-		FROM scheduled_shifts
-		WHERE id = $1`
+		SELECT
+			ss.id, ss.schedule_id, ss.shift_template_id, ss.role_id, ss.employee_id,
+			ss.shift_date, ss.start_time, ss.end_time, ss.notes, ss.created_at, ss.updated_at,
+			e.full_name as employee_name,
+			r.name as role_name
+		FROM scheduled_shifts ss
+		LEFT JOIN employees e ON ss.employee_id = e.id
+		INNER JOIN roles r ON ss.role_id = r.id
+		WHERE ss.id = $1`
 
 	var shift ScheduledShift
 	err := s.db.QueryRowContext(ctx, query, id).Scan(
@@ -144,6 +187,8 @@ func (s *ScheduledShiftStore) GetByID(ctx context.Context, id int64) (*Scheduled
 		&shift.Notes,
 		&shift.CreatedAt,
 		&shift.UpdatedAt,
+		&shift.EmployeeName,
+		&shift.RoleName,
 	)
 
 	if err != nil {
@@ -152,6 +197,10 @@ func (s *ScheduledShiftStore) GetByID(ctx context.Context, id int64) (*Scheduled
 		}
 		return nil, err
 	}
+
+	// Normalize time formats
+	shift.StartTime = normalizeTimeString(shift.StartTime)
+	shift.EndTime = normalizeTimeString(shift.EndTime)
 
 	return &shift, nil
 }
@@ -162,11 +211,16 @@ func (s *ScheduledShiftStore) ListBySchedule(ctx context.Context, scheduleID int
 	defer cancel()
 
 	query := `
-		SELECT id, schedule_id, shift_template_id, role_id, employee_id, 
-		       shift_date, start_time, end_time, notes, created_at, updated_at
-		FROM scheduled_shifts
-		WHERE schedule_id = $1
-		ORDER BY shift_date, start_time`
+		SELECT
+			ss.id, ss.schedule_id, ss.shift_template_id, ss.role_id, ss.employee_id,
+			ss.shift_date, ss.start_time, ss.end_time, ss.notes, ss.created_at, ss.updated_at,
+			e.full_name as employee_name,
+			r.name as role_name
+		FROM scheduled_shifts ss
+		LEFT JOIN employees e ON ss.employee_id = e.id
+		INNER JOIN roles r ON ss.role_id = r.id
+		WHERE ss.schedule_id = $1
+		ORDER BY ss.shift_date, ss.start_time`
 
 	rows, err := s.db.QueryContext(ctx, query, scheduleID)
 	if err != nil {
@@ -189,10 +243,17 @@ func (s *ScheduledShiftStore) ListBySchedule(ctx context.Context, scheduleID int
 			&shift.Notes,
 			&shift.CreatedAt,
 			&shift.UpdatedAt,
+			&shift.EmployeeName,
+			&shift.RoleName,
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		// Normalize time formats
+		shift.StartTime = normalizeTimeString(shift.StartTime)
+		shift.EndTime = normalizeTimeString(shift.EndTime)
+
 		shifts = append(shifts, &shift)
 	}
 
@@ -242,6 +303,11 @@ func (s *ScheduledShiftStore) ListByRestaurantAndWeek(ctx context.Context, resta
 		if err != nil {
 			return nil, err
 		}
+
+		// Normalize time formats
+		shift.StartTime = normalizeTimeString(shift.StartTime)
+		shift.EndTime = normalizeTimeString(shift.EndTime)
+
 		shifts = append(shifts, &shift)
 	}
 
@@ -325,6 +391,15 @@ func (s *ScheduledShiftStore) AssignEmployee(ctx context.Context, shiftID int64,
 		if !ok {
 			return ErrForbidden
 		}
+
+		// Validate employee has the required role for this shift
+		hasRole, err := s.employeeHasShiftRole(ctx, shiftID, *employeeID)
+		if err != nil {
+			return err
+		}
+		if !hasRole {
+			return errors.New("employee does not have the required role for this shift")
+		}
 	}
 
 	query := `
@@ -351,11 +426,31 @@ func (s *ScheduledShiftStore) employeeBelongsToShiftRestaurant(ctx context.Conte
 	defer cancel()
 
 	query := `
-		SELECT COUNT(*) 
+		SELECT COUNT(*)
 		FROM scheduled_shifts ss
 		JOIN schedules s ON ss.schedule_id = s.id
 		JOIN employees e ON e.restaurant_id = s.restaurant_id
 		WHERE ss.id = $1 AND e.id = $2`
+
+	var count int
+	err := s.db.QueryRowContext(ctx, query, shiftID, employeeID).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+// employeeHasShiftRole checks if an employee has the role required by the scheduled shift
+func (s *ScheduledShiftStore) employeeHasShiftRole(ctx context.Context, shiftID, employeeID int64) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `
+		SELECT COUNT(*)
+		FROM scheduled_shifts ss
+		JOIN employee_roles er ON er.employee_id = $2 AND er.role_id = ss.role_id
+		WHERE ss.id = $1`
 
 	var count int
 	err := s.db.QueryRowContext(ctx, query, shiftID, employeeID).Scan(&count)

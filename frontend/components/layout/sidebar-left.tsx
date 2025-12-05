@@ -43,8 +43,13 @@ export function SidebarLeft({
       </SidebarContent>
       <SidebarFooter className="p-4">
         <Button
-          className="w-full text-sm py-4 cursor-pointer"
-          style={{ backgroundColor: "#3B5483" }}
+          className="w-full text-sm py-4 cursor-pointer rounded-sm"
+          style={{
+            background: "linear-gradient(180deg, #C0EED3 0%, #5978B2 100%)",
+            backgroundBlendMode: "screen",
+            color: "#fff",
+            // textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+          }}
         >
           Publish Schedule
         </Button>

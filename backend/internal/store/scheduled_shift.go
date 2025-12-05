@@ -18,8 +18,8 @@ type ScheduledShift struct {
 	RoleID          int64     `json:"role_id"`
 	EmployeeID      *int64    `json:"employee_id,omitempty"`
 	ShiftDate       time.Time `json:"shift_date"`        // date only
-	StartTime       string    `json:"start_time"`        // "15:04"
-	EndTime         string    `json:"end_time"`          // "15:04"
+	StartTime       TimeOfDay `json:"start_time"`        // TimeOfDay auto-normalizes pq driver RFC3339 format
+	EndTime         TimeOfDay `json:"end_time"`          // TimeOfDay auto-normalizes pq driver RFC3339 format
 	Notes           string    `json:"notes"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
@@ -34,41 +34,6 @@ type ScheduledShiftStore struct {
 
 func NewScheduledShiftStore(db *sql.DB) *ScheduledShiftStore {
 	return &ScheduledShiftStore{db: db}
-}
-
-// normalizeTimeString converts various time formats to HH:MM:SS format
-// Handles: "HH:MM:SS", "HH:MM", "0000-01-01THH:MM:SSZ", time.Time, etc.
-// This is needed because PostgreSQL TIME columns are scanned as RFC3339 timestamps
-// (e.g., "0000-01-01T02:00:00Z") by the pq driver, but PostgreSQL expects "HH:MM:SS" format for inserts
-func normalizeTimeString(timeStr string) string {
-	// If already in HH:MM:SS or HH:MM format, return as-is
-	if len(timeStr) == 8 && timeStr[2] == ':' && timeStr[5] == ':' {
-		return timeStr // HH:MM:SS
-	}
-	if len(timeStr) == 5 && timeStr[2] == ':' {
-		return timeStr + ":00" // HH:MM -> HH:MM:00
-	}
-
-	// Try parsing as RFC3339/ISO8601 timestamp (what PostgreSQL TIME returns)
-	if t, err := time.Parse(time.RFC3339, timeStr); err == nil {
-		return t.Format("15:04:05")
-	}
-
-	// Try other common time formats
-	formats := []string{
-		"2006-01-02T15:04:05Z07:00",
-		"2006-01-02T15:04:05",
-		"15:04:05",
-		"15:04",
-	}
-	for _, format := range formats {
-		if t, err := time.Parse(format, timeStr); err == nil {
-			return t.Format("15:04:05")
-		}
-	}
-
-	// If all parsing fails, return as-is (will likely cause DB error but won't panic)
-	return timeStr
 }
 
 // Create inserts a new scheduled shift
@@ -198,9 +163,7 @@ func (s *ScheduledShiftStore) GetByID(ctx context.Context, id int64) (*Scheduled
 		return nil, err
 	}
 
-	// Normalize time formats
-	shift.StartTime = normalizeTimeString(shift.StartTime)
-	shift.EndTime = normalizeTimeString(shift.EndTime)
+	// TimeOfDay.Scan() automatically normalizes time formats
 
 	return &shift, nil
 }
@@ -250,9 +213,7 @@ func (s *ScheduledShiftStore) ListBySchedule(ctx context.Context, scheduleID int
 			return nil, err
 		}
 
-		// Normalize time formats
-		shift.StartTime = normalizeTimeString(shift.StartTime)
-		shift.EndTime = normalizeTimeString(shift.EndTime)
+		// TimeOfDay.Scan() automatically normalizes time formats
 
 		shifts = append(shifts, &shift)
 	}
@@ -304,9 +265,7 @@ func (s *ScheduledShiftStore) ListByRestaurantAndWeek(ctx context.Context, resta
 			return nil, err
 		}
 
-		// Normalize time formats
-		shift.StartTime = normalizeTimeString(shift.StartTime)
-		shift.EndTime = normalizeTimeString(shift.EndTime)
+		// TimeOfDay.Scan() automatically normalizes time formats
 
 		shifts = append(shifts, &shift)
 	}

@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useState, useEffect, forwardRef, useImperativeHandle, useMemo } from "react"
-import { ChevronRight, Pencil } from "lucide-react"
+import * as React from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { ChevronRight, Pencil } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -15,20 +15,22 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarSeparator,
-} from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
-import { useEmployees } from "@/hooks/use-employees"
-import { EmployeeDetailSheet } from "./employee-detail-sheet"
-import type { Employee } from "@/types/employee"
-import { generateEmployeeColors } from "@/lib/styles/employee-colors"
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useEmployees } from "@/hooks/use-employees";
+import { useEmployeeRoles } from "@/hooks/use-employee-roles";
+import { EmployeeDetailSheet } from "./employee-detail-sheet";
+import type { Employee } from "@/types/employee";
+import type { Role } from "@/types/role";
 
 interface EmployeeCollapsibleSectionProps {
-  restaurantId: number | null
-  onRoleCreated?: () => void | Promise<void>
+  restaurantId: number | null;
+  onRoleCreated?: () => void | Promise<void>;
 }
 
 export interface EmployeeCollapsibleSectionRef {
-  refetch: () => void
+  refetch: () => void;
 }
 
 /**
@@ -36,11 +38,11 @@ export interface EmployeeCollapsibleSectionRef {
  */
 interface EmployeeItemProps {
   employee: Employee;
-  color: string;
+  roles: Role[];
   onEdit: () => void;
 }
 
-function EmployeeItem({ employee, color, onEdit }: EmployeeItemProps) {
+function EmployeeItem({ employee, roles, onEdit }: EmployeeItemProps) {
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onEdit();
@@ -49,17 +51,24 @@ function EmployeeItem({ employee, color, onEdit }: EmployeeItemProps) {
   return (
     <SidebarMenuItem key={employee.id}>
       <div className="flex items-center w-full gap-2 px-2 py-2 rounded-md hover:bg-sidebar-accent group relative">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div
-            className="w-3 h-3 rounded-full flex-shrink-0"
-            style={{ backgroundColor: color }}
-          />
+        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+          {/* Employee name and email */}
           <div className="flex flex-col gap-0.5 min-w-0">
             <span className="text-sm truncate">{employee.full_name}</span>
-            <span className="text-xs text-muted-foreground truncate">
-              {employee.email}
-            </span>
           </div>
+
+          {/* Role badges */}
+          {roles.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {roles.map((role) => (
+                <Badge key={role.id} variant="secondary" className="text-xs">
+                  {role.name}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <span className="text-xs text-muted-foreground">No roles</span>
+          )}
         </div>
 
         {/* Edit button */}
@@ -83,42 +92,45 @@ function EmployeeItem({ employee, color, onEdit }: EmployeeItemProps) {
 export const EmployeeCollapsibleSection = forwardRef<
   EmployeeCollapsibleSectionRef,
   EmployeeCollapsibleSectionProps
->(function EmployeeCollapsibleSection({
-  restaurantId,
-  onRoleCreated,
-}, ref) {
-  const { employees, refetch } = useEmployees(restaurantId)
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
+>(function EmployeeCollapsibleSection({ restaurantId, onRoleCreated }, ref) {
+  const { employees, refetch } = useEmployees(restaurantId);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+    null
+  );
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  // Generate employee colors
-  const employeeColorMap = useMemo(() => {
-    return generateEmployeeColors(employees.map(emp => emp.id));
-  }, [employees])
+  // Fetch employee roles to display as badges
+  const { employeesWithRoles } = useEmployeeRoles({
+    restaurantId,
+    employees,
+    enabled: true, // Always enabled for sidebar display
+  });
 
   // Expose refetch method to parent component
   useImperativeHandle(ref, () => ({
     refetch,
-  }))
+  }));
 
   // Update selected employee when employees list changes
   useEffect(() => {
     if (selectedEmployee && employees.length > 0) {
-      const updatedEmployee = employees.find(emp => emp.id === selectedEmployee.id)
+      const updatedEmployee = employees.find(
+        (emp) => emp.id === selectedEmployee.id
+      );
       if (updatedEmployee) {
-        setSelectedEmployee(updatedEmployee)
+        setSelectedEmployee(updatedEmployee);
       }
     }
-  }, [employees, selectedEmployee?.id])
+  }, [employees, selectedEmployee?.id]);
 
   const handleEmployeeClick = (employee: Employee) => {
-    setSelectedEmployee(employee)
-    setIsSheetOpen(true)
-  }
+    setSelectedEmployee(employee);
+    setIsSheetOpen(true);
+  };
 
   const handleEmployeeUpdate = () => {
-    refetch()
-  }
+    refetch();
+  };
 
   // Show message when no restaurant is selected
   if (!restaurantId) {
@@ -138,7 +150,7 @@ export const EmployeeCollapsibleSection = forwardRef<
         </SidebarGroup>
         <SidebarSeparator className="mx-0" />
       </>
-    )
+    );
   }
 
   return (
@@ -154,8 +166,6 @@ export const EmployeeCollapsibleSection = forwardRef<
               Employees{" "}
               <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
             </CollapsibleTrigger>
-
-
           </SidebarGroupLabel>
           <CollapsibleContent>
             <SidebarGroupContent>
@@ -171,7 +181,7 @@ export const EmployeeCollapsibleSection = forwardRef<
                     <EmployeeItem
                       key={employee.id}
                       employee={employee}
-                      color={employeeColorMap.get(employee.id) || 'hsl(0, 0%, 70%)'}
+                      roles={employeesWithRoles.get(employee.id) || []}
                       onEdit={() => handleEmployeeClick(employee)}
                     />
                   ))
@@ -193,5 +203,5 @@ export const EmployeeCollapsibleSection = forwardRef<
         onRoleCreated={onRoleCreated}
       />
     </>
-  )
-})
+  );
+});

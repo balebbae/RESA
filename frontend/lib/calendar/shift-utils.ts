@@ -7,9 +7,9 @@ import type { ScheduledShift } from "@/types/schedule";
  */
 export function parseTime(timeString: string): number {
   // Handle ISO timestamp format (e.g., "0000-01-01T09:30:00Z")
-  if (timeString.includes('T')) {
-    const timePart = timeString.split('T')[1]; // Get "09:30:00Z"
-    const [hours, minutes] = timePart.split(':').map(Number);
+  if (timeString.includes("T")) {
+    const timePart = timeString.split("T")[1]; // Get "09:30:00Z"
+    const [hours, minutes] = timePart.split(":").map(Number);
     return hours + minutes / 60;
   }
 
@@ -24,7 +24,10 @@ export function parseTime(timeString: string): number {
  * @param endTime - End time in "HH:MM" format
  * @returns Duration in hours (decimal)
  */
-export function calculateShiftDuration(startTime: string, endTime: string): number {
+export function calculateShiftDuration(
+  startTime: string,
+  endTime: string
+): number {
   const start = parseTime(startTime);
   const end = parseTime(endTime);
 
@@ -95,7 +98,9 @@ export function getDayOfWeek(dateString: string): number {
  * @param shifts - Array of shifts for a specific day
  * @returns Array of shift groups (each group is an array of overlapping shifts)
  */
-export function groupOverlappingShifts(shifts: ScheduledShift[]): ScheduledShift[][] {
+export function groupOverlappingShifts(
+  shifts: ScheduledShift[]
+): ScheduledShift[][] {
   if (shifts.length === 0) return [];
 
   // Sort shifts by start time
@@ -133,7 +138,10 @@ export function groupOverlappingShifts(shifts: ScheduledShift[]): ScheduledShift
  * @param shift2 - Second shift
  * @returns true if shifts overlap
  */
-export function shiftsOverlap(shift1: ScheduledShift, shift2: ScheduledShift): boolean {
+export function shiftsOverlap(
+  shift1: ScheduledShift,
+  shift2: ScheduledShift
+): boolean {
   const start1 = parseTime(shift1.start_time);
   const end1 = parseTime(shift1.end_time);
   const start2 = parseTime(shift2.start_time);

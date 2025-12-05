@@ -495,6 +495,84 @@ docker compose down
 - Verify token in localStorage (`auth_token` key)
 - Check Network tab for API request/response
 
+## Time Handling
+
+RESA uses a centralized approach to time handling due to PostgreSQL driver quirks with TIME columns.
+
+### The Problem
+
+The PostgreSQL `pq` driver returns TIME columns (time-of-day without date) as RFC3339 timestamps:
+- Database stores: `14:30:00` (2:30 PM)
+- pq driver returns: `"0000-01-01T14:30:00Z"`
+
+This requires normalization to convert back to simple time strings.
+
+### Backend Solution
+
+**Custom Types** (`internal/store/types.go`):
+
+```go
+// TimeOfDay - For PostgreSQL TIME columns (e.g., shift start/end times)
+// Automatically normalizes RFC3339 format from pq driver on Scan()
+type TimeOfDay string
+
+// DateOnly - For PostgreSQL DATE columns (e.g., schedule dates)
+// Normalizes various date formats to YYYY-MM-DD
+type DateOnly string
+```
+
+**Usage in Structs:**
+```go
+type ShiftTemplate struct {
+    StartTime TimeOfDay `json:"start_time"` // Auto-normalizes on DB read
+    EndTime   TimeOfDay `json:"end_time"`
+}
+
+type Schedule struct {
+    StartDate DateOnly `json:"start_date"` // YYYY-MM-DD format
+    EndDate   DateOnly `json:"end_date"`
+}
+```
+
+**API Request Handling:**
+- Handlers receive time strings from JSON (e.g., `"14:30"`)
+- Convert to custom types: `store.TimeOfDay(payload.StartTime)`
+- Custom types implement `sql.Scanner` for automatic normalization on reads
+
+### Frontend Solution
+
+**Centralized Time Module** (`lib/time/index.ts`):
+
+```typescript
+import {
+  parseTimeToHours,    // "14:30" → 14.5
+  normalizeTime,       // "14:30:00" or ISO → "14:30"
+  normalizeDate,       // ISO timestamp → "YYYY-MM-DD"
+  formatHourDisplay,   // 14 → "2 PM"
+  dateToISO,           // "2025-01-20" → "2025-01-20T00:00:00Z"
+  isValidTimeFormat,   // Validate HH:MM format
+  getWeekDates,        // Week start → array of 7 dates
+} from "@/lib/time";
+```
+
+### API Contract
+
+| Data Type | Format | Example |
+|-----------|--------|---------|
+| Time of day | `HH:MM` | `"14:30"` |
+| Date | `YYYY-MM-DD` | `"2025-01-20"` |
+| Timestamp (API) | ISO 8601 | `"2025-01-20T00:00:00Z"` |
+
+### Key Files
+
+**Backend:**
+- `internal/store/types.go` - Custom `TimeOfDay` and `DateOnly` types
+- `internal/store/storage.go` - `normalizeTimeString()` helper function
+
+**Frontend:**
+- `lib/time/index.ts` - Centralized time utilities
+- `lib/utils/date-normalization.ts` - API response normalization (uses lib/time)
+
 ## Important Notes
 
 - Backend uses **raw SQL** with parameterized queries - no ORM

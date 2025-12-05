@@ -12,8 +12,8 @@ type ShiftTemplate struct {
     RestaurantID int64     `db:"restaurant_id" json:"restaurant_id"`
     Name         string    `db:"name" json:"name"` // required name like "Morning Shift"
     DayOfWeek    int       `db:"day_of_week" json:"day_of_week"` // 0=Sun ... 6=Sat
-    StartTime    string    `db:"start_time" json:"start_time"`     // stored as TIME in db, use string to avoid timezone confusion in JSON
-    EndTime      string    `db:"end_time" json:"end_time"`
+    StartTime    TimeOfDay `db:"start_time" json:"start_time"`   // TimeOfDay auto-normalizes pq driver RFC3339 format
+    EndTime      TimeOfDay `db:"end_time" json:"end_time"`       // TimeOfDay auto-normalizes pq driver RFC3339 format
     CreatedAt    time.Time `db:"created_at" json:"created_at"`
     UpdatedAt    time.Time `db:"updated_at" json:"updated_at"`
 
@@ -23,41 +23,6 @@ type ShiftTemplate struct {
 
 type ShiftTemplateStore struct {
 	db *sql.DB
-}
-
-// normalizeTimeString converts various time formats to HH:MM:SS format
-// Handles: "HH:MM:SS", "HH:MM", "0000-01-01THH:MM:SSZ", time.Time, etc.
-// This is needed because PostgreSQL TIME columns are scanned as RFC3339 timestamps
-// (e.g., "0000-01-01T02:00:00Z") by the pq driver, but PostgreSQL expects "HH:MM:SS" format for inserts
-func normalizeTimeString(timeStr string) string {
-	// If already in HH:MM:SS or HH:MM format, return as-is
-	if len(timeStr) == 8 && timeStr[2] == ':' && timeStr[5] == ':' {
-		return timeStr // HH:MM:SS
-	}
-	if len(timeStr) == 5 && timeStr[2] == ':' {
-		return timeStr + ":00" // HH:MM -> HH:MM:00
-	}
-
-	// Try parsing as RFC3339/ISO8601 timestamp (what PostgreSQL TIME returns)
-	if t, err := time.Parse(time.RFC3339, timeStr); err == nil {
-		return t.Format("15:04:05")
-	}
-
-	// Try other common time formats
-	formats := []string{
-		"2006-01-02T15:04:05Z07:00",
-		"2006-01-02T15:04:05",
-		"15:04:05",
-		"15:04",
-	}
-	for _, format := range formats {
-		if t, err := time.Parse(format, timeStr); err == nil {
-			return t.Format("15:04:05")
-		}
-	}
-
-	// If all parsing fails, return as-is (will likely cause DB error but won't panic)
-	return timeStr
 }
 
 func (s *ShiftTemplateStore) Create(ctx context.Context, template *ShiftTemplate) error {
@@ -114,9 +79,7 @@ func (s *ShiftTemplateStore) GetByID(ctx context.Context, id int64) (*ShiftTempl
 		return nil, err
 	}
 
-	// Normalize time formats
-	template.StartTime = normalizeTimeString(template.StartTime)
-	template.EndTime = normalizeTimeString(template.EndTime)
+	// TimeOfDay.Scan() automatically normalizes time formats
 
 	return &template, nil
 }
@@ -155,9 +118,7 @@ func (s *ShiftTemplateStore) ListByRestaurant(ctx context.Context, restaurantID 
 			return nil, err
 		}
 
-		// Normalize time formats to ensure PostgreSQL compatibility
-		template.StartTime = normalizeTimeString(template.StartTime)
-		template.EndTime = normalizeTimeString(template.EndTime)
+		// TimeOfDay.Scan() automatically normalizes time formats
 
 		templates = append(templates, &template)
 	}

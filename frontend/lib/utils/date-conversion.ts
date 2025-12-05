@@ -1,23 +1,30 @@
 /**
- * Converts YYYY-MM-DD date string to ISO 8601 timestamp
- * Backend expects: "2025-01-20T00:00:00Z"
- * Frontend has: "2025-01-20"
+ * @deprecated Use imports from "@/lib/time" instead
+ * This file is kept for backward compatibility during migration.
+ */
+
+import {
+  dateToISO,
+  getWeekEndDate,
+  hoursToTimeString,
+} from "@/lib/time";
+
+/**
+ * @deprecated Use dateToISO from "@/lib/time"
  */
 export function dateToISO8601(dateString: string): string {
-  return `${dateString}T00:00:00Z`;
+  return dateToISO(dateString);
 }
 
 /**
- * Calculates week end date (start + 6 days)
+ * @deprecated Use getWeekEndDate from "@/lib/time"
  */
 export function calculateWeekEnd(startDate: string): string {
-  const date = new Date(startDate + "T00:00:00Z");
-  date.setDate(date.getDate() + 6);
-  return date.toISOString().split("T")[0]; // Returns YYYY-MM-DD
+  return getWeekEndDate(startDate);
 }
 
 /**
- * Formats hour number to HH:MM time string
+ * @deprecated Use hoursToTimeString from "@/lib/time"
  */
 export function hourToTime(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;

@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { forwardRef, useImperativeHandle } from "react"
-import { ChevronRight, Calendar } from "lucide-react"
+import * as React from "react";
+import { forwardRef, useImperativeHandle } from "react";
+import { ChevronRight, Calendar } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -15,20 +15,20 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarSeparator,
-} from "@/components/ui/sidebar"
-import { useShiftTemplateContext } from "@/contexts/shift-template-context"
-import { formatTimeToHHMM } from "@/lib/calendar/date-utils"
-import type { ShiftTemplate } from "@/types/shift-template"
+} from "@/components/ui/sidebar";
+import { useShiftTemplateContext } from "@/contexts/shift-template-context";
+import { formatTimeToHHMM } from "@/lib/calendar/date-utils";
+import type { ShiftTemplate } from "@/types/shift-template";
 
 interface ShiftTemplateCollapsibleSectionProps {
-  restaurantId: number | null
+  restaurantId: number | null;
 }
 
 export interface ShiftTemplateCollapsibleSectionRef {
-  refetch: () => void
+  refetch: () => void;
 }
 
-const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 /**
  * Collapsible section for shift templates
@@ -37,16 +37,14 @@ const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 export const ShiftTemplateCollapsibleSection = forwardRef<
   ShiftTemplateCollapsibleSectionRef,
   ShiftTemplateCollapsibleSectionProps
->(function ShiftTemplateCollapsibleSection({
-  restaurantId,
-}, ref) {
+>(function ShiftTemplateCollapsibleSection({ restaurantId }, ref) {
   // Use context instead of hook to avoid duplicate API calls
-  const { shiftTemplates, roles, refetch } = useShiftTemplateContext()
+  const { shiftTemplates, roles, refetch } = useShiftTemplateContext();
 
   // Expose refetch method to parent component
   useImperativeHandle(ref, () => ({
     refetch,
-  }))
+  }));
 
   // Show message when no restaurant is selected
   if (!restaurantId) {
@@ -54,7 +52,7 @@ export const ShiftTemplateCollapsibleSection = forwardRef<
       <>
         <SidebarGroup className="py-0">
           <SidebarGroupLabel className="text-sidebar-foreground text-sm">
-            Shift Templates
+            Shift TemplatesTER
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <div className="px-2 py-4 text-center">
@@ -66,7 +64,7 @@ export const ShiftTemplateCollapsibleSection = forwardRef<
         </SidebarGroup>
         <SidebarSeparator className="mx-0" />
       </>
-    )
+    );
   }
 
   return (
@@ -94,7 +92,7 @@ export const ShiftTemplateCollapsibleSection = forwardRef<
                   </div>
                 ) : (
                   shiftTemplates.map((template) => {
-                    const displayName = template.name
+                    const displayName = template.name;
 
                     return (
                       <SidebarMenuItem key={template.id}>
@@ -105,12 +103,14 @@ export const ShiftTemplateCollapsibleSection = forwardRef<
                               {displayName}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {DAYS_OF_WEEK[template.day_of_week]} • {formatTimeToHHMM(template.start_time)} - {formatTimeToHHMM(template.end_time)}
+                              {DAYS_OF_WEEK[template.day_of_week]} •{" "}
+                              {formatTimeToHHMM(template.start_time)} -{" "}
+                              {formatTimeToHHMM(template.end_time)}
                             </span>
                           </div>
                         </div>
                       </SidebarMenuItem>
-                    )
+                    );
                   })
                 )}
               </SidebarMenu>
@@ -120,5 +120,5 @@ export const ShiftTemplateCollapsibleSection = forwardRef<
       </SidebarGroup>
       <SidebarSeparator className="mx-0" />
     </>
-  )
-})
+  );
+});

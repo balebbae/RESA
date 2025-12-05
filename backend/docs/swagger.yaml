@@ -314,7 +314,7 @@ definitions:
       created_at:
         type: string
       end_date:
-        description: YYYY-MM-DD
+        description: DateOnly auto-normalizes to YYYY-MM-DD
         type: string
       id:
         type: integer
@@ -323,7 +323,7 @@ definitions:
       restaurant_id:
         type: integer
       start_date:
-        description: YYYY-MM-DD
+        description: DateOnly auto-normalizes to YYYY-MM-DD
         type: string
       updated_at:
         type: string
@@ -338,7 +338,7 @@ definitions:
         description: Joined fields (not stored in scheduled_shifts table)
         type: string
       end_time:
-        description: '"15:04"'
+        description: TimeOfDay auto-normalizes pq driver RFC3339 format
         type: string
       id:
         type: integer
@@ -356,7 +356,7 @@ definitions:
       shift_template_id:
         type: integer
       start_time:
-        description: '"15:04"'
+        description: TimeOfDay auto-normalizes pq driver RFC3339 format
         type: string
       updated_at:
         type: string
@@ -369,6 +369,7 @@ definitions:
         description: 0=Sun ... 6=Sat
         type: integer
       end_time:
+        description: TimeOfDay auto-normalizes pq driver RFC3339 format
         type: string
       id:
         type: integer
@@ -383,8 +384,7 @@ definitions:
           type: integer
         type: array
       start_time:
-        description: stored as TIME in db, use string to avoid timezone confusion
-          in JSON
+        description: TimeOfDay auto-normalizes pq driver RFC3339 format
         type: string
       updated_at:
         type: string

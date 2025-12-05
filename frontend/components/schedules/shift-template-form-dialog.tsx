@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,6 +32,12 @@ interface ShiftTemplateFormDialogProps {
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   onSuccess?: (shiftTemplate: unknown) => void;
+  /** Pre-select this day when dialog opens (0-6, Sunday-Saturday) */
+  initialDayOfWeek?: number;
+  /** Pre-fill start time when dialog opens (HH:MM format) */
+  initialStartTime?: string;
+  /** Pre-fill end time when dialog opens (HH:MM format) */
+  initialEndTime?: string;
 }
 
 const DAYS_OF_WEEK = [
@@ -70,6 +76,9 @@ export function ShiftTemplateFormDialog({
   isOpen: externalOpen,
   onOpenChange,
   onSuccess,
+  initialDayOfWeek,
+  initialStartTime,
+  initialEndTime,
 }: ShiftTemplateFormDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -166,6 +175,42 @@ export function ShiftTemplateFormDialog({
       setEndMinute(minute);
     }
   }, [currentEndTime]);
+
+  // Track if initial values have been applied for this dialog session
+  const initialValuesAppliedRef = useRef(false);
+
+  // Apply initial values when dialog opens with prefilled data
+  useEffect(() => {
+    if (dialogOpen && !initialValuesAppliedRef.current) {
+      // Apply initial day of week
+      if (initialDayOfWeek !== undefined) {
+        setSelectedDays([initialDayOfWeek]);
+      }
+
+      // Apply initial start time
+      if (initialStartTime) {
+        const [hour, minute] = initialStartTime.split(":");
+        setStartHour(hour);
+        setStartMinute(minute);
+        setValue("start_time", initialStartTime);
+      }
+
+      // Apply initial end time
+      if (initialEndTime) {
+        const [hour, minute] = initialEndTime.split(":");
+        setEndHour(hour);
+        setEndMinute(minute);
+        setValue("end_time", initialEndTime);
+      }
+
+      initialValuesAppliedRef.current = true;
+    }
+
+    // Reset the flag when dialog closes
+    if (!dialogOpen) {
+      initialValuesAppliedRef.current = false;
+    }
+  }, [dialogOpen, initialDayOfWeek, initialStartTime, initialEndTime, setValue]);
 
   // Update form value when hour/minute changes
   const handleStartHourChange = (hour: string) => {

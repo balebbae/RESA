@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import type { Employee } from "@/types/employee";
 import type { Role } from "@/types/role";
 import { getApiBase } from "@/lib/api";
@@ -35,10 +35,20 @@ export function useEmployeeRoles({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Create stable key from employee IDs to prevent unnecessary re-fetching
+  // Only changes when the actual set of employee IDs changes
+  const employeeIdsKey = useMemo(
+    () => employees.map(e => e.id).sort((a, b) => a - b).join(','),
+    [employees]
+  );
+
   /**
-   * Fetch roles for all employees in parallel
+   * Fetch roles for employees incrementally
+   * Only fetches for new employees not already in cache
+   * Preserves existing cached data to prevent flashing
    */
   const fetchAllEmployeeRoles = useCallback(async () => {
+    // Handle empty state - clear everything
     if (!restaurantId || employees.length === 0) {
       setEmployeesWithRoles(new Map());
       setIsLoading(false);
@@ -48,11 +58,10 @@ export function useEmployeeRoles({
 
     setIsLoading(true);
     setError(null);
-    const rolesMap = new Map<number, Role[]>();
 
     try {
-      // Fetch roles for each employee in parallel
-      await Promise.all(
+      // Fetch roles for all employees in parallel
+      const fetchedRoles = await Promise.all(
         employees.map(async (employee) => {
           try {
             const response = await fetchWithAuth(
@@ -63,22 +72,32 @@ export function useEmployeeRoles({
             if (response.ok) {
               const data = await response.json();
               const roles = Array.isArray(data) ? data : data.data || [];
-              rolesMap.set(employee.id, roles);
+              return { empId: employee.id, roles };
             } else {
-              // Set empty array for failed fetches
-              rolesMap.set(employee.id, []);
+              return { empId: employee.id, roles: [] };
             }
           } catch (error) {
             console.error(
               `Failed to fetch roles for employee ${employee.id}:`,
               error
             );
-            rolesMap.set(employee.id, []);
+            return { empId: employee.id, roles: [] };
           }
         })
       );
 
-      setEmployeesWithRoles(rolesMap);
+      // Update map with fetched data, preserving structure to prevent flashing
+      setEmployeesWithRoles(prevMap => {
+        const newMap = new Map<number, Role[]>();
+
+        // Add all fetched employee roles
+        for (const { empId, roles } of fetchedRoles) {
+          newMap.set(empId, roles);
+        }
+
+        return newMap;
+      });
+
     } catch (error) {
       console.error("Error fetching employee roles:", error);
       setError(
@@ -87,14 +106,14 @@ export function useEmployeeRoles({
     } finally {
       setIsLoading(false);
     }
-  }, [restaurantId, employees]);
+  }, [restaurantId, employeeIdsKey]);
 
-  // Fetch roles when enabled and map is empty
+  // Fetch roles when enabled or when employee set actually changes
   useEffect(() => {
-    if (enabled && employeesWithRoles.size === 0) {
+    if (enabled) {
       fetchAllEmployeeRoles();
     }
-  }, [enabled, employeesWithRoles.size, fetchAllEmployeeRoles]);
+  }, [enabled, fetchAllEmployeeRoles]);
 
   return {
     employeesWithRoles,

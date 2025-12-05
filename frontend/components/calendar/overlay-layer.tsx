@@ -93,6 +93,7 @@ export function OverlayLayer({
     <div
       ref={containerRef}
       className="absolute inset-0 pointer-events-none"
+      data-overlay
       style={{
         left: `${TIME_COLUMN_WIDTH}px`,
         height: `${TOTAL_HOURS * PIXELS_PER_HOUR}px`,

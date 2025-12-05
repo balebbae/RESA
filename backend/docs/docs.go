@@ -3054,7 +3054,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "end_date": {
-                    "description": "YYYY-MM-DD",
+                    "description": "DateOnly auto-normalizes to YYYY-MM-DD",
                     "type": "string"
                 },
                 "id": {
@@ -3067,7 +3067,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "start_date": {
-                    "description": "YYYY-MM-DD",
+                    "description": "DateOnly auto-normalizes to YYYY-MM-DD",
                     "type": "string"
                 },
                 "updated_at": {
@@ -3089,7 +3089,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "end_time": {
-                    "description": "\"15:04\"",
+                    "description": "TimeOfDay auto-normalizes pq driver RFC3339 format",
                     "type": "string"
                 },
                 "id": {
@@ -3115,7 +3115,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "start_time": {
-                    "description": "\"15:04\"",
+                    "description": "TimeOfDay auto-normalizes pq driver RFC3339 format",
                     "type": "string"
                 },
                 "updated_at": {
@@ -3134,6 +3134,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "end_time": {
+                    "description": "TimeOfDay auto-normalizes pq driver RFC3339 format",
                     "type": "string"
                 },
                 "id": {
@@ -3154,7 +3155,7 @@ const docTemplate = `{
                     }
                 },
                 "start_time": {
-                    "description": "stored as TIME in db, use string to avoid timezone confusion in JSON",
+                    "description": "TimeOfDay auto-normalizes pq driver RFC3339 format",
                     "type": "string"
                 },
                 "updated_at": {

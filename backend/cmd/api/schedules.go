@@ -165,8 +165,8 @@ func (app *application) createScheduleHandler(w http.ResponseWriter, r *http.Req
 
 	schedule := &store.Schedule{
 		RestaurantID: restaurantID,
-		StartDate:    payload.StartDate,
-		EndDate:      payload.EndDate,
+		StartDate:    store.DateOnly(payload.StartDate),
+		EndDate:      store.DateOnly(payload.EndDate),
 	}
 
 	if err := app.store.Schedules.Create(r.Context(), schedule); err != nil {
@@ -378,7 +378,7 @@ func (app *application) updateScheduleHandler(w http.ResponseWriter, r *http.Req
 			app.badRequestResponse(w, r, errors.New("invalid start date format, use YYYY-MM-DD"))
 			return
 		}
-		startDate = *payload.StartDate
+		startDate = store.DateOnly(*payload.StartDate)
 	}
 
 	if payload.EndDate != nil {
@@ -388,12 +388,12 @@ func (app *application) updateScheduleHandler(w http.ResponseWriter, r *http.Req
 			app.badRequestResponse(w, r, errors.New("invalid end date format, use YYYY-MM-DD"))
 			return
 		}
-		endDate = *payload.EndDate
+		endDate = store.DateOnly(*payload.EndDate)
 	}
 
 	// Ensure end date is after or equal to start date
-	startDateParsed, _ := time.Parse("2006-01-02", startDate)
-	endDateParsed, _ := time.Parse("2006-01-02", endDate)
+	startDateParsed, _ := time.Parse("2006-01-02", string(startDate))
+	endDateParsed, _ := time.Parse("2006-01-02", string(endDate))
 	if endDateParsed.Before(startDateParsed) {
 		app.badRequestResponse(w, r, errors.New("end date must be after or equal to start date"))
 		return

@@ -1,6 +1,40 @@
 import type { ScheduledShift } from "@/types/schedule";
 import { calculateShiftHeight, calculateTopOffset } from "@/lib/calendar/shift-utils";
 
+/**
+ * Darken a color by reducing its lightness if it's in HSL format,
+ * otherwise darken a hex color by reducing all RGB components
+ */
+function darkenColor(color: string, amount: number = 20): string {
+  // Try to parse as HSL
+  const hslMatch = color.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+  if (hslMatch) {
+    const [, h, s, l] = hslMatch;
+    const newLightness = Math.max(0, parseInt(l) - amount);
+    return `hsl(${h}, ${s}%, ${newLightness}%)`;
+  }
+
+  // Try to parse as hex color
+  const hexMatch = color.match(/^#?([0-9A-Fa-f]{6})$/);
+  if (hexMatch) {
+    const hex = hexMatch[1];
+    let r = parseInt(hex.substring(0, 2), 16);
+    let g = parseInt(hex.substring(2, 4), 16);
+    let b = parseInt(hex.substring(4, 6), 16);
+
+    // Reduce brightness by 20%
+    const factor = 0.8;
+    r = Math.max(0, Math.floor(r * factor));
+    g = Math.max(0, Math.floor(g * factor));
+    b = Math.max(0, Math.floor(b * factor));
+
+    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+  }
+
+  // Fallback to original color if format is unrecognized
+  return color;
+}
+
 interface ShiftCardProps {
   shift: ScheduledShift;
   onClick?: (shift: ScheduledShift) => void;
@@ -27,9 +61,10 @@ export function ShiftCard({ shift, onClick, layoutProps }: ShiftCardProps) {
   const displayName = shift.employee_name || "Unassigned";
   const displayRole = shift.role_name || "Role";
 
-  // Use consistent blue background color matching shift templates
-  const backgroundColor = "#A5B5D3";
-  const borderColor = "#8A9AB8"; // Slightly darker blue for border
+  // Use role color from shift, fallback to default blue if not available
+  const backgroundColor = shift.role_color || "#A5B5D3";
+  // Darken the role color for the border (reduce lightness by ~20%)
+  const borderColor = shift.role_color ? darkenColor(shift.role_color) : "#8A9AB8";
 
   return (
     <div

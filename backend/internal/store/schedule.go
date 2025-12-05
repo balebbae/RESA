@@ -8,10 +8,10 @@ import (
 )
 
 type Schedule struct {
-    ID           int64     `db:"id" json:"id"`
-    RestaurantID int64     `db:"restaurant_id" json:"restaurant_id"`
-    StartDate    string    `db:"start_date" json:"start_date"` // YYYY-MM-DD
-    EndDate      string    `db:"end_date" json:"end_date"`     // YYYY-MM-DD
+    ID           int64      `db:"id" json:"id"`
+    RestaurantID int64      `db:"restaurant_id" json:"restaurant_id"`
+    StartDate    DateOnly   `db:"start_date" json:"start_date"` // DateOnly auto-normalizes to YYYY-MM-DD
+    EndDate      DateOnly   `db:"end_date" json:"end_date"`     // DateOnly auto-normalizes to YYYY-MM-DD
     PublishedAt  *time.Time `db:"published_at" json:"published_at,omitempty"`
     CreatedAt    time.Time  `db:"created_at" json:"created_at"`
     UpdatedAt    time.Time  `db:"updated_at" json:"updated_at"`

@@ -155,8 +155,8 @@ func (app *application) createShiftTemplateHandler(w http.ResponseWriter, r *htt
 		RestaurantID: restaurantID,
 		Name:         payload.Name,
 		DayOfWeek:    payload.DayOfWeek,
-		StartTime:    payload.StartTime,
-		EndTime:      payload.EndTime,
+		StartTime:    store.TimeOfDay(payload.StartTime),
+		EndTime:      store.TimeOfDay(payload.EndTime),
 	}
 
 	if err := app.store.ShiftTemplates.Create(r.Context(), template); err != nil {
@@ -360,7 +360,7 @@ func (app *application) updateShiftTemplateHandler(w http.ResponseWriter, r *htt
 			app.badRequestResponse(w, r, errors.New("invalid start time format, use 24-hour format (HH:MM)"))
 			return
 		}
-		startTime = *payload.StartTime
+		startTime = store.TimeOfDay(*payload.StartTime)
 	}
 
 	if payload.EndTime != nil {
@@ -369,7 +369,7 @@ func (app *application) updateShiftTemplateHandler(w http.ResponseWriter, r *htt
 			app.badRequestResponse(w, r, errors.New("invalid end time format, use 24-hour format (HH:MM)"))
 			return
 		}
-		endTime = *payload.EndTime
+		endTime = store.TimeOfDay(*payload.EndTime)
 	}
 
 	// Ensure end time is after start time

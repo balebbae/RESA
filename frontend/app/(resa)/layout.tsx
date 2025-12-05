@@ -1,33 +1,31 @@
-"use client"
+"use client";
 
-import { SidebarLeft } from "@/components/layout/sidebar-left"
-import { SidebarRight } from "@/components/layout/sidebar-right"
+import { SidebarLeft } from "@/components/layout/sidebar-left";
+import { SidebarRight } from "@/components/layout/sidebar-right";
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth"
-import { RestaurantProvider } from "@/contexts/restaurant-context"
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
+import { RestaurantProvider } from "@/contexts/restaurant-context";
 import {
   useWeekNavigation,
-  formatWeekRange,
-  WeekNavigationProvider
-} from "@/contexts/week-navigation-context"
-import { ShiftTemplateProvider } from "@/contexts/shift-template-context"
-import { ToastProvider } from "@/components/providers/toast-provider"
+  WeekNavigationProvider,
+} from "@/contexts/week-navigation-context";
+import { ShiftTemplateProvider } from "@/contexts/shift-template-context";
 
 /**
  * Protected layout for authenticated routes
@@ -36,23 +34,23 @@ import { ToastProvider } from "@/components/providers/toast-provider"
 export default function ResaLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading } = useAuth()
-  const router = useRouter()
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     // Wait for auth state to load
-    if (isLoading) return
+    if (isLoading) return;
 
     // Redirect to login if not authenticated
     if (!isAuthenticated) {
       // Preserve the intended destination for redirect after login
-      const currentPath = window.location.pathname
-      const redirectUrl = `/login?redirect=${encodeURIComponent(currentPath)}`
-      router.push(redirectUrl)
+      const currentPath = window.location.pathname;
+      const redirectUrl = `/login?redirect=${encodeURIComponent(currentPath)}`;
+      router.push(redirectUrl);
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [isAuthenticated, isLoading, router]);
 
   // Show nothing while checking auth or redirecting
   if (isLoading || !isAuthenticated) {
@@ -60,29 +58,26 @@ export default function ResaLayout({
       <div className="flex h-screen items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
       </div>
-    )
+    );
   }
 
   // User is authenticated, render the protected content
   return (
     <RestaurantProvider>
       <ShiftTemplateProvider>
-        <ToastProvider />
         <SidebarProvider className="!h-svh !min-h-0">
           <SidebarLeft />
           <SidebarInset>
             <WeekNavigationProvider>
               <ResaHeader />
-              <div className="flex flex-col flex-1 min-h-0">
-                {children}
-              </div>
+              <div className="flex flex-col flex-1 min-h-0">{children}</div>
             </WeekNavigationProvider>
           </SidebarInset>
           <SidebarRight />
         </SidebarProvider>
       </ShiftTemplateProvider>
     </RestaurantProvider>
-  )
+  );
 }
 
 /**
@@ -91,6 +86,13 @@ export default function ResaLayout({
  */
 function ResaHeader() {
   const weekNav = useWeekNavigation();
+
+  // Get current month and year
+  const currentDate = new Date();
+  const monthYear = currentDate.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <header className="bg-background sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border">
@@ -105,8 +107,8 @@ function ResaHeader() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbPage className="line-clamp-1">
-                  Workplaces
+                <BreadcrumbPage className="line-clamp-1 text-lg  font-semibold">
+                  {monthYear}
                 </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
@@ -116,9 +118,13 @@ function ResaHeader() {
         {/* Right side - Week navigation (conditionally rendered) */}
         {weekNav && (
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">
-              {formatWeekRange(weekNav.currentWeek)}
-            </span>
+            <Button variant="outline" className="h-8">
+              Week
+              <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+            <Button variant="outline" className="h-8">
+              Today
+            </Button>
             <Button
               variant="outline"
               size="icon"

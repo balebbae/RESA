@@ -1,10 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
 import { CalendarGrid } from "@/components/calendar/calendar-grid";
 import type { ScheduledShift } from "@/types/schedule";
 import type { Employee } from "@/types/employee";
-import { generateEmployeeColors } from "@/lib/styles/employee-colors";
 import { useWeekNavigation } from "@/contexts/week-navigation-context";
 import { useShiftTemplateContext } from "@/contexts/shift-template-context";
 import { useSchedule } from "@/hooks/use-schedule";
@@ -35,11 +33,6 @@ function WeeklyCalendarContent({ restaurantId, employees }: WeeklyCalendarProps)
     confirmOptimisticShift,
     updateOptimisticShift,
   } = useSchedule(restaurantId, currentWeek);
-
-  // Generate employee colors map
-  useMemo(() => {
-    return generateEmployeeColors(employees.map(emp => emp.id));
-  }, [employees]);
 
   const handleShiftClick = (shift: ScheduledShift) => {
     console.log("Shift clicked:", shift);

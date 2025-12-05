@@ -143,8 +143,8 @@ func (app *application) createScheduledShiftHandler(w http.ResponseWriter, r *ht
 		RoleID:          req.RoleID,
 		EmployeeID:      req.EmployeeID,
 		ShiftDate:       req.ShiftDate,
-		StartTime:       req.StartTime,
-		EndTime:         req.EndTime,
+		StartTime:       store.TimeOfDay(req.StartTime),
+		EndTime:         store.TimeOfDay(req.EndTime),
 		Notes:           req.Notes,
 	}
 
@@ -270,16 +270,16 @@ func (app *application) updateScheduledShiftHandler(w http.ResponseWriter, r *ht
 			app.badRequestResponse(w, r, errors.New("start time must be in format HH:MM"))
 			return
 		}
-		shift.StartTime = *req.StartTime
+		shift.StartTime = store.TimeOfDay(*req.StartTime)
 	}
-	
+
 	if req.EndTime != nil {
 		// Validate time format
 		if _, err := time.Parse("15:04", *req.EndTime); err != nil {
 			app.badRequestResponse(w, r, errors.New("end time must be in format HH:MM"))
 			return
 		}
-		shift.EndTime = *req.EndTime
+		shift.EndTime = store.TimeOfDay(*req.EndTime)
 	}
 	
 	if req.Notes != nil {
@@ -525,13 +525,13 @@ func (app *application) autoPopulateScheduleHandler(w http.ResponseWriter, r *ht
 	}
 
 	// Parse schedule date range (handles both YYYY-MM-DD and ISO 8601 formats)
-	startDate, err := parseFlexibleDate(schedule.StartDate)
+	startDate, err := parseFlexibleDate(string(schedule.StartDate))
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
 
-	endDate, err := parseFlexibleDate(schedule.EndDate)
+	endDate, err := parseFlexibleDate(string(schedule.EndDate))
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return

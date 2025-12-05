@@ -118,7 +118,7 @@ export function ShiftTemplateOverlay({
     return () => clearTimeout(timeout);
   }, [pendingUnassignments]);
 
-  const backgroundColor = "rgba(193, 224, 226, 0.52)"; // Light green (#CDFFD8) with slight opacity
+  const backgroundColor = "rgba(192, 238, 211, 0.6)"; // Light green (#CDFFD8) with slight opacity
 
   // Create set of employee IDs who are already assigned to this template on this date
   const assignedEmployeeIds = useMemo(() => {
@@ -156,6 +156,7 @@ export function ShiftTemplateOverlay({
     <Popover open={isPopoverOpen} onOpenChange={onPopoverOpenChange}>
       <PopoverTrigger asChild>
         <div
+          data-overlay
           className={`absolute cursor-pointer transition-opacity pointer-events-auto ${
             isHovered ? "opacity-90 z-20" : "opacity-100 z-10"
           }`}

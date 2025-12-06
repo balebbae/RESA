@@ -1,2 +1,0 @@
-ALTER TABLE IF EXISTS scheduled_shifts
-ADD COLUMN IF NOT EXISTS notes TEXT;

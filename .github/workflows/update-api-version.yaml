@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "backend/CHANGELOG.md"
+      - "CHANGELOG.md"
 
 permissions:
   contents: write
@@ -21,10 +21,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Extract latest version from backend/CHANGELOG.md
+      - name: Extract latest version from CHANGELOG.md
         id: get_version
         run: |
-          if VERSION=$(grep -oP '\\[\\K[0-9]+\\.[0-9]+\\.[0-9]+' backend/CHANGELOG.md | head -1); then
+          if VERSION=$(grep -oP '\\[\\K[0-9]+\\.[0-9]+\\.[0-9]+' CHANGELOG.md | head -1); then
             echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
             echo "Found version: $VERSION"
           else
@@ -32,16 +32,16 @@ jobs:
             exit 1
           fi
 
-      - name: Update version in backend/cmd/api/main.go
+      - name: Update version in cmd/api/main.go
         run: |
-          sed -i "s/const version = \".*\"/const version = \"${{ steps.get_version.outputs.VERSION }}\"/" backend/cmd/api/main.go
-          echo "Updated version in backend/cmd/api/main.go to ${{ steps.get_version.outputs.VERSION }}"
+          sed -i "s/const version = \".*\"/const version = \"${{ steps.get_version.outputs.VERSION }}\"/" cmd/api/main.go
+          echo "Updated version in cmd/api/main.go to ${{ steps.get_version.outputs.VERSION }}"
 
       - name: Commit and push changes
         run: |
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
-          git add backend/cmd/api/main.go
+          git add cmd/api/main.go
 
           if git diff --staged --quiet; then
             echo "No changes to commit"

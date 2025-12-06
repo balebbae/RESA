@@ -1,18 +1,34 @@
-.PHONY: dev dev-no-tmux stop logs
+include .env
+MIGRATIONS_PATH = ./cmd/migrate/migrations
 
-dev:
-	@./scripts/dev.sh
+.PHONY: migrate-create
+migrate-create:
+	@migrate create -seq -ext sql -dir $(MIGRATIONS_PATH) $(filter-out $@,$(MAKECMDGOALS))
 
-# Force non-tmux mode (useful in CI or limited shells)
-dev-no-tmux:
-	@TMUX=0 ./scripts/dev.sh
+.PHONY: migrate-up
+migrate-up:
+	@migrate -path=$(MIGRATIONS_PATH) -database=$(DB_ADDR) up
 
-stop:
-	@pkill -f "air$" || true
-	@pkill -f "npm run dev" || true
-	@echo "Stopped local dev processes. Docker services remain running."
+.PHONY: migrate-down
+migrate-down:
+	@migrate -path=$(MIGRATIONS_PATH) -database=$(DB_ADDR) down
 
-logs:
-	@tail -n +1 -f tmp/logs/backend.log tmp/logs/frontend.log
+.PHONY: migrate-force-0
+migrate-force-0:
+	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_ADDR)" force 0
 
+.PHONY: migrate-force-1
+migrate-force-1:
+	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_ADDR)" force 1
 
+.PHONY: seed
+seed: 
+	@go run cmd/migrate/seed/main.go
+
+.PHONY: gen-docs
+gen-docs:
+	@swag init -g ./api/main.go -d cmd,internal && swag fmt
+
+.PHONY: test
+test:
+	@go test -v ./...

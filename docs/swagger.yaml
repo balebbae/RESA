@@ -1,0 +1,2115 @@
+basePath: /v1
+definitions:
+  main.AddEmployeeRolesPayload:
+    properties:
+      role_ids:
+        items:
+          type: integer
+        type: array
+    required:
+    - role_ids
+    type: object
+  main.CreateEmployeePayload:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      full_name:
+        maxLength: 255
+        type: string
+    required:
+    - email
+    - full_name
+    type: object
+  main.CreateRestaurantPayload:
+    properties:
+      address:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      phone:
+        maxLength: 20
+        type: string
+    required:
+    - address
+    - name
+    type: object
+  main.CreateRolePayload:
+    properties:
+      color:
+        type: string
+      name:
+        maxLength: 50
+        type: string
+    required:
+    - name
+    type: object
+  main.CreateSchedulePayload:
+    properties:
+      end_date:
+        description: YYYY-MM-DD
+        type: string
+      start_date:
+        description: YYYY-MM-DD
+        type: string
+    required:
+    - end_date
+    - start_date
+    type: object
+  main.CreateShiftTemplatePayload:
+    properties:
+      day_of_week:
+        maximum: 6
+        minimum: 0
+        type: integer
+      end_time:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 1
+        type: string
+      role_ids:
+        items:
+          type: integer
+        type: array
+      start_time:
+        type: string
+    required:
+    - end_time
+    - name
+    - start_time
+    type: object
+  main.CreateUserTokenPayload:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      password:
+        maxLength: 72
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  main.GoogleCallbackPayload:
+    properties:
+      code:
+        type: string
+      state:
+        type: string
+    required:
+    - code
+    - state
+    type: object
+  main.GoogleLoginResponse:
+    properties:
+      auth_url:
+        type: string
+      state:
+        type: string
+    type: object
+  main.RegisterUserPayload:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      first_name:
+        maxLength: 255
+        type: string
+      last_name:
+        maxLength: 255
+        type: string
+      password:
+        maxLength: 72
+        minLength: 3
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    type: object
+  main.ResendConfirmationPayload:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+    required:
+    - email
+    type: object
+  main.UpdateEmployeePayload:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      full_name:
+        maxLength: 255
+        type: string
+    type: object
+  main.UpdateRestaurantPayload:
+    properties:
+      address:
+        maxLength: 255
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      phone:
+        maxLength: 20
+        type: string
+    type: object
+  main.UpdateRolePayload:
+    properties:
+      color:
+        type: string
+      name:
+        maxLength: 50
+        type: string
+    type: object
+  main.UpdateSchedulePayload:
+    properties:
+      end_date:
+        description: YYYY-MM-DD
+        type: string
+      start_date:
+        description: YYYY-MM-DD
+        type: string
+    type: object
+  main.UpdateShiftTemplatePayload:
+    properties:
+      day_of_week:
+        maximum: 6
+        minimum: 0
+        type: integer
+      end_time:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 1
+        type: string
+      role_ids:
+        items:
+          type: integer
+        type: array
+      start_time:
+        type: string
+    type: object
+  main.UserWithToken:
+    properties:
+      avatar_url:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      google_id:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      token:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  main.assignEmployeeRequest:
+    properties:
+      employee_id:
+        type: integer
+    type: object
+  main.createScheduledShiftRequest:
+    properties:
+      employee_id:
+        type: integer
+      end_time:
+        type: string
+      notes:
+        type: string
+      role_id:
+        type: integer
+      shift_date:
+        type: string
+      shift_template_id:
+        type: integer
+      start_time:
+        type: string
+    type: object
+  main.updateScheduledShiftRequest:
+    properties:
+      employee_id:
+        type: integer
+      end_time:
+        type: string
+      notes:
+        type: string
+      role_id:
+        type: integer
+      shift_date:
+        type: string
+      shift_template_id:
+        type: integer
+      start_time:
+        type: string
+    type: object
+  store.Employee:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: integer
+      restaurant_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  store.Restaurant:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      employer_id:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        description: Optional field
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
+  store.Role:
+    properties:
+      color:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      restaurant_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  store.Schedule:
+    properties:
+      created_at:
+        type: string
+      end_date:
+        description: DateOnly auto-normalizes to YYYY-MM-DD
+        type: string
+      id:
+        type: integer
+      published_at:
+        type: string
+      restaurant_id:
+        type: integer
+      start_date:
+        description: DateOnly auto-normalizes to YYYY-MM-DD
+        type: string
+      updated_at:
+        type: string
+    type: object
+  store.ScheduledShift:
+    properties:
+      created_at:
+        type: string
+      employee_id:
+        type: integer
+      employee_name:
+        description: Denormalized fields (stored in DB, synced via triggers)
+        type: string
+      end_time:
+        type: string
+      id:
+        type: integer
+      notes:
+        type: string
+      restaurant_id:
+        type: integer
+      role_color:
+        type: string
+      role_id:
+        type: integer
+      role_name:
+        type: string
+      schedule_id:
+        type: integer
+      shift_date:
+        type: string
+      shift_template_id:
+        type: integer
+      start_time:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  store.ShiftTemplate:
+    properties:
+      created_at:
+        type: string
+      day_of_week:
+        type: integer
+      end_time:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      restaurant_id:
+        type: integer
+      role_ids:
+        description: Stored as JSONB column
+        items:
+          type: integer
+        type: array
+      start_time:
+        type: string
+      updated_at:
+        type: string
+    type: object
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API for Restaurant Employee Scheduling Application (RESA)
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: RESA API
+paths:
+  /authentication/google:
+    post:
+      consumes:
+      - application/json
+      description: Generates and returns the Google OAuth authorization URL
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OAuth URL and state token
+          schema:
+            $ref: '#/definitions/main.GoogleLoginResponse'
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Initiates Google OAuth login
+      tags:
+      - authentication
+  /authentication/google/callback:
+    post:
+      consumes:
+      - application/json
+      description: Exchanges authorization code for user info and creates/authenticates
+        user
+      parameters:
+      - description: OAuth callback data
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.GoogleCallbackPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT token
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Handles Google OAuth callback
+      tags:
+      - authentication
+  /authentication/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new token with a fresh expiry time using an existing
+        valid token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New token
+          schema:
+            type: string
+        "401":
+          description: Unauthorized - invalid or expired token
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Refreshes an authentication token
+      tags:
+      - authentication
+  /authentication/resend-confirmation:
+    post:
+      consumes:
+      - application/json
+      description: Resends the confirmation email to an inactive user
+      parameters:
+      - description: User email
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.ResendConfirmationPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Resends confirmation email
+      tags:
+      - authentication
+  /authentication/token:
+    post:
+      consumes:
+      - application/json
+      description: creates a token for a user
+      parameters:
+      - description: User credentials
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.CreateUserTokenPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Creates a token
+      tags:
+      - authentication
+  /authentication/user:
+    post:
+      consumes:
+      - application/json
+      description: Registers a user
+      parameters:
+      - description: User credentials
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.RegisterUserPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered
+          schema:
+            $ref: '#/definitions/main.UserWithToken'
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Registers a user
+      tags:
+      - authentication
+  /restaurants:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all restaurants belonging to the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Restaurant'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Lists user's restaurants
+      tags:
+      - restaurant
+    post:
+      consumes:
+      - application/json
+      description: Creates a Restaurant
+      parameters:
+      - description: Restaurant payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.CreateRestaurantPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/store.Restaurant'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Creates a Restaurant
+      tags:
+      - restaurant
+  /restaurants/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a Restaurant by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Deletes a Restaurant
+      tags:
+      - restaurant
+    get:
+      consumes:
+      - application/json
+      description: Fetches a Restaurant by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Restaurant'
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Fetches a Restaurant
+      tags:
+      - restaurant
+    patch:
+      consumes:
+      - application/json
+      description: Updates a Restaurant by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Restaurant payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.UpdateRestaurantPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Restaurant'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Updates a Restaurant
+      tags:
+      - restaurant
+  /restaurants/{restaurant_id}/employees:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all employees for a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Employee'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Lists restaurant's employees
+      tags:
+      - employee
+    post:
+      consumes:
+      - application/json
+      description: Creates an employee for a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Employee payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.CreateEmployeePayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/store.Employee'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Creates an employee
+      tags:
+      - employee
+  /restaurants/{restaurant_id}/employees/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an employee by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Deletes an employee
+      tags:
+      - employee
+    get:
+      consumes:
+      - application/json
+      description: Fetches an employee by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Employee'
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Fetches an employee
+      tags:
+      - employee
+    patch:
+      consumes:
+      - application/json
+      description: Updates an employee by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Employee payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.UpdateEmployeePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Employee'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Updates an employee
+      tags:
+      - employee
+  /restaurants/{restaurant_id}/employees/{id}/roles:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all roles assigned to a specific employee
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Role'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get employee roles
+      tags:
+      - employee
+    post:
+      consumes:
+      - application/json
+      description: Assigns multiple roles to an employee
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role IDs payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.AddEmployeeRolesPayload'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Assigns roles to an employee
+      tags:
+      - employee
+  /restaurants/{restaurant_id}/employees/{id}/roles/{role_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a specific role from an employee
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Removes a role from an employee
+      tags:
+      - employee
+  /restaurants/{restaurant_id}/roles:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all roles for a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Role'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Lists restaurant's roles
+      tags:
+      - role
+    post:
+      consumes:
+      - application/json
+      description: Creates a role for a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Role payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.CreateRolePayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/store.Role'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Creates a role
+      tags:
+      - role
+  /restaurants/{restaurant_id}/roles/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a role by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Deletes a role
+      tags:
+      - role
+    get:
+      consumes:
+      - application/json
+      description: Fetches a role by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Role'
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Fetches a role
+      tags:
+      - role
+    patch:
+      consumes:
+      - application/json
+      description: Updates a role by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.UpdateRolePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Role'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Updates a role
+      tags:
+      - role
+  /restaurants/{restaurant_id}/roles/{id}/employees:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all employees assigned to a specific role
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Employee'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get employees for a role
+      tags:
+      - role
+  /restaurants/{restaurant_id}/schedules:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all schedules for a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Schedule'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Lists restaurant's schedules
+      tags:
+      - schedule
+    post:
+      consumes:
+      - application/json
+      description: Creates a schedule for a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Schedule payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.CreateSchedulePayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/store.Schedule'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Creates a schedule
+      tags:
+      - schedule
+  /restaurants/{restaurant_id}/schedules/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a schedule by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Deletes a schedule
+      tags:
+      - schedule
+    get:
+      consumes:
+      - application/json
+      description: Fetches a schedule by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Schedule'
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Fetches a schedule
+      tags:
+      - schedule
+    patch:
+      consumes:
+      - application/json
+      description: Updates a schedule by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Schedule payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.UpdateSchedulePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Schedule'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Updates a schedule
+      tags:
+      - schedule
+  /restaurants/{restaurant_id}/schedules/{id}/publish:
+    post:
+      consumes:
+      - application/json
+      description: Publishes a schedule to make it available to employees
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Publishes a schedule
+      tags:
+      - schedule
+  /restaurants/{restaurant_id}/shift-templates:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all shift templates for a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.ShiftTemplate'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Lists restaurant's shift templates
+      tags:
+      - shift-template
+    post:
+      consumes:
+      - application/json
+      description: Creates a shift template for a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Shift template payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.CreateShiftTemplatePayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/store.ShiftTemplate'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Creates a shift template
+      tags:
+      - shift-template
+  /restaurants/{restaurant_id}/shift-templates/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a shift template by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Shift Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Deletes a shift template
+      tags:
+      - shift-template
+    get:
+      consumes:
+      - application/json
+      description: Fetches a shift template by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Shift Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.ShiftTemplate'
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Fetches a shift template
+      tags:
+      - shift-template
+    patch:
+      consumes:
+      - application/json
+      description: Updates a shift template by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Shift Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Shift template payload with optional fields
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.UpdateShiftTemplatePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.ShiftTemplate'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Updates a shift template
+      tags:
+      - shift-template
+  /restaurants/{restaurant_id}/shift-templates/{id}/roles:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all roles associated with a shift template
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Shift Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Role'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get roles for a shift template
+      tags:
+      - shift-template
+  /restaurants/{restaurantID}/schedules/{scheduleID}/auto-populate:
+    post:
+      consumes:
+      - application/json
+      description: Creates scheduled shifts for all shift templates that don't have
+        shifts yet
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: scheduleID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Auto-populate schedule with template-based shifts
+      tags:
+      - scheduled-shifts
+  /restaurants/{restaurantID}/schedules/{scheduleID}/shifts:
+    get:
+      consumes:
+      - application/json
+      description: Gets all scheduled shifts for a specific schedule
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: scheduleID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.ScheduledShift'
+            type: array
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: List all shifts for a schedule
+      tags:
+      - scheduled-shifts
+    post:
+      consumes:
+      - application/json
+      description: Creates a new scheduled shift for a specific schedule
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: scheduleID
+        required: true
+        type: integer
+      - description: Shift information
+        in: body
+        name: shift
+        required: true
+        schema:
+          $ref: '#/definitions/main.createScheduledShiftRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/store.ScheduledShift'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new shift
+      tags:
+      - scheduled-shifts
+  /restaurants/{restaurantID}/schedules/{scheduleID}/shifts/{shiftID}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a scheduled shift by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: scheduleID
+        required: true
+        type: integer
+      - description: Shift ID
+        in: path
+        name: shiftID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a shift
+      tags:
+      - scheduled-shifts
+    get:
+      consumes:
+      - application/json
+      description: Gets a specific scheduled shift by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: scheduleID
+        required: true
+        type: integer
+      - description: Shift ID
+        in: path
+        name: shiftID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.ScheduledShift'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get a shift
+      tags:
+      - scheduled-shifts
+    patch:
+      consumes:
+      - application/json
+      description: Updates an existing scheduled shift by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: scheduleID
+        required: true
+        type: integer
+      - description: Shift ID
+        in: path
+        name: shiftID
+        required: true
+        type: integer
+      - description: Updated shift information
+        in: body
+        name: shift
+        required: true
+        schema:
+          $ref: '#/definitions/main.updateScheduledShiftRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.ScheduledShift'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Update a shift
+      tags:
+      - scheduled-shifts
+  /restaurants/{restaurantID}/schedules/{scheduleID}/shifts/{shiftID}/assign:
+    delete:
+      consumes:
+      - application/json
+      description: Removes an employee assignment from a scheduled shift
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: scheduleID
+        required: true
+        type: integer
+      - description: Shift ID
+        in: path
+        name: shiftID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.ScheduledShift'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Unassign employee from shift
+      tags:
+      - scheduled-shifts
+    patch:
+      consumes:
+      - application/json
+      description: Assigns an employee to a scheduled shift
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurantID
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: scheduleID
+        required: true
+        type: integer
+      - description: Shift ID
+        in: path
+        name: shiftID
+        required: true
+        type: integer
+      - description: Employee assignment information
+        in: body
+        name: employee
+        required: true
+        schema:
+          $ref: '#/definitions/main.assignEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.ScheduledShift'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Assign employee to shift
+      tags:
+      - scheduled-shifts
+  /users/activate/{token}:
+    put:
+      description: Activates/Register a user by invitation token
+      parameters:
+      - description: Invitation token
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: User activated
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Activates/Register a user
+      tags:
+      - users
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

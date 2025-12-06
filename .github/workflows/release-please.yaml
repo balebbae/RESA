@@ -1,15 +1,19 @@
+name: release-please
+
 on:
   push:
     branches:
       - main
     paths:
-      - 'backend/**'
+      - "cmd/**"
+      - "internal/**"
+      - "go.mod"
+      - "go.sum"
+      - "CHANGELOG.md"
 
 permissions:
   contents: write
   pull-requests: write
-
-name: release-please
 
 jobs:
   release-please:
@@ -19,4 +23,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: simple
-          path: backend
+          path: .

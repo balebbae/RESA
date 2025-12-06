@@ -120,7 +120,7 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.Timeout(60 * time.Second))
 	
 	r.Route("/v1", func(r chi.Router) {
-		// ───── Public + basic‑auth ─────────────────────────
+		// Public + basic‑auth
 
 		// operations
 		r.With(app.BasicAuthMiddleware()).Get("/health", app.healthCheckHandler) // Basic auth middleware
@@ -129,7 +129,7 @@ func (app *application) mount() http.Handler {
 		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
 		r.With(app.BasicAuthMiddleware()).Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL))) // Basic auth middleware
 
-		// ───── Authentication (public) ─────────────────────
+		// Authentication (public)
 		r.Route("/authentication", func(r chi.Router) {
 			r.Post("/user", app.registerUserHandler)
 			r.Post("/token", app.createTokenHandler)
@@ -141,7 +141,7 @@ func (app *application) mount() http.Handler {
 			r.Post("/google/callback", app.googleCallbackHandler)
 		})
 		
-		// ───── User self‑service ───────────────────────────
+		// User self‑service 
 		r.Route("/users", func(r chi.Router) {
 			r.Put("/activate/{token}", app.activateUserHandler)
 
@@ -149,7 +149,7 @@ func (app *application) mount() http.Handler {
 			// r.With(app.AuthTokenMiddleware).Patch("/me", app.updateCurrentUserHandler)
 		})
 
-		// ───── All app features require valid JWT ──────────
+		// All app features require valid JWT 
 		r.Route("/restaurants", func(r chi.Router) { 
 			r.Use(app.AuthTokenMiddleware) 
 			r.Post("/", app.createRestaurantHandler)
@@ -164,7 +164,7 @@ func (app *application) mount() http.Handler {
 				r.Patch("/", app.checkRestaurantOwnership(app.updateRestaurantHandler)) 
 				r.Delete("/", app.checkRestaurantOwnership(app.deleteRestaurantHandler)) 
 
-				// ── roles
+				// roles
 				r.Route("/roles", func(r chi.Router) {
 					r.Get("/",  app.getRolesHandler)
 					r.Post("/", app.checkRestaurantOwnership(app.createRoleHandler))
@@ -178,7 +178,7 @@ func (app *application) mount() http.Handler {
 					})
 				})
 
-				// ── employees
+				// employees
 				r.Route("/employees", func(r chi.Router) {
 					r.Get("/",  app.getEmployeesHandler)
 					r.Post("/", app.checkRestaurantOwnership(app.createEmployeeHandler))
@@ -194,7 +194,7 @@ func (app *application) mount() http.Handler {
 					})
 				})
 
-				// ── recurring shift templates
+				// recurring shift templates
 				r.Route("/shift-templates", func(r chi.Router) {
 					r.Get("/",  app.getShiftTemplatesHandler)
 					r.Post("/", app.checkRestaurantOwnership(app.createShiftTemplateHandler))
@@ -206,7 +206,7 @@ func (app *application) mount() http.Handler {
 					})
 				})
 
-				// ── weekly schedules
+				// weekly schedules
 				r.Route("/schedules", func(r chi.Router) {
 					r.Get("/",  app.getSchedulesHandler)
 					r.Post("/", app.checkRestaurantOwnership(app.createScheduleHandler))

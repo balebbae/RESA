@@ -24,18 +24,36 @@ jobs:
       - name: Extract latest version from CHANGELOG.md
         id: get_version
         run: |
-          if VERSION=$(grep -oP '\\[\\K[0-9]+\\.[0-9]+\\.[0-9]+' CHANGELOG.md | head -1); then
-            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found version: $VERSION"
-          else
-            echo "Error: Failed to extract version from CHANGELOG.md"
+          # Get the first heading line like: "## [1.1.2](...)"
+          LINE=$(grep -m1 -E '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md || true)
+
+          if [ -z "$LINE" ]; then
+            echo "Error: Could not find a version line in CHANGELOG.md"
             exit 1
           fi
 
+          # Extract just "1.1.2" from that line
+          VERSION=$(echo "$LINE" | sed -E 's/^## \[([0-9]+\.[0-9]+\.[0-9]+)\].*/\1/')
+
+          if [ -z "$VERSION" ]; then
+            echo "Error: Failed to extract version from line: $LINE"
+            exit 1
+          fi
+
+          echo "Found version: $VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Update version in cmd/api/main.go
         run: |
-          sed -i "s/const version = \".*\"/const version = \"${{ steps.get_version.outputs.VERSION }}\"/" cmd/api/main.go
-          echo "Updated version in cmd/api/main.go to ${{ steps.get_version.outputs.VERSION }}"
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+
+          if [ -z "$VERSION" ]; then
+            echo "Error: VERSION output from previous step is empty"
+            exit 1
+          fi
+
+          sed -i "s/const version = \".*\"/const version = \"$VERSION\"/" cmd/api/main.go
+          echo "Updated version in cmd/api/main.go to $VERSION"
 
       - name: Commit and push changes
         run: |
@@ -46,7 +64,8 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update API version to ${{ steps.get_version.outputs.VERSION }}"
+            git commit -m "Update API version to $(git log -1 --format=%s | sed 's/"/'\''/g')"
+            git commit --amend -m "Update API version to ${{ steps.get_version.outputs.VERSION }}" || true
             git push
             echo "Successfully pushed version update"
           fi

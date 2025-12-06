@@ -71,11 +71,11 @@ func main() {
 		},
 		auth: authConfig{
 			basic: basicConfig{
-				user: env.GetString("AUTH_BASIC_USER", "admin"), // <= TODO:: change that to have no default
+				user: env.GetString("AUTH_BASIC_USER", "admin"),
 				pass: env.GetString("AUTH_BASIC_PASS", "admin"),
 			},
 			token: tokenConfig{
-				secret: env.GetString("AUTH_TOKEN_SECRET", "example"), // <= TODO:: SET SECRET no default
+				secret: env.GetString("AUTH_TOKEN_SECRET", "example"),
 				exp: time.Hour * 24,
 				iss: "RESA",
 			},

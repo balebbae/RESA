@@ -106,6 +106,7 @@ export function CalendarGrid({
   const [clickPosition, setClickPosition] = useState<{
     x: number;
     y: number;
+    side: "left" | "right";
   } | null>(null);
   const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
 
@@ -184,6 +185,44 @@ export function CalendarGrid({
   };
 
   /**
+   * Calculate popover anchor position and side based on selection.
+   * Returns position at the edge of the selection highlight and determines
+   * if popover should show on left or right based on available space.
+   */
+  const calculatePopoverPosition = (
+    dayIndex: number,
+    startY: number,
+    endY: number,
+    gridRect: DOMRect
+  ): { x: number; y: number; side: "left" | "right" } => {
+    const POPOVER_WIDTH = 192; // w-48 = 192px
+    const BUFFER = 16; // Small buffer from edge
+
+    // Calculate selection highlight bounds within the grid
+    // Note: gridRect is already positioned after the time column
+    const selectionLeft = dayIndex * columnWidth;
+    const selectionRight = (dayIndex + 1) * columnWidth;
+    const selectionTop = Math.min(startY, endY);
+
+    // Calculate available space on right side
+    const gridWidth = gridRect.width;
+    const spaceOnRight = gridWidth - selectionRight;
+
+    // Determine side: use right if enough space, otherwise left
+    const side = spaceOnRight >= POPOVER_WIDTH + BUFFER ? "right" : "left";
+
+    // Position anchor at the appropriate edge
+    const anchorX =
+      side === "right"
+        ? gridRect.left + selectionRight
+        : gridRect.left + selectionLeft;
+
+    const anchorY = gridRect.top + selectionTop;
+
+    return { x: anchorX, y: anchorY, side };
+  };
+
+  /**
    * Handle double-click on calendar grid - creates 2-hour selection
    */
   const handleGridDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -205,7 +244,10 @@ export function CalendarGrid({
     // Calculate position - gridRect.top already accounts for scroll position
     const relativeY = e.clientY - gridRect.top;
     const startY = snapToGrid(relativeY);
-    const endY = Math.min(startY + DEFAULT_SHIFT_DURATION_PIXELS, MAX_GRID_HEIGHT);
+    const endY = Math.min(
+      startY + DEFAULT_SHIFT_DURATION_PIXELS,
+      MAX_GRID_HEIGHT
+    );
 
     const dayIndex = getDayIndexFromX(e.clientX, gridRect);
 
@@ -223,7 +265,8 @@ export function CalendarGrid({
       endTime,
     });
 
-    setClickPosition({ x: e.clientX, y: e.clientY });
+    const position = calculatePopoverPosition(dayIndex, startY, endY, gridRect);
+    setClickPosition(position);
     setPopoverOpen(true);
   };
 
@@ -284,15 +327,14 @@ export function CalendarGrid({
     const clampedY = Math.max(0, Math.min(MAX_GRID_HEIGHT, relativeY));
     const snappedY = snapToGrid(clampedY);
 
-    setDragState((prev) =>
-      prev ? { ...prev, currentY: snappedY } : null
-    );
+    setDragState((prev) => (prev ? { ...prev, currentY: snappedY } : null));
   };
 
   /**
    * Handle mouse up on calendar grid - complete drag selection
    */
-  const handleGridMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleGridMouseUp = (_e: React.MouseEvent<HTMLDivElement>) => {
     if (!dragState?.isDragging) return;
 
     const { startY, currentY, dayIndex, date } = dragState;
@@ -323,7 +365,17 @@ export function CalendarGrid({
       endTime,
     });
 
-    setClickPosition({ x: e.clientX, y: e.clientY });
+    const grid = gridRef.current;
+    if (grid) {
+      const gridRect = grid.getBoundingClientRect();
+      const position = calculatePopoverPosition(
+        dayIndex,
+        actualStartY,
+        actualEndY,
+        gridRect
+      );
+      setClickPosition(position);
+    }
     setPopoverOpen(true);
   };
 
@@ -476,9 +528,9 @@ export function CalendarGrid({
                 style={{ left: clickPosition.x, top: clickPosition.y }}
               />
               <PopoverContent
-                side="right"
+                side={clickPosition.side}
                 align="start"
-                sideOffset={8}
+                sideOffset={-0.5}
                 className="w-48 p-2"
               >
                 <CalendarClickMenu

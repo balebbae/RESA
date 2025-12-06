@@ -19,7 +19,6 @@ interface SelectionHighlightProps {
 }
 
 const SELECTION_COLOR = "rgba(192, 238, 211, 0.4)";
-const SELECTION_BORDER_COLOR = "rgba(144, 238, 144, 1)";
 
 export function SelectionHighlight({
   dayIndex,
@@ -46,7 +45,6 @@ export function SelectionHighlight({
         width: `${columnWidth}px`,
         height: `${height}px`,
         backgroundColor: SELECTION_COLOR,
-        border: `1px solid ${SELECTION_BORDER_COLOR}`,
         boxSizing: "border-box",
       }}
     />

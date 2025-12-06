@@ -82,7 +82,7 @@ func main() {
 			google: googleOAuthConfig{
 				clientID:     env.GetString("GOOGLE_CLIENT_ID", ""),
 				clientSecret: env.GetString("GOOGLE_CLIENT_SECRET", ""),
-				redirectURL:  env.GetString("GOOGLE_REDIRECT_URL", "http://localhost:8080/v1/authentication/google/callback"),
+				redirectURL:  env.GetString("GOOGLE_REDIRECT_URL", "http://localhost:3000/auth/google/callback"),
 			},
 		},
 		rateLimiter: ratelimiter.Config{

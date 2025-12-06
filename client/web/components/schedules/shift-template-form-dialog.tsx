@@ -25,11 +25,12 @@ import {
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { X, ChevronsUpDown } from "lucide-react";
+import { X, ChevronsUpDown, Plus } from "lucide-react";
 import { useShiftTemplateForm } from "@/hooks/use-shift-template-form";
 import { getApiBase } from "@/lib/api";
 import { fetchWithAuth } from "@/lib/auth";
 import type { Role } from "@/types/role";
+import { RoleFormDialog } from "@/components/roles/role-form-dialog";
 
 interface ShiftTemplateFormDialogProps {
   mode?: "create" | "edit";
@@ -149,10 +150,10 @@ export function ShiftTemplateFormDialog({
   // State for role selection
   const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
-  const [roleSelectValue, setRoleSelectValue] = useState<string>("");
   const [rolesLoading, setRolesLoading] = useState(false);
   const [rolesError, setRolesError] = useState<string | null>(null);
   const [rolesValidationError, setRolesValidationError] = useState<string | null>(null);
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
 
   // Submit button text (defined after state to access isCreating and selectedDays)
   const submitButtonText = isCreating
@@ -255,18 +256,60 @@ export function ShiftTemplateFormDialog({
     }
   }, [dialogOpen]);
 
-  // Handlers for role selection
-  const handleRoleSelect = (value: string) => {
-    const role = availableRoles.find((r) => r.id === parseInt(value));
-    if (role && !selectedRoles.find((r) => r.id === role.id)) {
-      setSelectedRoles([...selectedRoles, role]);
-      setRoleSelectValue(""); // Reset dropdown after adding role
-      setRolesValidationError(null); // Clear validation error when role added
-    }
-  };
+  // Apply initial values when dialog opens
+  useEffect(() => {
+    if (dialogOpen) {
+      // Apply initial day of week
+      if (initialDayOfWeek !== undefined) {
+        setSelectedDays([initialDayOfWeek]);
+      }
 
+      // Apply initial start time
+      if (initialStartTime) {
+        const [hour, minute] = initialStartTime.split(":");
+        setStartHour(hour);
+        setStartMinute(minute);
+        setValue("start_time", initialStartTime);
+      }
+
+      // Apply initial end time
+      if (initialEndTime) {
+        const [hour, minute] = initialEndTime.split(":");
+        setEndHour(hour);
+        setEndMinute(minute);
+        setValue("end_time", initialEndTime);
+      }
+    }
+  }, [dialogOpen, initialDayOfWeek, initialStartTime, initialEndTime, setValue]);
+
+  // Handler for role removal
   const handleRoleRemove = (roleId: number) => {
     setSelectedRoles(selectedRoles.filter((r) => r.id !== roleId));
+  };
+
+  // Handler for role creation
+  const handleRoleCreated = async (newRole: unknown) => {
+    // Refetch roles to get the latest list from backend
+    await fetchRoles();
+
+    // Extract role from either direct or wrapped response
+    const role = (newRole && typeof newRole === 'object' && 'data' in newRole)
+      ? (newRole as Record<string, unknown>).data
+      : newRole;
+
+    // Automatically select the newly created role
+    if (role && typeof role === 'object' && 'id' in role) {
+      const roleObj = role as Role;
+      setSelectedRoles(prev => {
+        // Only add if not already selected
+        if (prev.some(r => r.id === roleObj.id)) {
+          return prev;
+        }
+        return [...prev, roleObj];
+      });
+    }
+
+    setShowRoleDialog(false);
   };
 
   // Custom submit handler for multi-day creation
@@ -378,13 +421,14 @@ export function ShiftTemplateFormDialog({
   };
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{dialogTitle}</DialogTitle>
-          <DialogDescription>{dialogDescription}</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleMultiDaySubmit} className="space-y-4">
+    <>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dialogTitle}</DialogTitle>
+            <DialogDescription>{dialogDescription}</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleMultiDaySubmit} className="space-y-4">
           {(submissionError || error || isLoading) && (
             <div className="text-sm text-red-600 whitespace-pre-line">
               {submissionError || error || "Loading shift template details..."}
@@ -483,37 +527,68 @@ export function ShiftTemplateFormDialog({
               )}
             </Field>
 
-            {/* Roles Selection (Multi-select) */}
+            {/* Roles Selection (Multi-select with Popover) */}
             <Field>
               <FieldLabel htmlFor="roles">Roles</FieldLabel>
-              <Select
-                value={roleSelectValue}
-                onValueChange={(value) => {
-                  setRoleSelectValue(value);
-                  handleRoleSelect(value);
-                }}
-                disabled={rolesLoading}
-              >
-                <SelectTrigger id="roles" className="w-full">
-                  <SelectValue
-                    placeholder={
-                      rolesLoading ? "Loading roles..." : "Select roles"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableRoles.map((role) => (
-                    <SelectItem
-                      key={role.id}
-                      value={role.id.toString()}
-                      disabled={selectedRoles.some((r) => r.id === role.id)}
-                    >
-                      {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="roles"
+                    variant="outline"
+                    role="combobox"
+                    type="button"
+                    className="w-full justify-between font-normal"
+                    disabled={rolesLoading}
+                  >
+                    {selectedRoles.length > 0
+                      ? `${selectedRoles.length} role${selectedRoles.length > 1 ? "s" : ""} selected`
+                      : rolesLoading ? "Loading roles..." : "Select roles"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-2" align="start">
+                  <div className="flex flex-col gap-1">
+                    {/* Checkbox for each role */}
+                    {availableRoles.map((role) => (
+                      <label
+                        key={role.id}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={selectedRoles.some(r => r.id === role.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedRoles([...selectedRoles, role]);
+                              setRolesValidationError(null);
+                            } else {
+                              setSelectedRoles(selectedRoles.filter(r => r.id !== role.id));
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{role.name}</span>
+                      </label>
+                    ))}
 
+                    {/* Divider */}
+                    {availableRoles.length > 0 && (
+                      <div className="border-t my-1" />
+                    )}
+
+                    {/* Create new role button */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="justify-start text-primary font-medium"
+                      onClick={() => setShowRoleDialog(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create new role
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Error messages */}
               {rolesError && (
                 <p className="text-sm text-red-600">{rolesError}</p>
               )}
@@ -629,5 +704,15 @@ export function ShiftTemplateFormDialog({
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Role Creation Dialog */}
+    <RoleFormDialog
+      mode="create"
+      restaurantId={restaurantId}
+      isOpen={showRoleDialog}
+      onOpenChange={setShowRoleDialog}
+      onSuccess={handleRoleCreated}
+    />
+  </>
   );
 }

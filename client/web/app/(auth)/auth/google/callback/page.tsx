@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth"
 import { getApiBase } from "@/lib/api"
 import { validateOAuthState, clearOAuthState } from "@/lib/oauth"
 
-export default function GoogleCallbackPage() {
+function GoogleCallbackContent() {
   const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(true)
   const hasProcessedRef = useRef(false)
@@ -70,9 +70,10 @@ export default function GoogleCallbackPage() {
         // Redirect to intended destination or default to /home
         const redirectTo = storedState.redirectTo || "/home"
         router.push(redirectTo)
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("OAuth callback error:", err)
-        setError(err?.message || "Authentication failed. Please try again.")
+        const errorMessage = err instanceof Error ? err.message : "Authentication failed. Please try again."
+        setError(errorMessage)
         setIsProcessing(false)
 
         // Redirect to login after 3 seconds
@@ -108,5 +109,13 @@ export default function GoogleCallbackPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function GoogleCallbackPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="text-center"><div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]" /><p className="text-muted-foreground">Loading...</p></div></div>}>
+      <GoogleCallbackContent />
+    </Suspense>
   )
 }

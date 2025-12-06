@@ -45,7 +45,7 @@ export function RoleSelectorDialog({
 
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            This employee has multiple roles. Select which role they'll work in
+            This employee has multiple roles. Select which role they&apos;ll work in
             for this shift:
           </p>
 

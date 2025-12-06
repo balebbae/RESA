@@ -1,16 +1,17 @@
 "use client"
 
+import Link from "next/link"
 import { Livvic } from "next/font/google";
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { LoginForm } from "@/components/marketing/LoginForm"
 import { useAuth } from "@/lib/auth"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { getApiBase } from "@/lib/api"
 
 const livvic = Livvic({ subsets: ["latin"], weight: ["600"] });
 
-export default function LoginPage() {
+function LoginContent() {
   const { isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -81,11 +82,11 @@ export default function LoginPage() {
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex justify-center gap-2 md:justify-start">
-          <a href="/" className="flex items-center gap-2 font-medium">
+          <Link href="/" className="flex items-center gap-2 font-medium">
             <span className={`${livvic.className} text-3xl font-bold`}>
               RESA
             </span>
-          </a>
+          </Link>
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
@@ -140,5 +141,13 @@ export default function LoginPage() {
         />
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="text-muted-foreground">Loading...</div></div>}>
+      <LoginContent />
+    </Suspense>
   )
 }

@@ -81,9 +81,11 @@ export function EmployeeDetailSheet({
     mode: "edit",
     restaurantId,
     employeeId: employee?.id,
-    onSuccess: async (updatedEmployee: any) => {
+    onSuccess: async (updatedEmployee: unknown) => {
       // Extract employee ID from either the updated employee or the existing employee
-      const employeeId = updatedEmployee?.id || updatedEmployee?.data?.id || employee?.id
+      const emp = updatedEmployee as Record<string, unknown> | null
+      const empData = emp && typeof emp === 'object' && 'data' in emp ? emp.data as Record<string, unknown> : null
+      const employeeId = (emp && 'id' in emp ? emp.id as number : null) || (empData && 'id' in empData ? empData.id as number : null) || employee?.id
 
       // Handle role updates
       if (restaurantId && employeeId) {
@@ -267,7 +269,7 @@ export function EmployeeDetailSheet({
 
     // Extract role from either direct or wrapped response
     const role = (newRole && typeof newRole === 'object' && 'data' in newRole)
-      ? (newRole as any).data
+      ? (newRole as Record<string, unknown>).data
       : newRole
 
     // Automatically select the newly created role

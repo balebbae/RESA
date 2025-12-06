@@ -99,7 +99,7 @@ export function isTokenExpired(token?: string): boolean {
  * Store authentication token in localStorage
  * Also calculates and stores expiry time
  */
-export function setAuthToken(token: string | any): void {
+export function setAuthToken(token: string): void {
   if (typeof window !== "undefined") {
     if (!token) {
       console.error("Attempted to set empty token")

@@ -92,8 +92,9 @@ export function SignupForm({
       // 201 Created. Redirect to login with a notice to check email
       reset()
       router.push(`/login?notice=check-email&email=${encodeURIComponent(data.email)}`)
-    } catch (err: any) {
-      setError(err?.message || "Something went wrong. Please try again.")
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Something went wrong. Please try again."
+      setError(errorMessage)
     }
   }
 

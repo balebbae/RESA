@@ -82,8 +82,9 @@ export function LoginForm({
       // Redirect to intended destination or default to home
       const redirectUrl = searchParams.get("redirect") || "/home"
       router.push(redirectUrl)
-    } catch (err: any) {
-      setError(err?.message || "Something went wrong. Please try again.")
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Something went wrong. Please try again."
+      setError(errorMessage)
     }
   }
 

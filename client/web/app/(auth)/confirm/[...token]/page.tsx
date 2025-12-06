@@ -52,9 +52,10 @@ export default function ConfirmEmailPage() {
 
       setSuccess(true)
       setMessage("Your email has been successfully verified.")
-    } catch (err: any) {
+    } catch (err: unknown) {
       setSuccess(false)
-      setMessage(err?.message || "Failed to verify your email. Please try again.")
+      const errorMessage = err instanceof Error ? err.message : "Failed to verify your email. Please try again."
+      setMessage(errorMessage)
     } finally {
       setIsLoading(false)
     }

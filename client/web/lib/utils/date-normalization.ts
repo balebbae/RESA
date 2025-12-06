@@ -15,13 +15,13 @@ import { normalizeDate } from "@/lib/time";
  * @param shift - Raw shift data from backend (may have ISO timestamps)
  * @returns Normalized shift with YYYY-MM-DD date format
  */
-export function normalizeShiftDates(shift: any): ScheduledShift {
+export function normalizeShiftDates(shift: Record<string, unknown>): ScheduledShift {
   return {
     ...shift,
     // Use centralized normalizeDate function
-    shift_date: normalizeDate(shift.shift_date),
+    shift_date: normalizeDate(shift.shift_date as string),
     // Time fields should already be in HH:MM or HH:MM:SS format from backend
-    start_time: shift.start_time,
-    end_time: shift.end_time,
-  };
+    start_time: shift.start_time as string,
+    end_time: shift.end_time as string,
+  } as ScheduledShift;
 }

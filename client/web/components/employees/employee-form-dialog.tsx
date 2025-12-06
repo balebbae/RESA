@@ -151,9 +151,11 @@ export function EmployeeFormDialog({
     return true
   }
 
-  const handleSuccess = async (employee: any) => {
+  const handleSuccess = async (employee: unknown) => {
     // Extract employee ID from either employee.id or employee.data.id
-    const currentEmployeeId = employee?.id || employee?.data?.id
+    const emp = employee as Record<string, unknown> | null
+    const empData = emp && typeof emp === 'object' && 'data' in emp ? emp.data as Record<string, unknown> : null
+    const currentEmployeeId = (emp && 'id' in emp ? emp.id as number : null) || (empData && 'id' in empData ? empData.id as number : null)
 
     // Handle role updates
     if (restaurantId && currentEmployeeId) {
@@ -472,7 +474,7 @@ export function EmployeeFormDialog({
 
     // Extract role from either direct or wrapped response
     const role = (newRole && typeof newRole === 'object' && 'data' in newRole)
-      ? (newRole as any).data
+      ? (newRole as Record<string, unknown>).data
       : newRole
 
     // Automatically select the newly created role

@@ -22,13 +22,14 @@ import { useWorkspaceForm } from "@/hooks/use-workspace-form"
 import { useWorkspaceDelete } from "@/hooks/use-workspace-delete"
 import { WorkspaceDeleteDialog } from "./workspace-delete-dialog"
 import { PlacesAutocompleteInput } from "./places-autocomplete-input"
+import type { Workspace } from "@/types/workspace"
 
 interface WorkspaceFormDialogProps {
   mode?: "create" | "edit"
   workspaceId?: number
   isOpen?: boolean
   onOpenChange?: (open: boolean) => void
-  onSuccess?: (workspace: any) => void
+  onSuccess?: (workspace: Workspace | null) => void
 }
 
 /**
@@ -54,7 +55,7 @@ export function WorkspaceFormDialog({
     }
   }
 
-  const handleSuccess = (workspace: any) => {
+  const handleSuccess = (workspace: Workspace | null) => {
     setDialogOpen(false)
     if (onSuccess) {
       onSuccess(workspace)

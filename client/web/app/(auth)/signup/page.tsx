@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { GalleryVerticalEnd } from "lucide-react"
 import { Livvic } from "next/font/google";
 import { useAuth } from "@/lib/auth"
@@ -39,11 +40,11 @@ export default function SignupPage() {
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex justify-center gap-2 md:justify-start">
-          <a href="/" className="flex items-center gap-2 font-medium">
+          <Link href="/" className="flex items-center gap-2 font-medium">
             <span className={`${livvic.className} text-3xl font-bold`}>
               RESA
             </span>
-          </a>
+          </Link>
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">

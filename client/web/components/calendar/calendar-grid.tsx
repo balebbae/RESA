@@ -13,10 +13,7 @@ import { CalendarClickMenu } from "./calendar-click-menu";
 import { CurrentTimeIndicator } from "./current-time-indicator";
 import { getAllHours, getWeekDates } from "@/lib/calendar/shift-utils";
 import { getTimezoneAbbreviation } from "@/lib/time";
-import {
-  calculateClickPosition,
-  type CalendarClickPosition,
-} from "@/lib/calendar/click-to-time";
+// Note: calculateClickPosition no longer used - using inline calculations instead
 import { useRoles } from "@/hooks/use-roles";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { useShiftTemplateContext } from "@/contexts/shift-template-context";
@@ -26,6 +23,35 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { ShiftTemplateFormDialog } from "@/components/schedules/shift-template-form-dialog";
+import { SelectionHighlight } from "./selection-highlight";
+import { hoursToTimeString, roundToQuarterHour } from "@/lib/time";
+
+/** Constants for calendar grid calculations */
+const PIXELS_PER_HOUR = 60;
+const TIME_COLUMN_WIDTH = 80;
+const MIN_SELECTION_PIXELS = 15; // Minimum 15 minutes
+const MAX_GRID_HEIGHT = 24 * PIXELS_PER_HOUR; // 1440px for 24 hours
+const DEFAULT_SHIFT_DURATION_PIXELS = 2 * PIXELS_PER_HOUR; // 2 hours = 120px
+
+/** Selection state for completed selections (double-click or drag) */
+interface SelectionState {
+  type: "double-click" | "drag";
+  dayIndex: number;
+  date: string;
+  startY: number;
+  endY: number;
+  startTime: string;
+  endTime: string;
+}
+
+/** Drag state during active drag operation */
+interface DragState {
+  isDragging: boolean;
+  startY: number;
+  currentY: number;
+  dayIndex: number;
+  date: string;
+}
 
 interface CalendarGridProps {
   weekStartDate: string; // YYYY-MM-DD format (Sunday)
@@ -80,11 +106,13 @@ export function CalendarGrid({
   const [clickPosition, setClickPosition] = useState<{
     x: number;
     y: number;
+    side: "left" | "right";
   } | null>(null);
-  const [clickData, setClickData] = useState<CalendarClickPosition | null>(
-    null
-  );
   const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
+
+  // State for time selection (double-click or drag)
+  const [selection, setSelection] = useState<SelectionState | null>(null);
+  const [dragState, setDragState] = useState<DragState | null>(null);
 
   // Refs for calculating click position
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -126,12 +154,78 @@ export function CalendarGrid({
       setTimeout(() => {
         justClosedRef.current = false;
       }, 100);
+      // Clear selection when popover closes
+      setSelection(null);
     }
     setPopoverOpen(open);
   };
 
-  // Handle click on empty calendar area
-  const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  /**
+   * Convert pixel Y position to time string (HH:MM format)
+   */
+  const pixelsToTime = (y: number): string => {
+    const hours = roundToQuarterHour(y / PIXELS_PER_HOUR);
+    return hoursToTimeString(Math.min(hours, 23.75));
+  };
+
+  /**
+   * Snap Y position to 15-minute increments (15px)
+   */
+  const snapToGrid = (y: number): number => {
+    return Math.round(y / MIN_SELECTION_PIXELS) * MIN_SELECTION_PIXELS;
+  };
+
+  /**
+   * Calculate day index from X position
+   */
+  const getDayIndexFromX = (clientX: number, gridRect: DOMRect): number => {
+    const relativeX = clientX - gridRect.left;
+    const dayIndex = Math.floor(relativeX / columnWidth);
+    return Math.max(0, Math.min(6, dayIndex));
+  };
+
+  /**
+   * Calculate popover anchor position and side based on selection.
+   * Returns position at the edge of the selection highlight and determines
+   * if popover should show on left or right based on available space.
+   */
+  const calculatePopoverPosition = (
+    dayIndex: number,
+    startY: number,
+    endY: number,
+    gridRect: DOMRect
+  ): { x: number; y: number; side: "left" | "right" } => {
+    const POPOVER_WIDTH = 192; // w-48 = 192px
+    const BUFFER = 16; // Small buffer from edge
+
+    // Calculate selection highlight bounds within the grid
+    // Note: gridRect is already positioned after the time column
+    const selectionLeft = dayIndex * columnWidth;
+    const selectionRight = (dayIndex + 1) * columnWidth;
+    const selectionTop = Math.min(startY, endY);
+
+    // Calculate available space on right side
+    const gridWidth = gridRect.width;
+    const spaceOnRight = gridWidth - selectionRight;
+
+    // Determine side: use right if enough space, otherwise left
+    const side = spaceOnRight >= POPOVER_WIDTH + BUFFER ? "right" : "left";
+
+    // Position anchor at the appropriate edge
+    const anchorX =
+      side === "right"
+        ? gridRect.left + selectionRight
+        : gridRect.left + selectionLeft;
+
+    const anchorY = gridRect.top + selectionTop;
+
+    return { x: anchorX, y: anchorY, side };
+  };
+
+  /**
+   * Handle double-click on calendar grid - creates 2-hour selection
+   */
+  const handleGridDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Don't trigger if clicking on overlay elements (shift templates)
     if ((e.target as HTMLElement).closest("[data-overlay]")) {
       return;
@@ -142,36 +236,174 @@ export function CalendarGrid({
       return;
     }
 
-    // Don't open new popover if we just closed one
-    if (justClosedRef.current) {
-      return;
-    }
-
-    // If popover is already open, close it
-    if (popoverOpen) {
-      setPopoverOpen(false);
-      return;
-    }
-
-    const scrollContainer = scrollContainerRef.current;
     const grid = gridRef.current;
-    if (!scrollContainer || !grid) return;
+    if (!grid) return;
 
     const gridRect = grid.getBoundingClientRect();
-    const scrollTop = scrollContainer.scrollTop;
 
-    const data = calculateClickPosition({
-      clientX: e.clientX,
-      clientY: e.clientY,
-      gridRect,
-      scrollTop,
-      weekDates,
+    // Calculate position - gridRect.top already accounts for scroll position
+    const relativeY = e.clientY - gridRect.top;
+    const startY = snapToGrid(relativeY);
+    const endY = Math.min(
+      startY + DEFAULT_SHIFT_DURATION_PIXELS,
+      MAX_GRID_HEIGHT
+    );
+
+    const dayIndex = getDayIndexFromX(e.clientX, gridRect);
+
+    // Calculate times
+    const startTime = pixelsToTime(startY);
+    const endTime = pixelsToTime(endY);
+
+    setSelection({
+      type: "double-click",
+      dayIndex,
+      date: weekDates[dayIndex],
+      startY,
+      endY,
+      startTime,
+      endTime,
     });
 
-    setClickData(data);
-    setClickPosition({ x: e.clientX, y: e.clientY });
+    const position = calculatePopoverPosition(dayIndex, startY, endY, gridRect);
+    setClickPosition(position);
     setPopoverOpen(true);
   };
+
+  /**
+   * Handle mouse down on calendar grid - start drag selection
+   */
+  const handleGridMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Don't start drag on overlay elements
+    if ((e.target as HTMLElement).closest("[data-overlay]")) {
+      return;
+    }
+
+    // Don't start drag inside a popover
+    if ((e.target as HTMLElement).closest("[data-slot='popover-content']")) {
+      return;
+    }
+
+    // Don't start if popover is open
+    if (popoverOpen) {
+      return;
+    }
+
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    const gridRect = grid.getBoundingClientRect();
+
+    // Calculate position - gridRect.top already accounts for scroll position
+    const relativeY = e.clientY - gridRect.top;
+    const snappedY = snapToGrid(relativeY);
+    const dayIndex = getDayIndexFromX(e.clientX, gridRect);
+
+    // Clear any existing selection and start drag
+    setSelection(null);
+    setDragState({
+      isDragging: true,
+      startY: snappedY,
+      currentY: snappedY,
+      dayIndex,
+      date: weekDates[dayIndex],
+    });
+  };
+
+  /**
+   * Handle mouse move on calendar grid - update drag selection
+   */
+  const handleGridMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!dragState?.isDragging) return;
+
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    const gridRect = grid.getBoundingClientRect();
+
+    // Calculate Y position and clamp to grid bounds
+    // gridRect.top already accounts for scroll position
+    const relativeY = e.clientY - gridRect.top;
+    const clampedY = Math.max(0, Math.min(MAX_GRID_HEIGHT, relativeY));
+    const snappedY = snapToGrid(clampedY);
+
+    setDragState((prev) => (prev ? { ...prev, currentY: snappedY } : null));
+  };
+
+  /**
+   * Handle mouse up on calendar grid - complete drag selection
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleGridMouseUp = (_e: React.MouseEvent<HTMLDivElement>) => {
+    if (!dragState?.isDragging) return;
+
+    const { startY, currentY, dayIndex, date } = dragState;
+
+    // Calculate actual start/end (handle dragging upward)
+    const actualStartY = Math.min(startY, currentY);
+    const actualEndY = Math.max(startY, currentY);
+
+    // Clear drag state
+    setDragState(null);
+
+    // Minimum selection: 15px (15 minutes)
+    if (actualEndY - actualStartY < MIN_SELECTION_PIXELS) {
+      return;
+    }
+
+    // Calculate times
+    const startTime = pixelsToTime(actualStartY);
+    const endTime = pixelsToTime(actualEndY);
+
+    setSelection({
+      type: "drag",
+      dayIndex,
+      date,
+      startY: actualStartY,
+      endY: actualEndY,
+      startTime,
+      endTime,
+    });
+
+    const grid = gridRef.current;
+    if (grid) {
+      const gridRect = grid.getBoundingClientRect();
+      const position = calculatePopoverPosition(
+        dayIndex,
+        actualStartY,
+        actualEndY,
+        gridRect
+      );
+      setClickPosition(position);
+    }
+    setPopoverOpen(true);
+  };
+
+  // Handle mouse up outside the grid (global listener)
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (dragState?.isDragging) {
+        setDragState(null);
+      }
+    };
+
+    window.addEventListener("mouseup", handleGlobalMouseUp);
+    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+  }, [dragState?.isDragging]);
+
+  // Handle Escape key to clear selection
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelection(null);
+        setPopoverOpen(false);
+        setDragState(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Handle "Create Shift" button click
   const handleCreateShift = () => {
@@ -187,7 +419,7 @@ export function CalendarGrid({
   // Handle shift template creation success
   const handleShiftTemplateSuccess = () => {
     setShiftDialogOpen(false);
-    setClickData(null);
+    setSelection(null);
     refetchShiftTemplates();
     onShiftCreated?.();
   };
@@ -226,8 +458,13 @@ export function CalendarGrid({
           {/* Grid background layer - just borders */}
           <div
             ref={gridRef}
-            className="flex-1 grid grid-cols-7 bg-background"
-            onClick={handleGridClick}
+            className={`flex-1 grid grid-cols-7 bg-background ${
+              dragState?.isDragging ? "select-none" : ""
+            }`}
+            onDoubleClick={handleGridDoubleClick}
+            onMouseDown={handleGridMouseDown}
+            onMouseMove={handleGridMouseMove}
+            onMouseUp={handleGridMouseUp}
           >
             {weekDates.map((date) => (
               <div key={date} className="flex flex-col bg-background">
@@ -260,6 +497,23 @@ export function CalendarGrid({
             rolesLoading={rolesLoading}
           />
 
+          {/* Selection highlight overlay */}
+          {(selection || dragState?.isDragging) && (
+            <SelectionHighlight
+              dayIndex={selection?.dayIndex ?? dragState?.dayIndex ?? 0}
+              columnWidth={columnWidth}
+              startY={
+                selection?.startY ??
+                Math.min(dragState?.startY ?? 0, dragState?.currentY ?? 0)
+              }
+              endY={
+                selection?.endY ??
+                Math.max(dragState?.startY ?? 0, dragState?.currentY ?? 0)
+              }
+              timeColumnWidth={TIME_COLUMN_WIDTH}
+            />
+          )}
+
           {/* Current time indicator line */}
           <CurrentTimeIndicator
             weekDates={weekDates}
@@ -274,9 +528,9 @@ export function CalendarGrid({
                 style={{ left: clickPosition.x, top: clickPosition.y }}
               />
               <PopoverContent
-                side="right"
+                side={clickPosition.side}
                 align="start"
-                sideOffset={8}
+                sideOffset={-0.5}
                 className="w-48 p-2"
               >
                 <CalendarClickMenu
@@ -295,9 +549,9 @@ export function CalendarGrid({
         isOpen={shiftDialogOpen}
         onOpenChange={setShiftDialogOpen}
         onSuccess={handleShiftTemplateSuccess}
-        initialDayOfWeek={clickData?.dayOfWeek}
-        initialStartTime={clickData?.startTime}
-        initialEndTime={clickData?.endTime}
+        initialDayOfWeek={selection?.dayIndex}
+        initialStartTime={selection?.startTime}
+        initialEndTime={selection?.endTime}
       />
     </div>
   );

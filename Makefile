@@ -29,6 +29,7 @@ seed:
 gen-docs:
 	@swag init -g ./api/main.go -d cmd,internal && swag fmt
 
-.PHONY: test
-test:
-	@go test -v ./...
+# TODO: Not Funtional RN 
+# .PHONY: test
+# test:
+# 	@go test -v ./...

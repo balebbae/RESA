@@ -83,11 +83,7 @@ export function SidebarRight({
 
   return (
     <>
-      <Sidebar
-        collapsible="none"
-        className="hidden h-full border-l lg:flex"
-        {...props}
-      >
+      <Sidebar className="h-full border-l" {...props}>
         <SidebarContent>
           <DatePicker currentWeek={weekNav?.currentWeek} />
           <SidebarSeparator className="mx-0" />

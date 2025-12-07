@@ -13,6 +13,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
@@ -50,37 +51,37 @@ function EmployeeItem({ employee, roles, onEdit }: EmployeeItemProps) {
 
   return (
     <SidebarMenuItem key={employee.id}>
-      <div className="flex items-center w-full gap-2 px-2 py-2 rounded-md hover:bg-sidebar-accent group relative">
-        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-          {/* Employee name and email */}
-          <div className="flex flex-col gap-0.5 min-w-0">
-            <span className="text-sm truncate">{employee.full_name}</span>
-          </div>
+      <SidebarMenuButton
+        onClick={handleEditClick}
+        className="p-1 hover:cursor-pointer"
+      >
+        {/* <SidebarSeparator className="mx-0" /> */}
+        <div className="flex items-center w-full gap-0 px-2 py-2 rounded-md hover:bg-sidebar-accent group relative ">
+          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+            {/* Name + roles together */}
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs  truncate">{employee.full_name}</span>
 
-          {/* Role badges */}
-          {roles.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {roles.map((role) => (
-                <Badge key={role.id} variant="secondary" className="text-xs">
-                  {role.name}
-                </Badge>
-              ))}
+              {roles.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {roles.map((role) => (
+                    <Badge
+                      key={role.id}
+                      className="text-xs whitespace-nowrap rounded-full font-light bg-[#ebedf1f4] text-secondary-foreground border-transparent"
+                    >
+                      {role.name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  No roles
+                </span>
+              )}
             </div>
-          ) : (
-            <span className="text-xs text-muted-foreground">No roles</span>
-          )}
+          </div>
         </div>
-
-        {/* Edit button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={handleEditClick}
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-      </div>
+      </SidebarMenuButton>
     </SidebarMenuItem>
   );
 }
@@ -100,7 +101,7 @@ export const EmployeeCollapsibleSection = forwardRef<
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   // Fetch employee roles to display as badges
-  const { employeesWithRoles } = useEmployeeRoles({
+  const { employeesWithRoles, refetch: refetchRoles } = useEmployeeRoles({
     restaurantId,
     employees,
     enabled: true, // Always enabled for sidebar display
@@ -108,7 +109,10 @@ export const EmployeeCollapsibleSection = forwardRef<
 
   // Expose refetch method to parent component
   useImperativeHandle(ref, () => ({
-    refetch,
+    refetch: () => {
+      refetch();
+      refetchRoles();
+    },
   }));
 
   // Update selected employee when employees list changes
@@ -130,6 +134,7 @@ export const EmployeeCollapsibleSection = forwardRef<
 
   const handleEmployeeUpdate = () => {
     refetch();
+    refetchRoles();
   };
 
   // Show message when no restaurant is selected

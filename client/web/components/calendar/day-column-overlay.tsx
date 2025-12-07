@@ -96,6 +96,7 @@ export function DayColumnOverlay({
     handleRoleSelected,
     cancelShiftCreation,
     handleShiftUnassignment,
+    handleShiftUpdate,
   } = useShiftCreationFlow({
     restaurantId: selectedRestaurantId,
     scheduleId,
@@ -139,15 +140,36 @@ export function DayColumnOverlay({
   };
 
   // Handle employee selection
-  const onEmployeeSelect = async (employee: Employee, roleId: number) => {
+  const onEmployeeSelect = async (employee: Employee, roleId: number, notes?: string) => {
     const empRoles = employeesWithRoles.get(employee.id) || [];
     const selectedRole = empRoles.find((r) => r.id === roleId);
 
+    // Check if there's an existing shift for this template and role on this day
+    let existingShift: ScheduledShift | undefined;
+    if (selectedTemplate) {
+      existingShift = shifts.find(
+        (s) =>
+          s.shift_template_id === selectedTemplate.id &&
+          s.role_id === roleId &&
+          s.shift_date.startsWith(date)
+      );
+    }
+
+    if (existingShift) {
+      // Update existing shift
+      await handleShiftUpdate(existingShift, {
+        employee_id: employee.id,
+        notes: notes !== undefined ? notes : existingShift.notes,
+      });
+      return;
+    }
+
+    // Create new shift
     if (selectedRole && selectedTemplate) {
-      await handleEmployeeSelect(employee, [selectedRole]);
+      await handleEmployeeSelect(employee, [selectedRole], notes);
       setSelectedRoleId(null);
     } else {
-      await handleEmployeeSelect(employee, empRoles);
+      await handleEmployeeSelect(employee, empRoles, notes);
     }
   };
 

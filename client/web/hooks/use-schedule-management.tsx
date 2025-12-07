@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { createSchedule } from "@/lib/api/schedules";
-import { createScheduledShift } from "@/lib/api/shifts";
+import { createScheduledShift, updateScheduledShift } from "@/lib/api/shifts";
 import { calculateWeekEnd, dateToISO8601 } from "@/lib/utils/date-conversion";
 import { getApiBase } from "@/lib/api";
 import { fetchWithAuth } from "@/lib/auth";
@@ -144,6 +144,42 @@ export function useScheduleManagement({
   );
 
   /**
+   * Updates a scheduled shift
+   */
+  const updateShift = useCallback(
+    async (
+      scheduleId: number,
+      shiftId: number,
+      payload: Partial<CreateScheduledShiftPayload>
+    ) => {
+      if (!restaurantId) {
+        throw new Error("Restaurant ID is required");
+      }
+
+      setIsCreatingShift(true);
+
+      try {
+        const shift = await updateScheduledShift(
+          restaurantId,
+          scheduleId,
+          shiftId,
+          payload
+        );
+
+        if (onSuccess) onSuccess();
+        return shift;
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error("Unknown error");
+        if (onError) onError(err);
+        throw err;
+      } finally {
+        setIsCreatingShift(false);
+      }
+    },
+    [restaurantId, onSuccess, onError]
+  );
+
+  /**
    * Unassigns an employee from a scheduled shift
    * Returns the updated shift with employee_id set to null
    */
@@ -196,6 +232,7 @@ export function useScheduleManagement({
   return {
     createScheduleForWeek,
     createShift,
+    updateShift,
     unassignShift,
     isCreatingSchedule,
     isCreatingShift,

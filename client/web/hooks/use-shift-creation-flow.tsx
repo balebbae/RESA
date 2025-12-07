@@ -38,10 +38,11 @@ interface UseShiftCreationFlowReturn {
 
   // Actions
   startShiftCreation: (template: ShiftTemplate) => void;
-  handleEmployeeSelect: (employee: Employee, roles: Role[]) => Promise<void>;
+  handleEmployeeSelect: (employee: Employee, roles: Role[], notes?: string) => Promise<void>;
   handleRoleSelected: (role: Role) => Promise<void>;
   cancelShiftCreation: () => void;
   handleShiftUnassignment: (shift: ScheduledShift) => Promise<void>;
+  handleShiftUpdate: (shift: ScheduledShift, changes: Partial<ScheduledShift>) => Promise<void>;
 }
 
 /**
@@ -72,6 +73,7 @@ export function useShiftCreationFlow({
   // Integrate with schedule management hook for API calls
   const {
     createShift,
+    updateShift,
     unassignShift,
     isLoading: isCreatingShift,
   } = useScheduleManagement({
@@ -98,7 +100,7 @@ export function useShiftCreationFlow({
    * Handle immediate shift creation with optimistic UI update
    */
   const createShiftWithOptimisticUpdate = useCallback(
-    async (employee: Employee, role: Role, template: ShiftTemplate) => {
+    async (employee: Employee, role: Role, template: ShiftTemplate, notes: string = "") => {
       if (!weekStartDate) return;
 
       // Generate temporary ID for optimistic update
@@ -115,7 +117,7 @@ export function useShiftCreationFlow({
         shift_date: date,
         start_time: formatTimeToHHMM(template.start_time),
         end_time: formatTimeToHHMM(template.end_time),
-        notes: "",
+        notes: notes,
         employee_name: employee.full_name,
         role_name: role.name,
         role_color: role.color,
@@ -143,7 +145,7 @@ export function useShiftCreationFlow({
           shift_date: date,
           start_time: formatTimeToHHMM(template.start_time),
           end_time: formatTimeToHHMM(template.end_time),
-          notes: "",
+          notes: notes,
         });
 
         // Replace optimistic shift with real data
@@ -179,12 +181,48 @@ export function useShiftCreationFlow({
   );
 
   /**
+   * Handle shift update with optimistic UI update
+   */
+  const handleShiftUpdate = useCallback(
+    async (shift: ScheduledShift, changes: Partial<ScheduledShift>) => {
+      // Optimistic update
+      if (updateOptimisticShift) {
+        updateOptimisticShift(shift.id, { ...shift, ...changes });
+      }
+
+      // Clear selection state
+      setSelectedTemplate(null);
+      setRoleDialogOpen(false);
+      setPendingShiftData(null);
+      setSelectedRole(null);
+
+      try {
+        await updateShift(shift.schedule_id, shift.id, {
+           notes: changes.notes,
+           // Add other fields if needed
+        });
+        showSuccessToast("Shift updated successfully");
+      } catch (error) {
+        console.error("Failed to update shift:", error);
+        // Revert optimistic update? 
+        // For now, relies on refetch or parent to handle error state visually
+        // ideally we would revert using the original shift data
+        showErrorToast(
+          "Failed to update shift",
+          error instanceof Error ? error : new Error("Unknown error")
+        );
+      }
+    },
+    [updateShift, updateOptimisticShift]
+  );
+
+  /**
    * Handle employee selection from popover
    * If employee has one role: create shift immediately
    * If employee has multiple roles: show role selector dialog
    */
   const handleEmployeeSelect = useCallback(
-    async (employee: Employee, roles: Role[]) => {
+    async (employee: Employee, roles: Role[], notes: string = "") => {
       if (!selectedTemplate) return;
 
       // Check if employee has roles
@@ -198,6 +236,7 @@ export function useShiftCreationFlow({
         employee,
         template: selectedTemplate,
         roles,
+        notes,
       });
 
       if (roles.length === 1) {
@@ -206,7 +245,8 @@ export function useShiftCreationFlow({
         await createShiftWithOptimisticUpdate(
           employee,
           roles[0],
-          selectedTemplate
+          selectedTemplate,
+          notes
         );
       } else {
         // Multiple roles: show role selector
@@ -231,7 +271,8 @@ export function useShiftCreationFlow({
       await createShiftWithOptimisticUpdate(
         pendingShiftData.employee,
         role,
-        pendingShiftData.template
+        pendingShiftData.template,
+        pendingShiftData.notes || ""
       );
     },
     [pendingShiftData, createShiftWithOptimisticUpdate]
@@ -326,5 +367,6 @@ export function useShiftCreationFlow({
     handleRoleSelected,
     cancelShiftCreation,
     handleShiftUnassignment,
+    handleShiftUpdate,
   };
 }

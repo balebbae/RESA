@@ -21,6 +21,17 @@ export const DATE_FORMAT = "YYYY-MM-DD";
 /** Suffix appended to dates for full ISO 8601 format */
 export const ISO_DATE_SUFFIX = "T00:00:00Z";
 
+/**
+ * Format a Date object to YYYY-MM-DD in the local timezone.
+ * Replaces toISOString().split('T')[0] which forces UTC.
+ */
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 // ============ PARSING ============
 
 /**
@@ -326,13 +337,16 @@ export function getDayNameFull(dayIndex: number): string {
  */
 export function getWeekDates(startDate: string): string[] {
   const normalized = normalizeDate(startDate);
-  const start = new Date(normalized + "T00:00:00");
+  // Create date in local time using year/month/day constructor to avoid UTC assumptions
+  const [y, m, d] = normalized.split('-').map(Number);
+  const start = new Date(y, m - 1, d);
+  
   const dates: string[] = [];
 
   for (let i = 0; i < 7; i++) {
     const date = new Date(start);
     date.setDate(start.getDate() + i);
-    dates.push(date.toISOString().split("T")[0]);
+    dates.push(toLocalDateString(date));
   }
 
   return dates;
@@ -346,10 +360,12 @@ export function getWeekDates(startDate: string): string[] {
  */
 export function getWeekEndDate(startDate: string): string {
   const normalized = normalizeDate(startDate);
-  const start = new Date(normalized + "T00:00:00");
+  const [y, m, d] = normalized.split('-').map(Number);
+  const start = new Date(y, m - 1, d);
+  
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
-  return end.toISOString().split("T")[0];
+  return toLocalDateString(end);
 }
 
 /**
@@ -364,7 +380,7 @@ export function getWeekStart(date?: Date): string {
   const diff = d.getDate() - day;
   const sunday = new Date(d);
   sunday.setDate(diff);
-  return sunday.toISOString().split("T")[0];
+  return toLocalDateString(sunday);
 }
 
 /**
@@ -379,10 +395,12 @@ export function navigateWeek(
   direction: "next" | "prev"
 ): string {
   const normalized = normalizeDate(currentWeekStart);
-  const current = new Date(normalized + "T00:00:00");
+  const [y, m, d] = normalized.split('-').map(Number);
+  const current = new Date(y, m - 1, d);
+  
   const offset = direction === "next" ? 7 : -7;
   current.setDate(current.getDate() + offset);
-  return current.toISOString().split("T")[0];
+  return toLocalDateString(current);
 }
 
 /**
@@ -393,7 +411,7 @@ export function navigateWeek(
  */
 export function isToday(dateStr: string): boolean {
   const normalized = normalizeDate(dateStr);
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalDateString(new Date());
   return normalized === today;
 }
 

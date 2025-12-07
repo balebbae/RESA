@@ -4,6 +4,12 @@ import { useEffect, useState, useMemo } from "react";
 import { fetchWithAuth } from "@/lib/auth";
 import { getApiBase } from "@/lib/api";
 import type { Schedule, ScheduledShift } from "@/types/schedule";
+import { 
+  getWeekEndDate, 
+  getWeekStart, 
+  navigateWeek as navigateWeekUtil 
+} from "@/lib/time";
+
 
 export interface UseScheduleReturn {
   schedule: Schedule | null;
@@ -266,41 +272,15 @@ export function useSchedule(
 }
 
 /**
- * Get the end date of a week (Saturday) given the start date (Sunday)
- */
-function getWeekEndDate(startDate: string): string {
-  const date = new Date(startDate + "T00:00:00");
-  date.setDate(date.getDate() + 6);
-  return formatDate(date);
-}
-
-/**
- * Format a Date object as YYYY-MM-DD
- */
-function formatDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-/**
  * Get the Sunday of the current week
  */
 export function getCurrentWeekStart(): string {
-  const today = new Date();
-  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  const sunday = new Date(today);
-  sunday.setDate(today.getDate() - dayOfWeek);
-  return formatDate(sunday);
+  return getWeekStart();
 }
 
 /**
  * Navigate to previous or next week
  */
 export function navigateWeek(currentWeekStart: string, direction: "prev" | "next"): string {
-  const date = new Date(currentWeekStart + "T00:00:00");
-  const offset = direction === "next" ? 7 : -7;
-  date.setDate(date.getDate() + offset);
-  return formatDate(date);
+  return navigateWeekUtil(currentWeekStart, direction);
 }

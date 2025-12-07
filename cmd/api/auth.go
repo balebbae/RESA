@@ -248,18 +248,8 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// generate the token -> add claims
-	claims := jwt.MapClaims{
-		"sub": user.ID,
-		"exp": time.Now().Add(app.config.auth.token.exp).Unix(),
-		"iat": time.Now().Unix(),
-		"nbf": time.Now().Unix(),
-		"iss": app.config.auth.token.iss,
-		"aud": app.config.auth.token.iss,
-	}
-
-	// TODO:: set a cookie for the frontend to consume
-	token, err := app.authenticator.GenerateToken(claims)
+	// Generate token using helper that includes all user details
+	token, err := app.generateTokenForUser(user)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return 
@@ -319,25 +309,39 @@ func (app *application) refreshTokenHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get user ID from claims
-	userID, ok := claims["sub"]
+	subClaim, ok := claims["sub"]
 	if !ok {
 		app.logger.Errorw("missing subject claim in token")
 		app.internalServerError(w, r, fmt.Errorf("missing subject claim"))
 		return
 	}
 
-	// Create new token with fresh expiry
-	newClaims := jwt.MapClaims{
-		"sub": userID,
-		"exp": time.Now().Add(app.config.auth.token.exp).Unix(),
-		"iat": time.Now().Unix(),
-		"nbf": time.Now().Unix(),
-		"iss": app.config.auth.token.iss,
-		"aud": app.config.auth.token.iss,
+	// Handle float64 (default for JSON numbers)
+	var userID int64
+	switch v := subClaim.(type) {
+	case float64:
+		userID = int64(v)
+	case int64:
+		userID = v
+	default:
+		app.logger.Errorw("invalid subject claim type", "type", fmt.Sprintf("%T", subClaim))
+		app.internalServerError(w, r, fmt.Errorf("invalid subject claim type"))
+		return
 	}
 
-	// Generate new token
-	newToken, err := app.authenticator.GenerateToken(newClaims)
+	// Fetch the user to ensure they still exist and get fresh details
+	user, err := app.store.Users.GetByID(r.Context(), userID)
+	if err != nil {
+		if err == store.ErrNotFound {
+			app.unauthorizedErrorResponse(w, r, fmt.Errorf("user no longer exists"))
+			return
+		}
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	// Generate new token with updated user info
+	newToken, err := app.generateTokenForUser(user)
 	if err != nil {
 		app.logger.Errorw("failed to generate new token", "error", err)
 		app.internalServerError(w, r, err)
@@ -522,12 +526,19 @@ func (app *application) googleCallbackHandler(w http.ResponseWriter, r *http.Req
 // generateTokenForUser is a helper function to generate JWT token for a user
 func (app *application) generateTokenForUser(user *store.User) (string, error) {
 	claims := jwt.MapClaims{
-		"sub": user.ID,
-		"exp": time.Now().Add(app.config.auth.token.exp).Unix(),
-		"iat": time.Now().Unix(),
-		"nbf": time.Now().Unix(),
-		"iss": app.config.auth.token.iss,
-		"aud": app.config.auth.token.iss,
+		"sub":        user.ID,
+		"exp":        time.Now().Add(app.config.auth.token.exp).Unix(),
+		"iat":        time.Now().Unix(),
+		"nbf":        time.Now().Unix(),
+		"iss":        app.config.auth.token.iss,
+		"aud":        app.config.auth.token.iss,
+		"email":      user.Email,
+		"first_name": user.FirstName,
+		"last_name":  user.LastName,
+	}
+
+	if user.AvatarURL != nil {
+		claims["avatar_url"] = *user.AvatarURL
 	}
 
 	return app.authenticator.GenerateToken(claims)

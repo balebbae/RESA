@@ -32,6 +32,7 @@ import { RoleFormDialog } from "@/components/roles/role-form-dialog"
 import type { Role } from "@/types/role"
 import { getApiBase } from "@/lib/api"
 import { fetchWithAuth } from "@/lib/auth"
+import { showSuccessToast, showErrorToast } from "@/lib/utils/toast-helpers"
 
 interface EmployeeFormDialogProps {
   mode?: "create" | "edit"
@@ -284,6 +285,7 @@ export function EmployeeFormDialog({
 
         // Close dialog and trigger success callback
         setDialogOpen(false)
+        showSuccessToast("Employee updated successfully")
         if (onSuccess) {
           onSuccess({ id: employeeId })
         }
@@ -332,6 +334,7 @@ export function EmployeeFormDialog({
 
         // Close dialog and trigger success callback
         setDialogOpen(false)
+        showSuccessToast("Employee created successfully")
         if (onSuccess) {
           onSuccess(employeeData)
         }
@@ -342,6 +345,7 @@ export function EmployeeFormDialog({
       setFormError(errorMessage)
       setRolesError(errorMessage)
       setIsAssigningRoles(false)
+      showErrorToast(errorMessage)
     }
   }
 
@@ -351,6 +355,7 @@ export function EmployeeFormDialog({
       setShowDeleteConfirm(false)
       setDialogOpen(false)
       reset()
+      showSuccessToast("Employee deleted successfully")
       if (onSuccess) {
         onSuccess(null)
       }
@@ -488,6 +493,8 @@ export function EmployeeFormDialog({
         return [...prev, roleObj]
       })
     }
+    
+    showSuccessToast("Role created successfully")
 
     // Trigger parent callback to refresh sidebar role list
     if (onRoleCreated) {

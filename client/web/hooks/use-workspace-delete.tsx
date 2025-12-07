@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { getApiBase } from "@/lib/api"
 import { fetchWithAuth } from "@/lib/auth"
+import { showErrorToast } from "@/lib/utils/toast-helpers"
 
 export interface UseWorkspaceDeleteOptions {
   onSuccess?: () => void
@@ -46,7 +47,9 @@ export function useWorkspaceDelete({ onSuccess }: UseWorkspaceDeleteOptions = {}
         onSuccess()
       }
     } catch (err: any) {
-      setError(err?.message || "Failed to delete workspace. Please try again.")
+      const msg = err?.message || "Failed to delete workspace. Please try again."
+      setError(msg)
+      showErrorToast(msg)
       throw err
     } finally {
       setIsDeleting(false)

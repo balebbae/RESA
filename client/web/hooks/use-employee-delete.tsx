@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { getApiBase } from "@/lib/api"
 import { fetchWithAuth } from "@/lib/auth"
+import { showErrorToast } from "@/lib/utils/toast-helpers"
 
 export interface UseEmployeeDeleteOptions {
   restaurantId: number | null
@@ -52,7 +53,9 @@ export function useEmployeeDelete({ restaurantId, onSuccess }: UseEmployeeDelete
         onSuccess()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete employee. Please try again.")
+      const msg = err instanceof Error ? err.message : "Failed to delete employee. Please try again."
+      setError(msg)
+      showErrorToast(msg)
       throw err
     } finally {
       setIsDeleting(false)

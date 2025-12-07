@@ -19,7 +19,7 @@ import { FlowButton } from "./flow-button";
 const TEMP_USER_DATA = {
   name: "shadcn",
   email: "m@example.com",
-  avatar: "/avatars/shadcn.jpg",
+  avatar: "/public/logo.png",
 };
 
 /**

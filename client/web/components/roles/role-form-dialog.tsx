@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { useRoleForm } from "@/hooks/use-role-form"
 import { useRoleDelete } from "@/hooks/use-role-delete"
 import { RoleDeleteDialog } from "./role-delete-dialog"
+import { showSuccessToast, showErrorToast } from "@/lib/utils/toast-helpers"
 
 interface RoleFormDialogProps {
   mode?: "create" | "edit"
@@ -57,6 +58,7 @@ export function RoleFormDialog({
 
   const handleSuccess = (role: unknown) => {
     setDialogOpen(false)
+    showSuccessToast(mode === "edit" ? "Role updated successfully" : "Role created successfully")
     if (onSuccess) {
       onSuccess(role)
     }
@@ -79,12 +81,20 @@ export function RoleFormDialog({
     isOpen: dialogOpen,
   })
 
+  // Show error toast if useRoleForm returns an error
+  useEffect(() => {
+    if (error) {
+      showErrorToast(error)
+    }
+  }, [error])
+
   const { isDeleting, deleteRole } = useRoleDelete({
     restaurantId,
     onSuccess: () => {
       setShowDeleteConfirm(false)
       setDialogOpen(false)
       reset()
+      showSuccessToast("Role deleted successfully")
       if (onSuccess) {
         onSuccess(null)
       }

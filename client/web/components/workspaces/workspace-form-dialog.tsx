@@ -23,6 +23,7 @@ import { useWorkspaceDelete } from "@/hooks/use-workspace-delete"
 import { WorkspaceDeleteDialog } from "./workspace-delete-dialog"
 import { PlacesAutocompleteInput } from "./places-autocomplete-input"
 import type { Workspace } from "@/types/workspace"
+import { showSuccessToast } from "@/lib/utils/toast-helpers"
 
 interface WorkspaceFormDialogProps {
   mode?: "create" | "edit"
@@ -57,6 +58,7 @@ export function WorkspaceFormDialog({
 
   const handleSuccess = (workspace: Workspace | null) => {
     setDialogOpen(false)
+    showSuccessToast(mode === "edit" ? "Workplace updated successfully" : "Workplace created successfully")
     if (onSuccess) {
       onSuccess(workspace)
     }
@@ -86,6 +88,7 @@ export function WorkspaceFormDialog({
       setShowDeleteConfirm(false)
       setDialogOpen(false)
       reset()
+      showSuccessToast("Workplace deleted successfully")
       if (onSuccess) {
         onSuccess(null)
       }

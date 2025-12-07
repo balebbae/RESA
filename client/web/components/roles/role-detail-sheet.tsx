@@ -14,6 +14,7 @@ import { useRoleForm } from "@/hooks/use-role-form"
 import { useRoleDelete } from "@/hooks/use-role-delete"
 import { RoleDeleteDialog } from "./role-delete-dialog"
 import type { Role } from "@/types/role"
+import { showSuccessToast } from "@/lib/utils/toast-helpers"
 
 interface RoleDetailSheetProps {
   role: Role | null
@@ -60,6 +61,7 @@ export function RoleDetailSheet({
     roleId: role?.id,
     onSuccess: (updatedRole) => {
       setIsEditing(false)
+      showSuccessToast("Role updated successfully")
       if (onSuccess) {
         onSuccess()
       }
@@ -73,6 +75,7 @@ export function RoleDetailSheet({
       setShowDeleteConfirm(false)
       onOpenChange(false)
       setIsEditing(false)
+      showSuccessToast("Role deleted successfully")
       if (onSuccess) {
         onSuccess()
       }

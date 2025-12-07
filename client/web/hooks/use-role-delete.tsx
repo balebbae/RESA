@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { getApiBase } from "@/lib/api"
 import { fetchWithAuth } from "@/lib/auth"
+import { showErrorToast } from "@/lib/utils/toast-helpers"
 
 export interface UseRoleDeleteOptions {
   restaurantId: number | null
@@ -67,6 +68,7 @@ export function useRoleDelete({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to delete role"
       setError(errorMessage)
+      showErrorToast(errorMessage)
       throw err
     } finally {
       setIsDeleting(false)

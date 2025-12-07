@@ -26,6 +26,7 @@ import type { Employee } from "@/types/employee"
 import type { Role } from "@/types/role"
 import { getApiBase } from "@/lib/api"
 import { fetchWithAuth } from "@/lib/auth"
+import { showSuccessToast, showErrorToast } from "@/lib/utils/toast-helpers"
 
 interface EmployeeDetailSheetProps {
   employee: Employee | null
@@ -138,7 +139,9 @@ export function EmployeeDetailSheet({
           setEmployeeRoles(selectedRoles)
 
         } catch (err) {
-          setRolesError(err instanceof Error ? err.message : "Failed to update roles")
+          const msg = err instanceof Error ? err.message : "Failed to update roles"
+          setRolesError(msg)
+          showErrorToast(msg)
           setIsAssigningRoles(false)
           return // Don't exit edit mode if role assignment fails
         } finally {
@@ -147,6 +150,7 @@ export function EmployeeDetailSheet({
       }
 
       setIsEditing(false)
+      showSuccessToast("Employee updated successfully")
       if (onSuccess) {
         onSuccess()
       }
@@ -160,6 +164,7 @@ export function EmployeeDetailSheet({
       setShowDeleteConfirm(false)
       onOpenChange(false)
       setIsEditing(false)
+      showSuccessToast("Employee deleted successfully")
       if (onSuccess) {
         onSuccess()
       }
@@ -283,6 +288,8 @@ export function EmployeeDetailSheet({
         return [...prev, roleObj]
       })
     }
+
+    showSuccessToast("Role created successfully")
 
     // Trigger parent callback to refresh sidebar role list
     if (onRoleCreated) {

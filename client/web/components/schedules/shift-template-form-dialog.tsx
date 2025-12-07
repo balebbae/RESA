@@ -31,6 +31,7 @@ import { getApiBase } from "@/lib/api";
 import { fetchWithAuth } from "@/lib/auth";
 import type { Role } from "@/types/role";
 import { RoleFormDialog } from "@/components/roles/role-form-dialog";
+import { showSuccessToast, showErrorToast } from "@/lib/utils/toast-helpers";
 
 interface ShiftTemplateFormDialogProps {
   mode?: "create" | "edit";
@@ -98,10 +99,25 @@ export function ShiftTemplateFormDialog({
     }
   };
 
-  const handleSuccess = (shiftTemplate: unknown) => {
+  const handleSuccess = (result: unknown) => {
     setDialogOpen(false);
+
+    if (result === null) {
+      showSuccessToast("Shift template deleted successfully");
+    } else if (Array.isArray(result)) {
+      showSuccessToast(
+        `Successfully created ${result.length} shift template(s)`
+      );
+    } else {
+      showSuccessToast(
+        mode === "edit"
+          ? "Shift template updated successfully"
+          : "Shift template created successfully"
+      );
+    }
+
     if (onSuccess) {
-      onSuccess(shiftTemplate);
+      onSuccess(result);
     }
   };
 
@@ -109,6 +125,7 @@ export function ShiftTemplateFormDialog({
     register,
     handleSubmit,
     onSubmit,
+    deleteShiftTemplate,
     errors,
     isSubmitting,
     isLoading,
@@ -123,6 +140,13 @@ export function ShiftTemplateFormDialog({
     onSuccess: handleSuccess,
     isOpen: dialogOpen,
   });
+
+  // Effect to show hook errors as toasts
+  useEffect(() => {
+    if (error) {
+      showErrorToast(error);
+    }
+  }, [error]);
 
   const isEditMode = mode === "edit";
   const dialogTitle = isEditMode
@@ -152,8 +176,14 @@ export function ShiftTemplateFormDialog({
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
   const [rolesLoading, setRolesLoading] = useState(false);
   const [rolesError, setRolesError] = useState<string | null>(null);
-  const [rolesValidationError, setRolesValidationError] = useState<string | null>(null);
+  const [rolesValidationError, setRolesValidationError] = useState<
+    string | null
+  >(null);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
+
+  // State to hold fetched template data for synchronization
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [fetchedTemplate, setFetchedTemplate] = useState<any>(null);
 
   // Submit button text (defined after state to access isCreating and selectedDays)
   const submitButtonText = isCreating
@@ -232,9 +262,9 @@ export function ShiftTemplateFormDialog({
       setAvailableRoles(roles);
     } catch (err) {
       console.error("Error fetching roles:", err);
-      setRolesError(
-        err instanceof Error ? err.message : "Failed to load roles"
-      );
+      const msg = err instanceof Error ? err.message : "Failed to load roles";
+      setRolesError(msg);
+      showErrorToast(msg);
       setAvailableRoles([]);
     } finally {
       setRolesLoading(false);
@@ -248,17 +278,64 @@ export function ShiftTemplateFormDialog({
     }
   }, [dialogOpen, restaurantId, fetchRoles]);
 
+  // Fetch shift template details in edit mode
+  useEffect(() => {
+    if (dialogOpen && isEditMode && restaurantId && shiftTemplateId) {
+      const fetchTemplate = async () => {
+        try {
+          const res = await fetchWithAuth(
+            `${getApiBase()}/restaurants/${restaurantId}/shift-templates/${shiftTemplateId}`
+          );
+          if (!res.ok) throw new Error("Failed to fetch shift template");
+          const responseJson = await res.json();
+          const data = responseJson.data || responseJson;
+          setFetchedTemplate(data);
+
+          if (data) {
+            // Populate simple form fields immediately
+            setValue("name", data.name);
+            setValue("start_time", data.start_time?.slice(0, 5)); // Ensure HH:MM
+            setValue("end_time", data.end_time?.slice(0, 5));
+            setSelectedDays([data.day_of_week]);
+            setValue("day_of_week", data.day_of_week);
+          }
+        } catch (err) {
+          console.error("Error fetching template:", err);
+          const msg = "Failed to load shift template details";
+          setSubmissionError(msg);
+          showErrorToast(msg);
+        }
+      };
+      fetchTemplate();
+    }
+  }, [dialogOpen, isEditMode, restaurantId, shiftTemplateId, setValue]);
+
+  // Sync selectedRoles with fetchedTemplate.role_ids once roles are loaded
+  useEffect(() => {
+    if (fetchedTemplate && availableRoles.length > 0) {
+      const roleIds = fetchedTemplate.role_ids || [];
+      const roles = availableRoles.filter((r) => roleIds.includes(r.id));
+      setSelectedRoles(roles);
+      // Also update form value for role_ids
+      setValue("role_ids", roleIds);
+    }
+  }, [fetchedTemplate, availableRoles, setValue]);
+
   // Clear validation errors when dialog opens/closes
   useEffect(() => {
     if (!dialogOpen) {
       setRolesValidationError(null);
       setSubmissionError(null);
+      setFetchedTemplate(null);
+      setSelectedRoles([]);
+      setSelectedDays([]);
+      reset(); // Reset form
     }
-  }, [dialogOpen]);
+  }, [dialogOpen, reset]);
 
-  // Apply initial values when dialog opens
+  // Apply initial values when dialog opens (Create Mode only)
   useEffect(() => {
-    if (dialogOpen) {
+    if (dialogOpen && !isEditMode) {
       // Apply initial day of week
       if (initialDayOfWeek !== undefined) {
         setSelectedDays([initialDayOfWeek]);
@@ -280,11 +357,23 @@ export function ShiftTemplateFormDialog({
         setValue("end_time", initialEndTime);
       }
     }
-  }, [dialogOpen, initialDayOfWeek, initialStartTime, initialEndTime, setValue]);
+  }, [
+    dialogOpen,
+    isEditMode,
+    initialDayOfWeek,
+    initialStartTime,
+    initialEndTime,
+    setValue,
+  ]);
 
   // Handler for role removal
   const handleRoleRemove = (roleId: number) => {
-    setSelectedRoles(selectedRoles.filter((r) => r.id !== roleId));
+    const newRoles = selectedRoles.filter((r) => r.id !== roleId);
+    setSelectedRoles(newRoles);
+    setValue(
+      "role_ids",
+      newRoles.map((r) => r.id)
+    );
   };
 
   // Handler for role creation
@@ -293,38 +382,67 @@ export function ShiftTemplateFormDialog({
     await fetchRoles();
 
     // Extract role from either direct or wrapped response
-    const role = (newRole && typeof newRole === 'object' && 'data' in newRole)
-      ? (newRole as Record<string, unknown>).data
-      : newRole;
+    const role =
+      newRole && typeof newRole === "object" && "data" in newRole
+        ? (newRole as Record<string, unknown>).data
+        : newRole;
 
     // Automatically select the newly created role
-    if (role && typeof role === 'object' && 'id' in role) {
+    if (role && typeof role === "object" && "id" in role) {
       const roleObj = role as Role;
-      setSelectedRoles(prev => {
+      setSelectedRoles((prev) => {
         // Only add if not already selected
-        if (prev.some(r => r.id === roleObj.id)) {
+        if (prev.some((r) => r.id === roleObj.id)) {
           return prev;
         }
-        return [...prev, roleObj];
+        const newRoles = [...prev, roleObj];
+        setValue(
+          "role_ids",
+          newRoles.map((r) => r.id)
+        );
+        return newRoles;
       });
+      showSuccessToast("Role created successfully");
     }
 
     setShowRoleDialog(false);
   };
 
-  // Custom submit handler for multi-day creation
-  const handleMultiDaySubmit = async (e: React.FormEvent) => {
+  // Custom submit handler for multi-day creation or single edit
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate that at least one day is selected
-    if (selectedDays.length === 0) {
-      setSubmissionError("Please select at least one day");
-      return;
-    }
 
     // Validate that at least one role is selected
     if (selectedRoles.length === 0) {
       setRolesValidationError("Please select at least one role");
+      return;
+    }
+
+    if (isEditMode) {
+      // Edit Mode Logic
+      if (selectedDays.length !== 1) {
+        setSubmissionError(
+          "Please select exactly one day for the shift template."
+        );
+        return;
+      }
+
+      // Ensure form values are synced
+      setValue(
+        "role_ids",
+        selectedRoles.map((r) => r.id)
+      );
+      setValue("day_of_week", selectedDays[0]);
+
+      // Use the hook's onSubmit
+      await handleSubmit(onSubmit)(e);
+      return;
+    }
+
+    // Create Mode Logic (Multi-day)
+    // Validate that at least one day is selected
+    if (selectedDays.length === 0) {
+      setSubmissionError("Please select at least one day");
       return;
     }
 
@@ -400,21 +518,22 @@ export function ShiftTemplateFormDialog({
           setSubmissionError(
             `${errorMsg}\n\nSuccessfully created ${createdTemplates.length} template(s).`
           );
+          showErrorToast(errorMsg);
         } else {
           setSubmissionError(errorMsg);
+          showErrorToast(errorMsg);
         }
       } else {
         // All succeeded - close dialog and notify parent
-        setDialogOpen(false);
+        // handleSuccess will show the toast
+        handleSuccess(createdTemplates);
         setSelectedDays([]);
-        if (onSuccess) {
-          onSuccess(createdTemplates);
-        }
       }
     } catch (err) {
-      setSubmissionError(
-        err instanceof Error ? err.message : "Failed to create shift templates"
-      );
+      const msg =
+        err instanceof Error ? err.message : "Failed to create shift templates";
+      setSubmissionError(msg);
+      showErrorToast(msg);
     } finally {
       setIsCreating(false);
     }
@@ -428,291 +547,358 @@ export function ShiftTemplateFormDialog({
             <DialogTitle>{dialogTitle}</DialogTitle>
             <DialogDescription>{dialogDescription}</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleMultiDaySubmit} className="space-y-4">
-          {(submissionError || error || isLoading) && (
-            <div className="text-sm text-red-600 whitespace-pre-line">
-              {submissionError || error || "Loading shift template details..."}
-            </div>
-          )}
+          <form onSubmit={handleFormSubmit} className="space-y-4">
+            {(submissionError || error || isLoading) && (
+              <div className="text-sm text-red-600 whitespace-pre-line">
+                {submissionError || error}
+              </div>
+            )}
 
-          <FieldGroup>
-            {/* Name Field */}
-            <Field>
-              <FieldLabel htmlFor="name">Name</FieldLabel>
-              <Input
-                id="name"
-                type="text"
-                placeholder="e.g., Morning Shift, Closing Shift"
-                {...register("name")}
-                required
-                autoFocus
-              />
-              {errors.name && (
-                <p className="text-sm text-red-600">{errors.name.message}</p>
-              )}
-            </Field>
+            <FieldGroup>
+              {/* Name Field */}
+              <Field>
+                <FieldLabel htmlFor="name">Name</FieldLabel>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="e.g., Morning Shift, Closing Shift"
+                  {...register("name")}
+                  required
+                  autoFocus
+                />
+                {errors.name && (
+                  <p className="text-sm text-red-600">{errors.name.message}</p>
+                )}
+              </Field>
 
-            {/* Days of Week Selection (Multi-select with Popover) */}
-            <Field>
-              <FieldLabel htmlFor="days">Days of Week</FieldLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="days"
-                    variant="outline"
-                    role="combobox"
-                    type="button"
-                    className="w-full justify-between font-normal"
+              {/* Days of Week Selection (Multi-select with Popover) */}
+              <Field>
+                <FieldLabel htmlFor="days">Days of Week</FieldLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="days"
+                      variant="outline"
+                      role="combobox"
+                      type="button"
+                      className="w-full justify-between font-normal"
+                    >
+                      {selectedDays.length > 0
+                        ? `${selectedDays.length} day${
+                            selectedDays.length > 1 ? "s" : ""
+                          } selected`
+                        : "Select days"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[var(--radix-popover-trigger-width)] p-2"
+                    align="start"
                   >
-                    {selectedDays.length > 0
-                      ? `${selectedDays.length} day${selectedDays.length > 1 ? "s" : ""} selected`
-                      : "Select days"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-2" align="start">
-                  <div className="flex flex-col gap-1">
-                    {DAYS_OF_WEEK.map((day) => (
-                      <label
-                        key={day.value}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={selectedDays.includes(day.value)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedDays([...selectedDays, day.value].sort());
-                            } else {
-                              setSelectedDays(selectedDays.filter((d) => d !== day.value));
-                            }
-                          }}
-                        />
-                        <span className="text-sm">{day.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+                    <div className="flex flex-col gap-1">
+                      {DAYS_OF_WEEK.map((day) => (
+                        <label
+                          key={day.value}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={selectedDays.includes(day.value)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                if (isEditMode) {
+                                  // Single select in edit mode
+                                  setSelectedDays([day.value]);
+                                } else {
+                                  setSelectedDays(
+                                    [...selectedDays, day.value].sort()
+                                  );
+                                }
+                              } else {
+                                if (isEditMode) {
+                                  // Cannot deselect the only day in edit mode (must select another)
+                                  // or just allow deselect and let validation catch it
+                                  setSelectedDays([]);
+                                } else {
+                                  setSelectedDays(
+                                    selectedDays.filter((d) => d !== day.value)
+                                  );
+                                }
+                              }
+                            }}
+                          />
+                          <span className="text-sm">{day.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
-              {/* Display selected days as badges */}
-              {selectedDays.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {selectedDays.map((dayValue) => {
-                    const day = DAYS_OF_WEEK.find((d) => d.value === dayValue);
-                    return (
+                {/* Display selected days as badges */}
+                {selectedDays.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {selectedDays.map((dayValue) => {
+                      const day = DAYS_OF_WEEK.find(
+                        (d) => d.value === dayValue
+                      );
+                      return (
+                        <Badge
+                          key={dayValue}
+                          variant="secondary"
+                          className="gap-1"
+                        >
+                          {day?.label}
+                          <button
+                            type="button"
+                            onClick={() => handleDayRemove(dayValue)}
+                            className="ml-1 rounded-full hover:bg-muted"
+                            aria-label={`Remove ${day?.label}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {errors.day_of_week && (
+                  <p className="text-sm text-red-600">
+                    {errors.day_of_week.message}
+                  </p>
+                )}
+              </Field>
+
+              {/* Roles Selection (Multi-select with Popover) */}
+              <Field>
+                <FieldLabel htmlFor="roles">Roles</FieldLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="roles"
+                      variant="outline"
+                      role="combobox"
+                      type="button"
+                      className="w-full justify-between font-normal"
+                      disabled={rolesLoading}
+                    >
+                      {selectedRoles.length > 0
+                        ? `${selectedRoles.length} role${
+                            selectedRoles.length > 1 ? "s" : ""
+                          } selected`
+                        : rolesLoading
+                        ? "Loading roles..."
+                        : "Select roles"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[var(--radix-popover-trigger-width)] p-2"
+                    align="start"
+                  >
+                    <div className="flex flex-col gap-1">
+                      {/* Checkbox for each role */}
+                      {availableRoles.map((role) => (
+                        <label
+                          key={role.id}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={selectedRoles.some(
+                              (r) => r.id === role.id
+                            )}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                const newRoles = [...selectedRoles, role];
+                                setSelectedRoles(newRoles);
+                                setRolesValidationError(null);
+                                setValue(
+                                  "role_ids",
+                                  newRoles.map((r) => r.id)
+                                );
+                              } else {
+                                const newRoles = selectedRoles.filter(
+                                  (r) => r.id !== role.id
+                                );
+                                setSelectedRoles(newRoles);
+                                setValue(
+                                  "role_ids",
+                                  newRoles.map((r) => r.id)
+                                );
+                              }
+                            }}
+                          />
+                          <span className="text-sm">{role.name}</span>
+                        </label>
+                      ))}
+
+                      {/* Divider */}
+                      {availableRoles.length > 0 && (
+                        <div className="border-t my-1" />
+                      )}
+
+                      {/* Create new role button */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="justify-start text-primary font-medium"
+                        onClick={() => setShowRoleDialog(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create new role
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* Error messages */}
+                {rolesError && (
+                  <p className="text-sm text-red-600">{rolesError}</p>
+                )}
+
+                {rolesValidationError && (
+                  <p className="text-sm text-red-600">{rolesValidationError}</p>
+                )}
+
+                {/* Display selected roles as badges */}
+                {selectedRoles.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {selectedRoles.map((role) => (
                       <Badge
-                        key={dayValue}
+                        key={role.id}
                         variant="secondary"
                         className="gap-1"
                       >
-                        {day?.label}
+                        {role.name}
                         <button
                           type="button"
-                          onClick={() => handleDayRemove(dayValue)}
+                          onClick={() => handleRoleRemove(role.id)}
                           className="ml-1 rounded-full hover:bg-muted"
-                          aria-label={`Remove ${day?.label}`}
+                          aria-label={`Remove ${role.name}`}
                         >
                           <X className="h-3 w-3" />
                         </button>
                       </Badge>
-                    );
-                  })}
-                </div>
-              )}
-
-              {errors.day_of_week && (
-                <p className="text-sm text-red-600">
-                  {errors.day_of_week.message}
-                </p>
-              )}
-            </Field>
-
-            {/* Roles Selection (Multi-select with Popover) */}
-            <Field>
-              <FieldLabel htmlFor="roles">Roles</FieldLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="roles"
-                    variant="outline"
-                    role="combobox"
-                    type="button"
-                    className="w-full justify-between font-normal"
-                    disabled={rolesLoading}
-                  >
-                    {selectedRoles.length > 0
-                      ? `${selectedRoles.length} role${selectedRoles.length > 1 ? "s" : ""} selected`
-                      : rolesLoading ? "Loading roles..." : "Select roles"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-2" align="start">
-                  <div className="flex flex-col gap-1">
-                    {/* Checkbox for each role */}
-                    {availableRoles.map((role) => (
-                      <label
-                        key={role.id}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={selectedRoles.some(r => r.id === role.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedRoles([...selectedRoles, role]);
-                              setRolesValidationError(null);
-                            } else {
-                              setSelectedRoles(selectedRoles.filter(r => r.id !== role.id));
-                            }
-                          }}
-                        />
-                        <span className="text-sm">{role.name}</span>
-                      </label>
                     ))}
-
-                    {/* Divider */}
-                    {availableRoles.length > 0 && (
-                      <div className="border-t my-1" />
-                    )}
-
-                    {/* Create new role button */}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="justify-start text-primary font-medium"
-                      onClick={() => setShowRoleDialog(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create new role
-                    </Button>
                   </div>
-                </PopoverContent>
-              </Popover>
+                )}
+              </Field>
 
-              {/* Error messages */}
-              {rolesError && (
-                <p className="text-sm text-red-600">{rolesError}</p>
-              )}
-
-              {rolesValidationError && (
-                <p className="text-sm text-red-600">{rolesValidationError}</p>
-              )}
-
-              {/* Display selected roles as badges */}
-              {selectedRoles.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {selectedRoles.map((role) => (
-                    <Badge key={role.id} variant="secondary" className="gap-1">
-                      {role.name}
-                      <button
-                        type="button"
-                        onClick={() => handleRoleRemove(role.id)}
-                        className="ml-1 rounded-full hover:bg-muted"
-                        aria-label={`Remove ${role.name}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
+              {/* Start Time */}
+              <Field>
+                <FieldLabel>Start Time</FieldLabel>
+                <div className="flex gap-2">
+                  <Select
+                    value={startHour}
+                    onValueChange={handleStartHourChange}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[180px]">
+                      {HOURS.map((hour) => (
+                        <SelectItem key={hour.value} value={hour.value}>
+                          {hour.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={startMinute}
+                    onValueChange={handleStartMinuteChange}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MINUTES.map((minute) => (
+                        <SelectItem key={minute} value={minute}>
+                          {minute}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-            </Field>
+                {errors.start_time && (
+                  <p className="text-sm text-red-600">
+                    {errors.start_time.message}
+                  </p>
+                )}
+              </Field>
 
-            {/* Start Time */}
-            <Field>
-              <FieldLabel>Start Time</FieldLabel>
-              <div className="flex gap-2">
-                <Select value={startHour} onValueChange={handleStartHourChange}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[180px]">
-                    {HOURS.map((hour) => (
-                      <SelectItem key={hour.value} value={hour.value}>
-                        {hour.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={startMinute}
-                  onValueChange={handleStartMinuteChange}
+              {/* End Time */}
+              <Field>
+                <FieldLabel>End Time</FieldLabel>
+                <div className="flex gap-2">
+                  <Select value={endHour} onValueChange={handleEndHourChange}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[180px]">
+                      {HOURS.map((hour) => (
+                        <SelectItem key={hour.value} value={hour.value}>
+                          {hour.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={endMinute}
+                    onValueChange={handleEndMinuteChange}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MINUTES.map((minute) => (
+                        <SelectItem key={minute} value={minute}>
+                          {minute}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {errors.end_time && (
+                  <p className="text-sm text-red-600">
+                    {errors.end_time.message}
+                  </p>
+                )}
+              </Field>
+            </FieldGroup>
+
+            <div className="flex justify-between gap-3 pt-2">
+              {/* Delete Button (Only in Edit Mode) */}
+              {isEditMode ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => deleteShiftTemplate()}
+                  disabled={isSubmitting || isLoading}
                 >
-                  <SelectTrigger className="w-20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MINUTES.map((minute) => (
-                      <SelectItem key={minute} value={minute}>
-                        {minute}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {errors.start_time && (
-                <p className="text-sm text-red-600">
-                  {errors.start_time.message}
-                </p>
+                  Delete
+                </Button>
+              ) : (
+                <div /> /* Spacer */
               )}
-            </Field>
 
-            {/* End Time */}
-            <Field>
-              <FieldLabel>End Time</FieldLabel>
-              <div className="flex gap-2">
-                <Select value={endHour} onValueChange={handleEndHourChange}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[180px]">
-                    {HOURS.map((hour) => (
-                      <SelectItem key={hour.value} value={hour.value}>
-                        {hour.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={endMinute} onValueChange={handleEndMinuteChange}>
-                  <SelectTrigger className="w-20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MINUTES.map((minute) => (
-                      <SelectItem key={minute} value={minute}>
-                        {minute}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {errors.end_time && (
-                <p className="text-sm text-red-600">
-                  {errors.end_time.message}
-                </p>
-              )}
-            </Field>
-          </FieldGroup>
+              <Button
+                type="submit"
+                disabled={isSubmitting || isLoading || isCreating}
+              >
+                {submitButtonText}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-          <div className="flex justify-end gap-3">
-            <Button
-              type="submit"
-              disabled={isSubmitting || isLoading || isCreating}
-            >
-              {submitButtonText}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-
-    {/* Role Creation Dialog */}
-    <RoleFormDialog
-      mode="create"
-      restaurantId={restaurantId}
-      isOpen={showRoleDialog}
-      onOpenChange={setShowRoleDialog}
-      onSuccess={handleRoleCreated}
-    />
-  </>
+      {/* Role Creation Dialog */}
+      <RoleFormDialog
+        mode="create"
+        restaurantId={restaurantId}
+        isOpen={showRoleDialog}
+        onOpenChange={setShowRoleDialog}
+        onSuccess={handleRoleCreated}
+      />
+    </>
   );
 }

@@ -151,7 +151,7 @@ export function useShiftCreationFlow({
           confirmOptimisticShift(tempId, realShift);
         }
 
-        showSuccessToast("Shift created successfully");
+        showSuccessToast("Employee assigned successfully");
       } catch (error) {
         console.error("Failed to create shift:", error);
 

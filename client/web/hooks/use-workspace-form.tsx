@@ -7,6 +7,7 @@ import * as z from "zod"
 import { getApiBase } from "@/lib/api"
 import { fetchWithAuth } from "@/lib/auth"
 import type { WorkspaceFormData } from "@/types/workspace"
+import { showErrorToast } from "@/lib/utils/toast-helpers"
 
 const workspaceSchema = z.object({
   name: z.string().min(1, "Workplace name is required").max(255, "Name must be less than 255 characters"),
@@ -130,7 +131,9 @@ export function useWorkspaceForm({
         onSuccess(workspace)
       }
     } catch (err: any) {
-      setError(err?.message || "Something went wrong. Please try again.")
+      const msg = err?.message || "Something went wrong. Please try again."
+      setError(msg)
+      showErrorToast(msg)
     }
   }
 

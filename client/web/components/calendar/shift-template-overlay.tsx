@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { RoleColorIndicator } from "@/components/calendar/role-color-indicator";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface ShiftTemplateOverlayProps {
   template: ShiftTemplate;
@@ -33,7 +35,7 @@ interface ShiftTemplateOverlayProps {
   employees: Employee[];
   employeesWithRoles: Map<number, Role[]>;
   loadingRoles: boolean;
-  onEmployeeSelect: (employee: Employee, roleId: number) => void;
+  onEmployeeSelect: (employee: Employee, roleId: number, notes?: string) => void;
   onShiftUnassign: (shift: ScheduledShift) => void;
   onRoleClick: (
     template: ShiftTemplate,
@@ -77,6 +79,9 @@ export function ShiftTemplateOverlay({
   const [pendingUnassignments, setPendingUnassignments] = useState<Set<number>>(
     new Set()
   );
+  
+  // State for shift notes
+  const [notes, setNotes] = useState("");
 
   // Clean up pending unassignments when assignedShifts actually updates
   // (employee removed from assignedShifts = unassignment succeeded)

@@ -35,7 +35,11 @@ export function CurrentTimeIndicator({
   }, []);
 
   // Calculate today's index in the week (-1 if not visible)
-  const todayStr = currentTime.toISOString().split("T")[0];
+  const todayYear = currentTime.getFullYear();
+  const todayMonth = String(currentTime.getMonth() + 1).padStart(2, "0");
+  const todayDay = String(currentTime.getDate()).padStart(2, "0");
+  const todayStr = `${todayYear}-${todayMonth}-${todayDay}`;
+  
   const todayIndex = weekDates.findIndex(
     (date) => normalizeDate(date) === todayStr
   );

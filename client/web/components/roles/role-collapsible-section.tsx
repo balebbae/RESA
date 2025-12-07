@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useState, useEffect, forwardRef, useImperativeHandle } from "react"
-import { ChevronRight, Briefcase } from "lucide-react"
+import * as React from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { ChevronRight } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -16,17 +16,17 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-} from "@/components/ui/sidebar"
-import { useRoles } from "@/hooks/use-roles"
-import { RoleDetailSheet } from "./role-detail-sheet"
-import type { Role } from "@/types/role"
+} from "@/components/ui/sidebar";
+import { useRoles } from "@/hooks/use-roles";
+import { RoleDetailSheet } from "./role-detail-sheet";
+import type { Role } from "@/types/role";
 
 interface RoleCollapsibleSectionProps {
-  restaurantId: number | null
+  restaurantId: number | null;
 }
 
 export interface RoleCollapsibleSectionRef {
-  refetch: () => void
+  refetch: () => void;
 }
 
 /**
@@ -37,36 +37,34 @@ export interface RoleCollapsibleSectionRef {
 export const RoleCollapsibleSection = forwardRef<
   RoleCollapsibleSectionRef,
   RoleCollapsibleSectionProps
->(function RoleCollapsibleSection({
-  restaurantId,
-}, ref) {
-  const { roles, refetch } = useRoles(restaurantId)
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null)
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
+>(function RoleCollapsibleSection({ restaurantId }, ref) {
+  const { roles, refetch } = useRoles(restaurantId);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   // Expose refetch method to parent component
   useImperativeHandle(ref, () => ({
     refetch,
-  }))
+  }));
 
   // Update selected role when roles list changes
   useEffect(() => {
     if (selectedRole && roles.length > 0) {
-      const updatedRole = roles.find(r => r.id === selectedRole.id)
+      const updatedRole = roles.find((r) => r.id === selectedRole.id);
       if (updatedRole) {
-        setSelectedRole(updatedRole)
+        setSelectedRole(updatedRole);
       }
     }
-  }, [roles, selectedRole?.id])
+  }, [roles, selectedRole?.id]);
 
   const handleRoleClick = (role: Role) => {
-    setSelectedRole(role)
-    setIsSheetOpen(true)
-  }
+    setSelectedRole(role);
+    setIsSheetOpen(true);
+  };
 
   const handleRoleUpdate = () => {
-    refetch()
-  }
+    refetch();
+  };
 
   // Show message when no restaurant is selected
   if (!restaurantId) {
@@ -86,21 +84,21 @@ export const RoleCollapsibleSection = forwardRef<
         </SidebarGroup>
         <SidebarSeparator className="mx-0" />
       </>
-    )
+    );
   }
 
   // Format dates for display
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      })
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
     } catch {
-      return dateString
+      return dateString;
     }
-  }
+  };
 
   return (
     <>
@@ -132,9 +130,12 @@ export const RoleCollapsibleSection = forwardRef<
                         onClick={() => handleRoleClick(role)}
                         className="h-auto min-h-14 py-2 hover:cursor-pointer"
                       >
-                        <Briefcase className="h-4 w-4" />
+                        <div
+                          className="h-3 w-3 rounded-full border border-border/50 shrink-0"
+                          style={{ backgroundColor: role.color }}
+                        />
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-sm">{role.name}</span>
+                          <span className="text-xs">{role.name}</span>
                           <span className="text-xs text-muted-foreground">
                             Created {formatDate(role.created_at)}
                           </span>
@@ -159,5 +160,5 @@ export const RoleCollapsibleSection = forwardRef<
         onSuccess={handleRoleUpdate}
       />
     </>
-  )
-})
+  );
+});

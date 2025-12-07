@@ -13,11 +13,17 @@ import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  PanelRight,
+} from "lucide-react";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { RestaurantProvider } from "@/contexts/restaurant-context";
@@ -38,6 +44,7 @@ export default function ResaLayout({
 }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
 
   useEffect(() => {
     // Wait for auth state to load
@@ -69,10 +76,19 @@ export default function ResaLayout({
           <WeekNavigationProvider>
             <SidebarLeft />
             <SidebarInset>
-              <ResaHeader />
+              <ResaHeader
+                rightSidebarOpen={rightSidebarOpen}
+                setRightSidebarOpen={setRightSidebarOpen}
+              />
               <div className="flex flex-col flex-1 min-h-0">{children}</div>
             </SidebarInset>
-            <SidebarRight />
+            <SidebarProvider
+              open={rightSidebarOpen}
+              onOpenChange={setRightSidebarOpen}
+              className="w-auto !min-h-svh"
+            >
+              <SidebarRight side="right" collapsible="offcanvas" />
+            </SidebarProvider>
           </WeekNavigationProvider>
         </SidebarProvider>
       </ShiftTemplateProvider>
@@ -84,8 +100,26 @@ export default function ResaLayout({
  * Header component that conditionally shows week navigation
  * when WeekNavigationProvider is available (on schedule pages)
  */
-function ResaHeader() {
+function ResaHeader({
+  rightSidebarOpen,
+  setRightSidebarOpen,
+}: {
+  rightSidebarOpen?: boolean;
+  setRightSidebarOpen?: (open: boolean) => void;
+}) {
   const weekNav = useWeekNavigation();
+  const { open: leftSidebarOpen, setOpen: setLeftOpen } = useSidebar();
+
+  // Close left sidebar on window resize if screen is small
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024 && leftSidebarOpen) {
+        setLeftOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [leftSidebarOpen, setLeftOpen]);
 
   // Get current month and year
   const currentDate = new Date();
@@ -99,7 +133,12 @@ function ResaHeader() {
       <div className="flex flex-1 items-center justify-between px-3">
         {/* Left side */}
         <div className="flex items-center gap-2">
-          <SidebarTrigger />
+          <SidebarTrigger onClick={() => {
+            // If opening left sidebar on small screen, close right sidebar
+            if (!leftSidebarOpen && window.innerWidth < 1024 && setRightSidebarOpen) {
+              setRightSidebarOpen(false);
+            }
+          }} />
           <Separator
             orientation="vertical"
             className="mr-2 data-[orientation=vertical]:h-4"
@@ -118,15 +157,8 @@ function ResaHeader() {
         {/* Right side - Week navigation (conditionally rendered) */}
         {weekNav && (
           <div className="flex items-center gap-2">
-            <Button variant="outline" className="h-8">
-              Week
-              <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-            <Button variant="outline" className="h-8">
-              Today
-            </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               className="h-8 w-8"
               onClick={weekNav.goToPrevWeek}
@@ -134,13 +166,34 @@ function ResaHeader() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               className="h-8 w-8"
               onClick={weekNav.goToNextWeek}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
+            <Separator
+              orientation="vertical"
+              className=" data-[orientation=vertical]:h-4 ml-2"
+            />
+            {setRightSidebarOpen && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => {
+                  const newState = !rightSidebarOpen;
+                  setRightSidebarOpen(newState);
+                  if (newState && window.innerWidth < 1024) {
+                    setLeftOpen(false);
+                  }
+                }}
+              >
+                <PanelRight className="size-4" />
+                <span className="sr-only">Toggle Right Sidebar</span>
+              </Button>
+            )}
           </div>
         )}
       </div>

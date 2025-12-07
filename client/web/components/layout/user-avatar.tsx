@@ -1,20 +1,19 @@
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
-import type { User } from "@/types/user"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { User } from "@/types/user";
 
 interface UserAvatarProps {
-  user: User
-  className?: string
+  user: User;
+  className?: string;
 }
 
 /**
  * Reusable user avatar component
  * Extracted from nav-user for better reusability
  */
-export function UserAvatar({ user, className = "h-8 w-8 rounded-lg" }: UserAvatarProps) {
+export function UserAvatar({
+  user,
+  className = "h-6 w-6 rounded-full mr-1",
+}: UserAvatarProps) {
   // Generate initials from user name
   const getInitials = (name: string) => {
     return name
@@ -22,8 +21,8 @@ export function UserAvatar({ user, className = "h-8 w-8 rounded-lg" }: UserAvata
       .map((part) => part[0])
       .join("")
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   return (
     <Avatar className={className}>
@@ -32,5 +31,5 @@ export function UserAvatar({ user, className = "h-8 w-8 rounded-lg" }: UserAvata
         {getInitials(user.name)}
       </AvatarFallback>
     </Avatar>
-  )
+  );
 }

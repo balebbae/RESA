@@ -6,10 +6,12 @@ import type { ScheduledShift } from "@/types/schedule";
 import type { Employee } from "@/types/employee";
 import type { Role } from "@/types/role";
 import { useRestaurant } from "@/contexts/restaurant-context";
+import { useShiftTemplateContext } from "@/contexts/shift-template-context";
 import { useShiftCreationFlow } from "@/hooks/use-shift-creation-flow";
 import { useEmployeeRoles } from "@/hooks/use-employee-roles";
 import { RoleSelectorDialog } from "@/components/shifts/role-selector-dialog";
 import { ShiftTemplateOverlay } from "./shift-template-overlay";
+import { ShiftTemplateFormDialog } from "@/components/schedules/shift-template-form-dialog";
 import {
   filterTemplatesForDay,
   assignColumnsToTemplates,
@@ -64,9 +66,13 @@ export function DayColumnOverlay({
   rolesLoading,
 }: DayColumnOverlayProps) {
   const { selectedRestaurantId } = useRestaurant();
+  const { refetch: refetchTemplates } = useShiftTemplateContext();
 
   // Track which role was clicked for filtering employees
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
+  
+  // Track which template is being edited
+  const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
 
   // Filter templates for this specific day
   const templatesForDay = useMemo(
@@ -90,6 +96,7 @@ export function DayColumnOverlay({
     handleRoleSelected,
     cancelShiftCreation,
     handleShiftUnassignment,
+    handleShiftUpdate,
   } = useShiftCreationFlow({
     restaurantId: selectedRestaurantId,
     scheduleId,
@@ -133,15 +140,36 @@ export function DayColumnOverlay({
   };
 
   // Handle employee selection
-  const onEmployeeSelect = async (employee: Employee, roleId: number) => {
+  const onEmployeeSelect = async (employee: Employee, roleId: number, notes?: string) => {
     const empRoles = employeesWithRoles.get(employee.id) || [];
     const selectedRole = empRoles.find((r) => r.id === roleId);
 
+    // Check if there's an existing shift for this template and role on this day
+    let existingShift: ScheduledShift | undefined;
+    if (selectedTemplate) {
+      existingShift = shifts.find(
+        (s) =>
+          s.shift_template_id === selectedTemplate.id &&
+          s.role_id === roleId &&
+          s.shift_date.startsWith(date)
+      );
+    }
+
+    if (existingShift) {
+      // Update existing shift
+      await handleShiftUpdate(existingShift, {
+        employee_id: employee.id,
+        notes: notes !== undefined ? notes : existingShift.notes,
+      });
+      return;
+    }
+
+    // Create new shift
     if (selectedRole && selectedTemplate) {
-      await handleEmployeeSelect(employee, [selectedRole]);
+      await handleEmployeeSelect(employee, [selectedRole], notes);
       setSelectedRoleId(null);
     } else {
-      await handleEmployeeSelect(employee, empRoles);
+      await handleEmployeeSelect(employee, empRoles, notes);
     }
   };
 
@@ -154,6 +182,10 @@ export function DayColumnOverlay({
       const shiftDateOnly = shift.shift_date.split("T")[0];
       return shift.shift_template_id === templateId && shiftDateOnly === date;
     });
+  };
+
+  const handleTemplateClick = (template: ShiftTemplate) => {
+    setEditingTemplateId(template.id);
   };
 
   if (columnAssignments.length === 0) {
@@ -182,7 +214,7 @@ export function DayColumnOverlay({
             position={styles}
             assignedShifts={assignedShifts}
             isHovered={hoveredTemplateId === assignment.template.id}
-            onTemplateClick={startShiftCreation}
+            onTemplateClick={handleTemplateClick}
             onTemplateHover={onTemplateHover}
             isPopoverOpen={isPopoverOpen}
             onPopoverOpenChange={(open) => {
@@ -215,6 +247,19 @@ export function DayColumnOverlay({
           onSelectRole={handleRoleSelected}
         />
       )}
+
+      {/* Edit Shift Template Dialog */}
+      <ShiftTemplateFormDialog
+        isOpen={!!editingTemplateId}
+        onOpenChange={(open) => !open && setEditingTemplateId(null)}
+        restaurantId={selectedRestaurantId}
+        shiftTemplateId={editingTemplateId || undefined}
+        mode="edit"
+        onSuccess={() => {
+          setEditingTemplateId(null);
+          refetchTemplates();
+        }}
+      />
     </div>
   );
 }

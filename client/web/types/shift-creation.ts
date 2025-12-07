@@ -10,6 +10,7 @@ export interface PendingShiftData {
   employee: Employee;
   template: ShiftTemplate;
   roles: Role[];
+  notes?: string;
 }
 
 /**

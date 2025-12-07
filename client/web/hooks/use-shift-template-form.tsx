@@ -28,6 +28,7 @@ const shiftTemplateSchema = z
     end_time: z
       .string()
       .regex(timeRegex, "End time must be in HH:MM format (e.g., 17:00)"),
+    role_ids: z.array(z.number()).optional(),
   })
   .refine(
     (data) => {
@@ -71,6 +72,7 @@ export interface ShiftTemplateFormData {
   day_of_week: number;
   start_time: string;
   end_time: string;
+  role_ids?: number[];
 }
 
 export interface UseShiftTemplateFormOptions {
@@ -110,6 +112,7 @@ export function useShiftTemplateForm({
       day_of_week: 0,
       start_time: "09:00",
       end_time: "17:00",
+      role_ids: [],
     },
   });
 
@@ -130,6 +133,7 @@ export function useShiftTemplateForm({
         day_of_week: data.day_of_week,
         start_time: data.start_time,
         end_time: data.end_time,
+        role_ids: data.role_ids,
       };
 
       const isEdit = mode === "edit";
@@ -173,10 +177,39 @@ export function useShiftTemplateForm({
     }
   };
 
+  const deleteShiftTemplate = async () => {
+    if (!restaurantId || !shiftTemplateId) return;
+    
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetchWithAuth(
+        `${getApiBase()}/restaurants/${restaurantId}/shift-templates/${shiftTemplateId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to delete shift template");
+      }
+
+      if (onSuccess) {
+        onSuccess(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete template");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     register,
     handleSubmit,
     onSubmit,
+    deleteShiftTemplate,
     errors,
     isSubmitting,
     isLoading,

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/balebbae/RESA/internal/mailer"
 	"github.com/balebbae/RESA/internal/store"
 	"github.com/go-chi/chi/v5"
 )
@@ -599,4 +600,315 @@ func (app *application) publishScheduleHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// SendScheduleEmailPayload defines the request body for sending schedule emails
+type SendScheduleEmailPayload struct {
+	IncludeEvents bool `json:"include_events"`
+}
+
+// SendScheduleEmailResponse defines the response structure
+type SendScheduleEmailResponse struct {
+	TotalRecipients int                        `json:"total_recipients"`
+	Successful      int                        `json:"successful"`
+	Failed          int                        `json:"failed"`
+	Failures        []SendScheduleEmailFailure `json:"failures,omitempty"`
+}
+
+// SendScheduleEmailFailure describes a single email send failure
+type SendScheduleEmailFailure struct {
+	EmployeeID   int64  `json:"employee_id"`
+	EmployeeName string `json:"employee_name"`
+	Email        string `json:"email"`
+	Error        string `json:"error"`
+}
+
+// ScheduleEmailData contains all data needed for the schedule email template
+type ScheduleEmailData struct {
+	RestaurantName string
+	EmployeeName   string
+	ScheduleStart  string
+	ScheduleEnd    string
+	Shifts         []ScheduleEmailShift
+	Events         []ScheduleEmailEvent
+	HasShifts      bool
+	HasEvents      bool
+}
+
+// ScheduleEmailShift represents a shift in the email
+type ScheduleEmailShift struct {
+	Date      string
+	StartTime string
+	EndTime   string
+	RoleName  string
+	RoleColor string
+	Notes     string
+}
+
+// ScheduleEmailEvent represents an event in the email
+type ScheduleEmailEvent struct {
+	Date        string
+	Title       string
+	Description string
+	StartTime   string
+	EndTime     string
+}
+
+// formatDateForDisplay formats a DateOnly for human-readable display
+func formatDateForDisplay(d store.DateOnly) string {
+	t, err := time.Parse("2006-01-02", string(d))
+	if err != nil {
+		return string(d)
+	}
+	return t.Format("Mon, Jan 2, 2006")
+}
+
+// formatShiftDateForDisplay formats a time.Time for shift display (e.g., "Monday, Jan 2")
+func formatShiftDateForDisplay(t time.Time) string {
+	return t.Format("Monday, Jan 2")
+}
+
+// formatTimeForDisplay formats a TimeOfDay for human-readable display (e.g., "9:00 AM")
+func formatTimeForDisplay(t store.TimeOfDay) string {
+	parsed, err := time.Parse("15:04:05", string(t))
+	if err != nil {
+		// Try HH:MM format
+		parsed, err = time.Parse("15:04", string(t))
+		if err != nil {
+			return string(t)
+		}
+	}
+	return parsed.Format("3:04 PM")
+}
+
+// filterShiftsForEmployee returns only shifts assigned to the given employee
+func filterShiftsForEmployee(shifts []*store.ScheduledShift, employeeID int64) []*store.ScheduledShift {
+	var result []*store.ScheduledShift
+	for _, shift := range shifts {
+		if shift.EmployeeID != nil && *shift.EmployeeID == employeeID {
+			result = append(result, shift)
+		}
+	}
+	return result
+}
+
+// transformShiftsForEmail converts ScheduledShifts to email-friendly format
+func transformShiftsForEmail(shifts []*store.ScheduledShift) []ScheduleEmailShift {
+	result := make([]ScheduleEmailShift, 0, len(shifts))
+	for _, s := range shifts {
+		result = append(result, ScheduleEmailShift{
+			Date:      formatShiftDateForDisplay(s.ShiftDate),
+			StartTime: formatTimeForDisplay(s.StartTime),
+			EndTime:   formatTimeForDisplay(s.EndTime),
+			RoleName:  s.RoleName,
+			RoleColor: s.RoleColor,
+			Notes:     s.Notes,
+		})
+	}
+	return result
+}
+
+// transformEventsForEmail converts Events to email-friendly format
+func transformEventsForEmail(events []*store.Event) []ScheduleEmailEvent {
+	if events == nil {
+		return nil
+	}
+	result := make([]ScheduleEmailEvent, 0, len(events))
+	for _, e := range events {
+		result = append(result, ScheduleEmailEvent{
+			Date:        formatDateForDisplay(e.Date),
+			Title:       e.Title,
+			Description: e.Description,
+			StartTime:   formatTimeForDisplay(e.StartTime),
+			EndTime:     formatTimeForDisplay(e.EndTime),
+		})
+	}
+	return result
+}
+
+// buildScheduleEmailData builds the email data structure for an employee
+func buildScheduleEmailData(
+	employee *store.Employee,
+	allShifts []*store.ScheduledShift,
+	events []*store.Event,
+	restaurantName string,
+	schedule *store.Schedule,
+) *ScheduleEmailData {
+	employeeShifts := filterShiftsForEmployee(allShifts, employee.ID)
+	emailShifts := transformShiftsForEmail(employeeShifts)
+	emailEvents := transformEventsForEmail(events)
+
+	return &ScheduleEmailData{
+		RestaurantName: restaurantName,
+		EmployeeName:   employee.FullName,
+		ScheduleStart:  formatDateForDisplay(schedule.StartDate),
+		ScheduleEnd:    formatDateForDisplay(schedule.EndDate),
+		Shifts:         emailShifts,
+		Events:         emailEvents,
+		HasShifts:      len(emailShifts) > 0,
+		HasEvents:      len(emailEvents) > 0,
+	}
+}
+
+// SendScheduleEmail godoc
+//
+//	@Summary		Sends schedule emails to all employees
+//	@Description	Sends the schedule via email to all employees in the restaurant
+//	@Tags			schedule
+//	@Accept			json
+//	@Produce		json
+//	@Param			restaurant_id	path		int							true	"Restaurant ID"
+//	@Param			id				path		int							true	"Schedule ID"
+//	@Param			payload			body		SendScheduleEmailPayload	true	"Email options"
+//	@Success		200				{object}	SendScheduleEmailResponse
+//	@Failure		400				{object}	error
+//	@Failure		401				{object}	error
+//	@Failure		404				{object}	error
+//	@Failure		500				{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/restaurants/{restaurant_id}/schedules/{id}/send-email [post]
+func (app *application) sendScheduleEmailHandler(w http.ResponseWriter, r *http.Request) {
+	restaurantID, err := strconv.ParseInt(chi.URLParam(r, "restaurantID"), 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	scheduleID, err := strconv.ParseInt(chi.URLParam(r, "scheduleID"), 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	ctx := r.Context()
+
+	// Verify restaurant ownership
+	restaurant, err := app.store.Restaurants.GetByID(ctx, restaurantID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			app.notFoundResponse(w, r, err)
+			return
+		}
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	user := getUserFromContext(r)
+	if restaurant.UserID != user.ID {
+		app.notFoundResponse(w, r, errors.New("restaurant not found"))
+		return
+	}
+
+	// Get and validate schedule
+	schedule, err := app.store.Schedules.GetByID(ctx, scheduleID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			app.notFoundResponse(w, r, err)
+			return
+		}
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if schedule.RestaurantID != restaurantID {
+		app.notFoundResponse(w, r, errors.New("schedule not found"))
+		return
+	}
+
+	// Parse payload (allow empty body, default to include_events: false)
+	var payload SendScheduleEmailPayload
+	if err := readJSON(w, r, &payload); err != nil {
+		payload = SendScheduleEmailPayload{IncludeEvents: false}
+	}
+
+	// Gather data
+	employees, err := app.store.Employees.ListByRestaurant(ctx, restaurantID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if len(employees) == 0 {
+		app.badRequestResponse(w, r, errors.New("no employees to send schedule to"))
+		return
+	}
+
+	shifts, err := app.store.ScheduledShifts.ListBySchedule(ctx, scheduleID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	var events []*store.Event
+	if payload.IncludeEvents {
+		events, err = app.store.Events.ListByRestaurantAndDateRange(
+			ctx,
+			restaurantID,
+			schedule.StartDate,
+			schedule.EndDate,
+		)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+	}
+
+	// Send emails
+	isProdEnv := app.config.env == "production"
+	response := SendScheduleEmailResponse{
+		TotalRecipients: len(employees),
+		Failures:        []SendScheduleEmailFailure{},
+	}
+
+	for _, employee := range employees {
+		// Skip employees without email
+		if employee.Email == "" {
+			response.Failed++
+			response.Failures = append(response.Failures, SendScheduleEmailFailure{
+				EmployeeID:   employee.ID,
+				EmployeeName: employee.FullName,
+				Email:        "",
+				Error:        "no email address",
+			})
+			continue
+		}
+
+		emailData := buildScheduleEmailData(
+			employee,
+			shifts,
+			events,
+			restaurant.Name,
+			schedule,
+		)
+
+		_, err := app.mailer.Send(
+			mailer.ScheduleNotificationTemplate,
+			employee.FullName,
+			employee.Email,
+			emailData,
+			!isProdEnv,
+		)
+
+		if err != nil {
+			app.logger.Warnw("failed to send schedule email",
+				"employee_id", employee.ID,
+				"email", employee.Email,
+				"error", err,
+			)
+			response.Failed++
+			response.Failures = append(response.Failures, SendScheduleEmailFailure{
+				EmployeeID:   employee.ID,
+				EmployeeName: employee.FullName,
+				Email:        employee.Email,
+				Error:        err.Error(),
+			})
+			continue
+		}
+
+		response.Successful++
+	}
+
+	if err := app.jsonResponse(w, http.StatusOK, response); err != nil {
+		app.internalServerError(w, r, err)
+	}
 }

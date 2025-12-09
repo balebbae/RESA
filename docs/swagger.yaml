@@ -9,6 +9,15 @@ definitions:
     required:
     - role_ids
     type: object
+  main.AssignEventEmployeesPayload:
+    properties:
+      employee_ids:
+        items:
+          type: integer
+        type: array
+    required:
+    - employee_ids
+    type: object
   main.CreateEmployeePayload:
     properties:
       email:
@@ -20,6 +29,30 @@ definitions:
     required:
     - email
     - full_name
+    type: object
+  main.CreateEventPayload:
+    properties:
+      date:
+        type: string
+      description:
+        type: string
+      employee_ids:
+        items:
+          type: integer
+        type: array
+      end_time:
+        type: string
+      start_time:
+        type: string
+      title:
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - date
+    - end_time
+    - start_time
+    - title
     type: object
   main.CreateRestaurantPayload:
     properties:
@@ -69,6 +102,8 @@ definitions:
       name:
         maxLength: 255
         minLength: 1
+        type: string
+      notes:
         type: string
       role_ids:
         items:
@@ -140,6 +175,35 @@ definitions:
     required:
     - email
     type: object
+  main.SendScheduleEmailFailure:
+    properties:
+      email:
+        type: string
+      employee_id:
+        type: integer
+      employee_name:
+        type: string
+      error:
+        type: string
+    type: object
+  main.SendScheduleEmailPayload:
+    properties:
+      include_events:
+        type: boolean
+    type: object
+  main.SendScheduleEmailResponse:
+    properties:
+      failed:
+        type: integer
+      failures:
+        items:
+          $ref: '#/definitions/main.SendScheduleEmailFailure'
+        type: array
+      successful:
+        type: integer
+      total_recipients:
+        type: integer
+    type: object
   main.UpdateEmployeePayload:
     properties:
       email:
@@ -147,6 +211,25 @@ definitions:
         type: string
       full_name:
         maxLength: 255
+        type: string
+    type: object
+  main.UpdateEventPayload:
+    properties:
+      date:
+        type: string
+      description:
+        type: string
+      employee_ids:
+        items:
+          type: integer
+        type: array
+      end_time:
+        type: string
+      start_time:
+        type: string
+      title:
+        maxLength: 255
+        minLength: 1
         type: string
     type: object
   main.UpdateRestaurantPayload:
@@ -189,6 +272,8 @@ definitions:
       name:
         maxLength: 255
         minLength: 1
+        type: string
+      notes:
         type: string
       role_ids:
         items:
@@ -271,6 +356,31 @@ definitions:
         type: integer
       restaurant_id:
         type: integer
+      updated_at:
+        type: string
+    type: object
+  store.Event:
+    properties:
+      created_at:
+        type: string
+      date:
+        type: string
+      description:
+        type: string
+      employees:
+        items:
+          $ref: '#/definitions/store.Employee'
+        type: array
+      end_time:
+        type: string
+      id:
+        type: integer
+      restaurant_id:
+        type: integer
+      start_time:
+        type: string
+      title:
+        type: string
       updated_at:
         type: string
     type: object
@@ -373,6 +483,8 @@ definitions:
       id:
         type: integer
       name:
+        type: string
+      notes:
         type: string
       restaurant_id:
         type: integer
@@ -1033,6 +1145,333 @@ paths:
       summary: Removes a role from an employee
       tags:
       - employee
+  /restaurants/{restaurant_id}/events:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all events for a restaurant, optionally filtered by date
+        range
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Start date filter (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date filter (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Event'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Lists restaurant's events
+      tags:
+      - event
+    post:
+      consumes:
+      - application/json
+      description: Creates an event for a restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Event payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.CreateEventPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/store.Event'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Creates an event
+      tags:
+      - event
+  /restaurants/{restaurant_id}/events/{eventID}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an event by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Event ID
+        in: path
+        name: eventID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Deletes an event
+      tags:
+      - event
+    get:
+      consumes:
+      - application/json
+      description: Fetches an event by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Event ID
+        in: path
+        name: eventID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Event'
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Fetches an event
+      tags:
+      - event
+    patch:
+      consumes:
+      - application/json
+      description: Updates an event by ID
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Event ID
+        in: path
+        name: eventID
+        required: true
+        type: integer
+      - description: Event payload with optional fields
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.UpdateEventPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Event'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Updates an event
+      tags:
+      - event
+  /restaurants/{restaurant_id}/events/{eventID}/employees:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all employees assigned to an event
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Event ID
+        in: path
+        name: eventID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Employee'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get employees for an event
+      tags:
+      - event
+    post:
+      consumes:
+      - application/json
+      description: Assigns multiple employees to an event (additive)
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Event ID
+        in: path
+        name: eventID
+        required: true
+        type: integer
+      - description: Employee IDs payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.AssignEventEmployeesPayload'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Assigns employees to an event
+      tags:
+      - event
+  /restaurants/{restaurant_id}/events/{eventID}/employees/{employeeID}:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a specific employee from an event
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Event ID
+        in: path
+        name: eventID
+        required: true
+        type: integer
+      - description: Employee ID
+        in: path
+        name: employeeID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Removes an employee from an event
+      tags:
+      - event
   /restaurants/{restaurant_id}/roles:
     get:
       consumes:
@@ -1491,6 +1930,52 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Publishes a schedule
+      tags:
+      - schedule
+  /restaurants/{restaurant_id}/schedules/{id}/send-email:
+    post:
+      consumes:
+      - application/json
+      description: Sends the schedule via email to all employees in the restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Email options
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.SendScheduleEmailPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SendScheduleEmailResponse'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Sends schedule emails to all employees
       tags:
       - schedule
   /restaurants/{restaurant_id}/shift-templates:

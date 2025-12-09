@@ -19,6 +19,7 @@ type CreateShiftTemplatePayload struct {
 	DayOfWeek    int     `json:"day_of_week" validate:"gte=0,lte=6"`
 	StartTime    string  `json:"start_time" validate:"required"`
 	EndTime      string  `json:"end_time" validate:"required"`
+	Notes        string  `json:"notes,omitempty"`
 	RoleIDs      []int64 `json:"role_ids,omitempty"`
 }
 
@@ -27,6 +28,7 @@ type UpdateShiftTemplatePayload struct {
 	DayOfWeek    *int     `json:"day_of_week,omitempty" validate:"omitempty,min=0,max=6"`
 	StartTime    *string  `json:"start_time,omitempty" validate:"omitempty"`
 	EndTime      *string  `json:"end_time,omitempty" validate:"omitempty"`
+	Notes        *string  `json:"notes,omitempty"`
 	RoleIDs      []int64  `json:"role_ids,omitempty"`
 }
 
@@ -163,6 +165,7 @@ func (app *application) createShiftTemplateHandler(w http.ResponseWriter, r *htt
 		DayOfWeek:    payload.DayOfWeek,
 		StartTime:    store.TimeOfDay(payload.StartTime),
 		EndTime:      store.TimeOfDay(payload.EndTime),
+		Notes:        payload.Notes,
 		RoleIDs:      roleIDs,
 	}
 
@@ -371,6 +374,10 @@ func (app *application) updateShiftTemplateHandler(w http.ResponseWriter, r *htt
 	// Set validated times
 	template.StartTime = startTime
 	template.EndTime = endTime
+
+	if payload.Notes != nil {
+		template.Notes = *payload.Notes
+	}
 
 	// Update role_ids if provided (nil check allows sending empty array to clear roles)
 	if payload.RoleIDs != nil {

@@ -1,27 +1,32 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useRef } from "react";
-import type { ShiftTemplate } from "@/types/shift-template";
-import type { ScheduledShift } from "@/types/schedule";
-import type { Employee } from "@/types/employee";
-import type { Role } from "@/types/role";
-import { DayColumnOverlay } from "./day-column-overlay";
+import { useState, useEffect, useRef } from "react"
+import type { ShiftTemplate } from "@/types/shift-template"
+import type { ScheduledShift } from "@/types/schedule"
+import type { Employee } from "@/types/employee"
+import type { Role } from "@/types/role"
+import type { Event } from "@/types/event"
+import { DayColumnOverlay } from "./day-column-overlay"
+import { DayColumnEvents } from "./day-column-events"
 
 interface OverlayLayerProps {
-  weekDates: string[];
-  shiftTemplates: ShiftTemplate[];
-  shifts: ScheduledShift[];
-  employees: Employee[];
-  scheduleId: number | null;
-  weekStartDate: string;
-  onShiftCreated?: () => void;
-  addOptimisticShift?: (shift: ScheduledShift) => void;
-  removeOptimisticShift?: (tempId: string | number) => void;
-  confirmOptimisticShift?: (tempId: string | number, realShift: ScheduledShift) => void;
-  updateOptimisticShift?: (shiftId: string | number, shift: ScheduledShift) => void;
-  roles: Role[];
-  roleMap: Map<number, Role>;
-  rolesLoading: boolean;
+  weekDates: string[]
+  shiftTemplates: ShiftTemplate[]
+  shifts: ScheduledShift[]
+  employees: Employee[]
+  scheduleId: number | null
+  weekStartDate: string
+  onShiftCreated?: () => void
+  addOptimisticShift?: (shift: ScheduledShift) => void
+  removeOptimisticShift?: (tempId: string | number) => void
+  confirmOptimisticShift?: (tempId: string | number, realShift: ScheduledShift) => void
+  updateOptimisticShift?: (shiftId: string | number, shift: ScheduledShift) => void
+  roles: Role[]
+  roleMap: Map<number, Role>
+  rolesLoading: boolean
+  // Events support
+  events?: Event[]
+  onEventClick?: (event: Event) => void
 }
 
 const TIME_COLUMN_WIDTH = 80; // Must match w-20 in CalendarGrid
@@ -48,6 +53,8 @@ export function OverlayLayer({
   roles,
   roleMap,
   rolesLoading,
+  events = [],
+  onEventClick,
 }: OverlayLayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [columnWidth, setColumnWidth] = useState(0);
@@ -99,6 +106,7 @@ export function OverlayLayer({
         height: `${TOTAL_HOURS * PIXELS_PER_HOUR}px`,
       }}
     >
+      {/* Shift templates and shifts */}
       {weekDates.map((date, index) => (
         <DayColumnOverlay
           key={date}
@@ -122,6 +130,19 @@ export function OverlayLayer({
           rolesLoading={rolesLoading}
         />
       ))}
+
+      {/* Events overlay */}
+      {events.length > 0 &&
+        weekDates.map((date, index) => (
+          <DayColumnEvents
+            key={`events-${date}`}
+            date={date}
+            dayIndex={index}
+            columnWidth={columnWidth}
+            events={events}
+            onEventClick={onEventClick}
+          />
+        ))}
     </div>
-  );
+  )
 }

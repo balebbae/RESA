@@ -1,2 +1,0 @@
--- Constraints and indexes are now included in the initial table definition (000014)
--- This migration is kept as a no-op for migration history consistency

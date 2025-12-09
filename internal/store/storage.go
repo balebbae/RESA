@@ -72,24 +72,37 @@ type Storage struct {
 	ScheduledShifts interface {
 		Create(context.Context, *ScheduledShift) error
 		BatchCreate(context.Context, []*ScheduledShift) ([]int64, error)
-		GetByID(context.Context, int64) (*ScheduledShift, error) 
+		GetByID(context.Context, int64) (*ScheduledShift, error)
 		ListBySchedule(context.Context, int64) ([]*ScheduledShift, error)
 		ListByRestaurantAndWeek(context.Context, int64, time.Time, time.Time) ([]*ScheduledShift, error) // TODO: consume on http side
-		Update(context.Context, *ScheduledShift) error 
+		Update(context.Context, *ScheduledShift) error
 		Delete(context.Context, int64) error
 		AssignEmployee(context.Context, int64, *int64) error
+	}
+	Events interface {
+		Create(context.Context, *Event) error
+		GetByID(context.Context, int64) (*Event, error)
+		ListByRestaurant(context.Context, int64) ([]*Event, error)
+		ListByRestaurantAndDateRange(context.Context, int64, DateOnly, DateOnly) ([]*Event, error)
+		Update(context.Context, *Event) error
+		Delete(context.Context, int64) error
+		AssignEmployees(context.Context, int64, []int64) error
+		RemoveEmployee(context.Context, int64, int64) error
+		GetEmployees(context.Context, int64) ([]*Employee, error)
+		ReplaceEmployees(context.Context, int64, []int64) error
 	}
 }
 
 func NewStorage(db *sql.DB) Storage {
 	return Storage{
-		Users:          &UserStore{db},
-		Restaurants:    &RestaurantStore{db},
-		Employees:      &EmployeeStore{db},
-		Roles:          &RoleStore{db},
-		ShiftTemplates: &ShiftTemplateStore{db},
-		Schedules:      &ScheduleStore{db},
+		Users:           &UserStore{db},
+		Restaurants:     &RestaurantStore{db},
+		Employees:       &EmployeeStore{db},
+		Roles:           &RoleStore{db},
+		ShiftTemplates:  &ShiftTemplateStore{db},
+		Schedules:       &ScheduleStore{db},
 		ScheduledShifts: &ScheduledShiftStore{db},
+		Events:          &EventStore{db},
 	}
 }
 

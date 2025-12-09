@@ -233,6 +233,18 @@ export function ShiftTemplateOverlay({
                 )}
               </div>
             )}
+
+            {/* Notes Section (Moved to Bottom) */}
+            {template.notes && (
+              <div className="flex-shrink-0 mt-1">
+                <div className="border-t border-black/20 my-1" />
+                <div className="text-xs font-medium truncate">Notes</div>
+                <div className="border-t border-black/20 my-1" />
+                <div className="text-[10px] leading-tight opacity-90 whitespace-pre-wrap break-words line-clamp-3">
+                  {template.notes}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </PopoverTrigger>

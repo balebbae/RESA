@@ -1,30 +1,32 @@
-"use client";
+"use client"
 
-import { useMemo, useState, useRef, useEffect } from "react";
-import type { ScheduledShift } from "@/types/schedule";
-import type { ShiftTemplate } from "@/types/shift-template";
-import type { Employee } from "@/types/employee";
-import type { Role } from "@/types/role";
-import { DayHeader } from "./day-header";
-import { TimeColumn } from "./time-column";
-import { TimeSlotCell } from "./time-slot-cell";
-import { OverlayLayer } from "./overlay-layer";
-import { CalendarClickMenu } from "./calendar-click-menu";
-import { CurrentTimeIndicator } from "./current-time-indicator";
-import { getAllHours, getWeekDates } from "@/lib/calendar/shift-utils";
-import { getTimezoneAbbreviation } from "@/lib/time";
-// Note: calculateClickPosition no longer used - using inline calculations instead
-import { useRoles } from "@/hooks/use-roles";
-import { useRestaurant } from "@/contexts/restaurant-context";
-import { useShiftTemplateContext } from "@/contexts/shift-template-context";
+import { useMemo, useState, useRef, useEffect } from "react"
+import type { ScheduledShift } from "@/types/schedule"
+import type { ShiftTemplate } from "@/types/shift-template"
+import type { Employee } from "@/types/employee"
+import type { Role } from "@/types/role"
+import { DayHeader } from "./day-header"
+import { TimeColumn } from "./time-column"
+import { TimeSlotCell } from "./time-slot-cell"
+import { OverlayLayer } from "./overlay-layer"
+import { CalendarClickMenu } from "./calendar-click-menu"
+import { CurrentTimeIndicator } from "./current-time-indicator"
+import { getAllHours, getWeekDates } from "@/lib/calendar/shift-utils"
+import { getTimezoneAbbreviation } from "@/lib/time"
+import { useRoles } from "@/hooks/use-roles"
+import { useRestaurant } from "@/contexts/restaurant-context"
+import { useShiftTemplateContext } from "@/contexts/shift-template-context"
+import { useEvents } from "@/hooks/use-events"
 import {
   Popover,
   PopoverAnchor,
   PopoverContent,
 } from "@/components/ui/popover";
 import { ShiftTemplateFormDialog } from "@/components/schedules/shift-template-form-dialog";
+import { EventEditDialog } from "./event-edit-dialog";
 import { SelectionHighlight } from "./selection-highlight";
 import { hoursToTimeString, roundToQuarterHour } from "@/lib/time";
+import type { Event } from "@/types/event"
 
 /** Constants for calendar grid calculations */
 const PIXELS_PER_HOUR = 60;
@@ -90,9 +92,15 @@ export function CalendarGrid({
   const hours = getAllHours();
 
   // Fetch roles once at grid level
-  const { selectedRestaurantId } = useRestaurant();
-  const { roles, isLoading: rolesLoading } = useRoles(selectedRestaurantId);
-  const { refetch: refetchShiftTemplates } = useShiftTemplateContext();
+  const { selectedRestaurantId } = useRestaurant()
+  const { roles, isLoading: rolesLoading } = useRoles(selectedRestaurantId)
+  const { refetch: refetchShiftTemplates } = useShiftTemplateContext()
+
+  // Fetch events for the visible week
+  const { events, refetch: refetchEvents } = useEvents(selectedRestaurantId, {
+    startDate: weekDates[0],
+    endDate: weekDates[6],
+  })
 
   // Create role lookup map for O(1) access
   const roleMap = useMemo(() => {
@@ -102,13 +110,18 @@ export function CalendarGrid({
   }, [roles]);
 
   // State for click-to-create popover
-  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false)
   const [clickPosition, setClickPosition] = useState<{
-    x: number;
-    y: number;
-    side: "left" | "right";
-  } | null>(null);
-  const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
+    x: number
+    y: number
+    side: "left" | "right"
+  } | null>(null)
+  const [shiftDialogOpen, setShiftDialogOpen] = useState(false)
+  const [showEventForm, setShowEventForm] = useState(false)
+  
+  // State for event editing
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+  const [eventDialogOpen, setEventDialogOpen] = useState(false)
 
   // State for time selection (double-click or drag)
   const [selection, setSelection] = useState<SelectionState | null>(null);
@@ -149,16 +162,17 @@ export function CalendarGrid({
   const handlePopoverOpenChange = (open: boolean) => {
     if (!open) {
       // Mark that we just closed the popover
-      justClosedRef.current = true;
+      justClosedRef.current = true
       // Reset the flag after a short delay
       setTimeout(() => {
-        justClosedRef.current = false;
-      }, 100);
-      // Clear selection when popover closes
-      setSelection(null);
+        justClosedRef.current = false
+      }, 100)
+      // Clear selection and event form when popover closes
+      setSelection(null)
+      setShowEventForm(false)
     }
-    setPopoverOpen(open);
-  };
+    setPopoverOpen(open)
+  }
 
   /**
    * Convert pixel Y position to time string (HH:MM format)
@@ -411,10 +425,36 @@ export function CalendarGrid({
     setShiftDialogOpen(true);
   };
 
-  // Handle "Create Event" button click (placeholder)
+  // Handle "Create Event" button click - show inline event form
   const handleCreateEvent = () => {
-    // No functionality yet
-  };
+    setShowEventForm(true)
+  }
+
+  // Handle successful event creation
+  const handleEventCreated = () => {
+    setShowEventForm(false)
+    setPopoverOpen(false)
+    setSelection(null)
+    refetchEvents()
+  }
+
+  // Handle event form cancel
+  const handleEventFormCancel = () => {
+    setShowEventForm(false)
+  }
+
+  // Handle existing event click
+  const handleEventClick = (event: Event) => {
+    setSelectedEvent(event)
+    setEventDialogOpen(true)
+  }
+
+  // Handle event update/delete success
+  const handleEventUpdateSuccess = () => {
+    setEventDialogOpen(false)
+    setSelectedEvent(null)
+    refetchEvents()
+  }
 
   // Handle shift template creation success
   const handleShiftTemplateSuccess = () => {
@@ -479,7 +519,7 @@ export function CalendarGrid({
             ))}
           </div>
 
-          {/* Overlay layer for shift templates */}
+          {/* Overlay layer for shift templates and events */}
           <OverlayLayer
             weekDates={weekDates}
             shiftTemplates={shiftTemplates}
@@ -495,6 +535,8 @@ export function CalendarGrid({
             roles={roles}
             roleMap={roleMap}
             rolesLoading={rolesLoading}
+            events={events}
+            onEventClick={handleEventClick}
           />
 
           {/* Selection highlight overlay */}
@@ -531,11 +573,19 @@ export function CalendarGrid({
                 side={clickPosition.side}
                 align="start"
                 sideOffset={-0.5}
-                className="w-48 p-2"
+                className={showEventForm ? "w-80 p-0" : "w-48 p-2"}
               >
                 <CalendarClickMenu
                   onCreateShift={handleCreateShift}
                   onCreateEvent={handleCreateEvent}
+                  showEventForm={showEventForm}
+                  restaurantId={selectedRestaurantId}
+                  date={selection?.date}
+                  startTime={selection?.startTime}
+                  endTime={selection?.endTime}
+                  employees={employees}
+                  onEventCreated={handleEventCreated}
+                  onEventFormCancel={handleEventFormCancel}
                 />
               </PopoverContent>
             </Popover>
@@ -552,6 +602,16 @@ export function CalendarGrid({
         initialDayOfWeek={selection?.dayIndex}
         initialStartTime={selection?.startTime}
         initialEndTime={selection?.endTime}
+      />
+
+      {/* Event Edit Dialog */}
+      <EventEditDialog
+        restaurantId={selectedRestaurantId}
+        event={selectedEvent}
+        employees={employees}
+        isOpen={eventDialogOpen}
+        onOpenChange={setEventDialogOpen}
+        onSuccess={handleEventUpdateSuccess}
       />
     </div>
   );

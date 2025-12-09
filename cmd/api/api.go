@@ -219,6 +219,9 @@ func (app *application) mount() http.Handler {
 						// publish (email out)
 						r.Post("/publish", app.checkRestaurantOwnership(app.publishScheduleHandler))
 
+						// send schedule emails to employees
+						r.Post("/send-email", app.checkRestaurantOwnership(app.sendScheduleEmailHandler))
+
 						// auto-populate shifts from templates
 						r.Post("/auto-populate", app.checkRestaurantOwnership(app.autoPopulateScheduleHandler))
 
@@ -237,6 +240,23 @@ func (app *application) mount() http.Handler {
 								r.Delete("/assign", app.checkRestaurantOwnership(app.unassignEmployeeFromShiftHandler))
 							})
 						})
+					})
+				})
+
+				// events (standalone, not linked to schedules)
+				r.Route("/events", func(r chi.Router) {
+					r.Get("/",  app.getEventsHandler)
+					r.Post("/", app.checkRestaurantOwnership(app.createEventHandler))
+
+					r.Route("/{eventID}", func(r chi.Router) {
+						r.Get("/",    app.getEventHandler)
+						r.Patch("/",  app.checkRestaurantOwnership(app.updateEventHandler))
+						r.Delete("/", app.checkRestaurantOwnership(app.deleteEventHandler))
+
+						// event employee assignments
+						r.Get("/employees",                 app.getEventEmployeesHandler)
+						r.Post("/employees",                app.checkRestaurantOwnership(app.assignEventEmployeesHandler))
+						r.Delete("/employees/{employeeID}", app.checkRestaurantOwnership(app.removeEventEmployeeHandler))
 					})
 				})
             })

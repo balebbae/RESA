@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +15,7 @@ import { RoleLegend } from "@/components/roles/role-legend";
 import { useWorkplaces } from "@/hooks/use-workplaces";
 import { FlowButton } from "./flow-button";
 import { useAuth } from "@/lib/auth";
+import { SendScheduleDialog } from "@/components/schedules/send-schedule-dialog";
 
 /**
  * Left sidebar component - Simplified and refactored
@@ -24,6 +26,7 @@ import { useAuth } from "@/lib/auth";
 export function SidebarLeft({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const { workplaces, refetch } = useWorkplaces();
   const { user } = useAuth();
 
@@ -45,9 +48,18 @@ export function SidebarLeft({
         <RoleLegend />
       </SidebarContent>
       <SidebarFooter className="p-4">
-        <FlowButton text="Generate Schedule" />
+        <FlowButton
+          text="Generate Schedule"
+          onClick={() => setSendDialogOpen(true)}
+        />
       </SidebarFooter>
       <SidebarRail />
+
+      {/* Send Schedule Dialog */}
+      <SendScheduleDialog
+        isOpen={sendDialogOpen}
+        onOpenChange={setSendDialogOpen}
+      />
     </Sidebar>
   );
 }

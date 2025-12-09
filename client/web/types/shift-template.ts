@@ -12,6 +12,7 @@ export interface ShiftTemplate {
   day_of_week: number; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   start_time: string; // HH:MM format
   end_time: string; // HH:MM format
+  notes: string;
   role_ids: number[]; // IDs of roles (stored as JSONB, always present)
   created_at: string;
   updated_at: string;

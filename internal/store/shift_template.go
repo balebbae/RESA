@@ -15,6 +15,7 @@ type ShiftTemplate struct {
 	DayOfWeek    int       `json:"day_of_week"`
 	StartTime    TimeOfDay `json:"start_time"`
 	EndTime      TimeOfDay `json:"end_time"`
+	Notes        string    `json:"notes"`
 	RoleIDs      []int64   `json:"role_ids"` // Stored as JSONB column
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
@@ -43,8 +44,8 @@ func (s *ShiftTemplateStore) Create(ctx context.Context, template *ShiftTemplate
 	}
 
 	query := `
-		INSERT INTO shift_templates (restaurant_id, name, day_of_week, start_time, end_time, role_ids)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO shift_templates (restaurant_id, name, day_of_week, start_time, end_time, notes, role_ids)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, created_at, updated_at`
 
 	err = s.db.QueryRowContext(
@@ -55,6 +56,7 @@ func (s *ShiftTemplateStore) Create(ctx context.Context, template *ShiftTemplate
 		template.DayOfWeek,
 		template.StartTime,
 		template.EndTime,
+		template.Notes,
 		roleIDsJSON,
 	).Scan(&template.ID, &template.CreatedAt, &template.UpdatedAt)
 
@@ -70,7 +72,7 @@ func (s *ShiftTemplateStore) GetByID(ctx context.Context, id int64) (*ShiftTempl
 	defer cancel()
 
 	query := `
-		SELECT id, restaurant_id, name, day_of_week, start_time, end_time, role_ids, created_at, updated_at
+		SELECT id, restaurant_id, name, day_of_week, start_time, end_time, notes, role_ids, created_at, updated_at
 		FROM shift_templates
 		WHERE id = $1`
 
@@ -83,6 +85,7 @@ func (s *ShiftTemplateStore) GetByID(ctx context.Context, id int64) (*ShiftTempl
 		&template.DayOfWeek,
 		&template.StartTime,
 		&template.EndTime,
+		&template.Notes,
 		&roleIDsJSON,
 		&template.CreatedAt,
 		&template.UpdatedAt,
@@ -113,7 +116,7 @@ func (s *ShiftTemplateStore) ListByRestaurant(ctx context.Context, restaurantID 
 	defer cancel()
 
 	query := `
-		SELECT id, restaurant_id, name, day_of_week, start_time, end_time, role_ids, created_at, updated_at
+		SELECT id, restaurant_id, name, day_of_week, start_time, end_time, notes, role_ids, created_at, updated_at
 		FROM shift_templates
 		WHERE restaurant_id = $1
 		ORDER BY day_of_week, start_time`
@@ -136,6 +139,7 @@ func (s *ShiftTemplateStore) ListByRestaurant(ctx context.Context, restaurantID 
 			&template.DayOfWeek,
 			&template.StartTime,
 			&template.EndTime,
+			&template.Notes,
 			&roleIDsJSON,
 			&template.CreatedAt,
 			&template.UpdatedAt,
@@ -179,8 +183,8 @@ func (s *ShiftTemplateStore) Update(ctx context.Context, template *ShiftTemplate
 
 	query := `
 		UPDATE shift_templates
-		SET name = $1, day_of_week = $2, start_time = $3, end_time = $4, role_ids = $5, updated_at = NOW()
-		WHERE id = $6
+		SET name = $1, day_of_week = $2, start_time = $3, end_time = $4, notes = $5, role_ids = $6, updated_at = NOW()
+		WHERE id = $7
 		RETURNING updated_at`
 
 	err = s.db.QueryRowContext(
@@ -190,6 +194,7 @@ func (s *ShiftTemplateStore) Update(ctx context.Context, template *ShiftTemplate
 		template.DayOfWeek,
 		template.StartTime,
 		template.EndTime,
+		template.Notes,
 		roleIDsJSON,
 		template.ID,
 	).Scan(&template.UpdatedAt)

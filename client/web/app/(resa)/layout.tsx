@@ -133,12 +133,18 @@ function ResaHeader({
       <div className="flex flex-1 items-center justify-between px-3">
         {/* Left side */}
         <div className="flex items-center gap-2">
-          <SidebarTrigger onClick={() => {
-            // If opening left sidebar on small screen, close right sidebar
-            if (!leftSidebarOpen && window.innerWidth < 1024 && setRightSidebarOpen) {
-              setRightSidebarOpen(false);
-            }
-          }} />
+          <SidebarTrigger
+            onClick={() => {
+              // If opening left sidebar on small screen, close right sidebar
+              if (
+                !leftSidebarOpen &&
+                window.innerWidth < 1024 &&
+                setRightSidebarOpen
+              ) {
+                setRightSidebarOpen(false);
+              }
+            }}
+          />
           <Separator
             orientation="vertical"
             className="mr-2 data-[orientation=vertical]:h-4"
@@ -157,6 +163,13 @@ function ResaHeader({
         {/* Right side - Week navigation (conditionally rendered) */}
         {weekNav && (
           <div className="flex items-center gap-2">
+            <Button variant="outline" className="h-8">
+              Week
+              <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+            <Button variant="outline" className="h-8">
+              Today
+            </Button>
             <Button
               variant="ghost"
               size="icon"

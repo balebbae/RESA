@@ -28,6 +28,7 @@ const shiftTemplateSchema = z
     end_time: z
       .string()
       .regex(timeRegex, "End time must be in HH:MM format (e.g., 17:00)"),
+    notes: z.string().optional(),
     role_ids: z.array(z.number()).optional(),
   })
   .refine(
@@ -72,6 +73,7 @@ export interface ShiftTemplateFormData {
   day_of_week: number;
   start_time: string;
   end_time: string;
+  notes?: string;
   role_ids?: number[];
 }
 
@@ -112,6 +114,7 @@ export function useShiftTemplateForm({
       day_of_week: 0,
       start_time: "09:00",
       end_time: "17:00",
+      notes: "",
       role_ids: [],
     },
   });
@@ -133,6 +136,7 @@ export function useShiftTemplateForm({
         day_of_week: data.day_of_week,
         start_time: data.start_time,
         end_time: data.end_time,
+        notes: data.notes,
         role_ids: data.role_ids,
       };
 

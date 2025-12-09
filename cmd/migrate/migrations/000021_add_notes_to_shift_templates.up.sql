@@ -1,0 +1,1 @@
+ALTER TABLE shift_templates ADD COLUMN notes TEXT NOT NULL DEFAULT '';

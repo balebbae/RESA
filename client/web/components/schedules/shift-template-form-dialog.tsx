@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -156,7 +157,6 @@ export function ShiftTemplateFormDialog({
     ? "Update shift template information."
     : "Add a new shift template to this workplace.";
 
-  const selectedDayOfWeek = watch("day_of_week");
   const currentStartTime = watch("start_time");
   const currentEndTime = watch("end_time");
 
@@ -296,6 +296,7 @@ export function ShiftTemplateFormDialog({
             setValue("name", data.name);
             setValue("start_time", data.start_time?.slice(0, 5)); // Ensure HH:MM
             setValue("end_time", data.end_time?.slice(0, 5));
+            setValue("notes", data.notes || "");
             setSelectedDays([data.day_of_week]);
             setValue("day_of_week", data.day_of_week);
           }
@@ -469,6 +470,7 @@ export function ShiftTemplateFormDialog({
             day_of_week: dayValue,
             start_time: `${startHour}:${startMinute}`,
             end_time: `${endHour}:${endMinute}`,
+            notes: watch("notes"),
             role_ids:
               selectedRoles.length > 0
                 ? selectedRoles.map((r) => r.id)
@@ -862,6 +864,17 @@ export function ShiftTemplateFormDialog({
                     {errors.end_time.message}
                   </p>
                 )}
+              </Field>
+
+              {/* Notes Field */}
+              <Field>
+                <FieldLabel htmlFor="notes">Notes</FieldLabel>
+                <Textarea
+                  id="notes"
+                  placeholder="e.g., Opening duties, check inventory..."
+                  {...register("notes")}
+                  className="resize-none"
+                />
               </Field>
             </FieldGroup>
 

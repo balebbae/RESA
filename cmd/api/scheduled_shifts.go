@@ -582,7 +582,7 @@ func (app *application) autoPopulateScheduleHandler(w http.ResponseWriter, r *ht
 					ShiftDate:       date,
 					StartTime:       template.StartTime,
 					EndTime:         template.EndTime,
-					Notes:           "",
+					Notes:           template.Notes,
 				}
 
 				shiftsToCreate = append(shiftsToCreate, shift)

@@ -175,6 +175,35 @@ definitions:
     required:
     - email
     type: object
+  main.SendScheduleEmailFailure:
+    properties:
+      email:
+        type: string
+      employee_id:
+        type: integer
+      employee_name:
+        type: string
+      error:
+        type: string
+    type: object
+  main.SendScheduleEmailPayload:
+    properties:
+      include_events:
+        type: boolean
+    type: object
+  main.SendScheduleEmailResponse:
+    properties:
+      failed:
+        type: integer
+      failures:
+        items:
+          $ref: '#/definitions/main.SendScheduleEmailFailure'
+        type: array
+      successful:
+        type: integer
+      total_recipients:
+        type: integer
+    type: object
   main.UpdateEmployeePayload:
     properties:
       email:
@@ -1901,6 +1930,52 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Publishes a schedule
+      tags:
+      - schedule
+  /restaurants/{restaurant_id}/schedules/{id}/send-email:
+    post:
+      consumes:
+      - application/json
+      description: Sends the schedule via email to all employees in the restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: integer
+      - description: Schedule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Email options
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.SendScheduleEmailPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SendScheduleEmailResponse'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Sends schedule emails to all employees
       tags:
       - schedule
   /restaurants/{restaurant_id}/shift-templates:

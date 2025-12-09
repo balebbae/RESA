@@ -219,6 +219,9 @@ func (app *application) mount() http.Handler {
 						// publish (email out)
 						r.Post("/publish", app.checkRestaurantOwnership(app.publishScheduleHandler))
 
+						// send schedule emails to employees
+						r.Post("/send-email", app.checkRestaurantOwnership(app.sendScheduleEmailHandler))
+
 						// auto-populate shifts from templates
 						r.Post("/auto-populate", app.checkRestaurantOwnership(app.autoPopulateScheduleHandler))
 

@@ -3,9 +3,10 @@ package mailer
 import "embed"
 
 const (
-	FromName = "Sodia"
-	maxRetries = 3
-	UserWelcomeTemplate = "user_invitation.go.tmpl"
+	FromName                     = "Sodia"
+	maxRetries                   = 3
+	UserWelcomeTemplate          = "user_invitation.go.tmpl"
+	ScheduleNotificationTemplate = "schedule_notification.go.tmpl"
 )
 
 //go:embed "template"

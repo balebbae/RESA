@@ -2684,6 +2684,75 @@
                 }
             }
         },
+        "/restaurants/{restaurant_id}/schedules/{id}/send-email": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Sends the schedule via email to all employees in the restaurant",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "schedule"
+                ],
+                "summary": "Sends schedule emails to all employees",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Restaurant ID",
+                        "name": "restaurant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Schedule ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Email options",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.SendScheduleEmailPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.SendScheduleEmailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            }
+        },
         "/restaurants/{restaurant_id}/shift-templates": {
             "get": {
                 "security": [
@@ -3324,6 +3393,51 @@
                 "email": {
                     "type": "string",
                     "maxLength": 255
+                }
+            }
+        },
+        "main.SendScheduleEmailFailure": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "employee_id": {
+                    "type": "integer"
+                },
+                "employee_name": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.SendScheduleEmailPayload": {
+            "type": "object",
+            "properties": {
+                "include_events": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "main.SendScheduleEmailResponse": {
+            "type": "object",
+            "properties": {
+                "failed": {
+                    "type": "integer"
+                },
+                "failures": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.SendScheduleEmailFailure"
+                    }
+                },
+                "successful": {
+                    "type": "integer"
+                },
+                "total_recipients": {
+                    "type": "integer"
                 }
             }
         },
